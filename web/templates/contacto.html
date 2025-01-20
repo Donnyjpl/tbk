@@ -1,0 +1,25 @@
+{% extends 'baset.html' %}
+{% load static %}
+
+{% block title %}
+Formulario de Contacto - OnlyFlans
+{% endblock %}
+
+{% block content %}
+
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow p-4">
+                <h1 class="card-title text-center mb-4 h1">Formulario Contacto</h1>
+                <form method="post">
+                    {% csrf_token %}
+                    {{ formm.as_p }}
+                    <button class="btn btn-success mt-3 d-block mx-auto" type="submit">Guardar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

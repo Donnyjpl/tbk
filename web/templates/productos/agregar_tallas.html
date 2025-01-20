@@ -1,0 +1,100 @@
+<!-- agregar_tallas.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agregar Tallas para {{ producto.nombre }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f8f8;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group select, .form-group input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Agregar Tallas para {{ producto.nombre }}</h1>
+
+        <!-- Mensaje de éxito -->
+        {% if messages %}
+            <div class="success-message">
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Formulario para agregar tallas -->
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="talla">Talla</label>
+                {{ form.talla }}
+            </div>
+            <div class="form-group">
+                <label for="cantidad">Cantidad</label>
+                {{ form.cantidad }}
+            </div>
+            <button type="submit">Agregar Talla</button>
+        </form>
+
+        <h2>Tallas del Producto:</h2>
+        <ul>
+            {% for talla in producto.tallas.all %}
+                <li>Talla: {{ talla.talla }} - Cantidad: {{ talla.cantidad }}</li>
+            {% endfor %}
+        </ul>
+
+        <p><a href="{% url 'producto_detalle' slug=producto.slug %}">Ver detalles del producto</a></p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,48 @@
+/* Aseguramos que todas las tarjetas tengan el mismo tamaño */
+.card {
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Esto asegura que todas las tarjetas tengan la misma altura */
+}
+
+/* Asegurar que las imágenes tengan el mismo tamaño */
+.product-img {
+    object-fit: cover; /* Esto asegura que la imagen cubra completamente el área del contenedor sin deformarse */
+    height: 250px; /* Ajusta la altura según lo que desees */
+    width: 100%; /* Asegura que la imagen ocupe todo el ancho disponible */
+    border-radius: 0.5rem; /* Bordes redondeados si lo deseas */
+}
+
+/* Hacer que el contenido de la tarjeta también ocupe el 100% del espacio disponible */
+.card-body {
+    flex-grow: 1; /* Esto hace que el cuerpo de la tarjeta ocupe el espacio restante */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Alinea los elementos de la tarjeta de manera uniforme */
+    padding: 15px; /* Espaciado interior */
+}
+
+/* Aseguramos que la imagen esté bien alineada */
+.card-img {
+    border-radius: 0.5rem; /* Opcional: bordes redondeados para la imagen */
+    overflow: hidden; /* Evita que la imagen se salga del contenedor */
+}
+
+/* Para garantizar que el contenido (nombre, precio, etc.) sea consistente en tamaño */
+.card-body a {
+    font-size: 16px; /* Ajusta el tamaño del texto */
+    text-transform: capitalize; /* Capitaliza el nombre del producto */
+    color: #333; /* Color de texto */
+    text-decoration: none;
+}
+
+.card-body p {
+    font-size: 18px; /* Ajusta el tamaño del precio */
+    color: #d9534f; /* Color rojo para el precio */
+    text-align: center;
+    margin-top: 10px;
+}
+
+.card-body .badge {
+    font-size: 12px; /* Tamaño más pequeño para las etiquetas de talla */
+}

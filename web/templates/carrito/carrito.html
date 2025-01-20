@@ -1,0 +1,42 @@
+{% extends 'baset.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <h2>Mi Carrito de Compras</h2>
+    <div class="row">
+        <div class="col-md-12">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Precio</th>
+                        <th>Total</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for slug, producto in carrito.items %}
+                    <tr>
+                        <td>{{ producto.nombre }}</td>
+                        <td>
+                            <form method="GET" action="{% url 'actualizar_carrito' producto.slug %}">
+                                <input type="number" name="cantidad" value="{{ producto.cantidad }}" min="1" required>
+                                <button type="submit" class="btn btn-warning">Actualizar</button>
+                            </form>
+                        </td>
+                        <td>${{ producto.precio }}</td>
+                        <td>${{ producto.precio|floatformat:2 }}</td>
+                        <td>
+                            <a href="{% url 'eliminar_del_carrito' slug=slug %}" class="btn btn-danger">Eliminar</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <h3>Total: ${{ total|floatformat:2 }}</h3>
+            <a href="#" class="btn btn-success">Proceder al Pago</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

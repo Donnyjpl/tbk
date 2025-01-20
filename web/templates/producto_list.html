@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Crear Productos - TBK{% endblock %}
+{% block content %}
+<!-- producto_list.html -->
+<h1>Lista de Productos</h1>
+
+<ul>
+    {% for producto in productos %}
+        <li>
+            <h3>{{ producto.nombre }} - ${{ producto.precio }}</h3>
+
+            <!-- Mostrar imágenes -->
+            <div>
+                <h4>Detalle:</h4>
+                {% for imagen in producto.imagenes_list %}
+                    <img src="{{ imagen.imagen.url }}" alt="{{ producto.nombre }}" style="width: 100px; height: 100px;">
+                {% endfor %}
+            </div>
+
+            <!-- Mostrar tallas y stock -->
+            <div>
+                <h4>Tallas y Stock:</h4>
+                <ul>
+                    {% for talla in producto.tallas_list %}
+                        <li>
+                            Talla: {{ talla.talla }} - Stock: {{ talla.cantidad }} unidades
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </li>
+    {% endfor %}
+</ul>
+
+{% endblock %}

@@ -1,0 +1,362 @@
+{% extends 'baset.html' %}
+
+{% block title %} Detalles de Producto {% endblock %}
+
+{% block content %}
+<!-- Open Content -->
+<section class="bg-light">
+    <div class="container pb-5">
+        <div class="row">
+            <!-- Columna de imagen principal del producto -->
+            <div class="col-lg-5 mt-5">
+                <div class="card mb-3">
+                    <!-- Imagen principal del producto -->
+                    {% if producto.imagenes_list.all %}
+                    <img class="card-img img-fluid" src="{{ producto.imagenes_list.first.imagen.url }}"
+                        alt="{{ producto.nombre }}" id="product-detail">
+                    {% else %}
+                    <p>No hay imagen principal disponible.</p>
+                    {% endif %}
+                </div>
+
+                <div class="row">
+                    <!-- Controles para el carrusel -->
+                    <div class="col-1 align-self-center">
+                        <a href="#carousel-related-product" role="button" data-bs-slide="prev">
+                            <i class="text-dark fas fa-chevron-left"></i>
+                            <span class="sr-only">Previous</span>
+                        </a>
+                    </div>
+
+                    <!-- Carrusel de imágenes relacionadas -->
+                    <div id="carousel-related-product" class="col-10 carousel slide carousel-multi-item"
+                        data-bs-ride="carousel">
+                        <div class="carousel-inner product-links-wap" role="listbox">
+                            {% for imagen in producto.imagenes_list.all %}
+                            <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                                <div class="row">
+                                    <div class="col-4">
+                                        <a href="#">
+                                            <img class="card-img img-fluid" src="{{ imagen.imagen.url }}"
+                                                alt="Product Image">
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Controles para el carrusel -->
+                    <div class="col-1 align-self-center">
+                        <a href="#carousel-related-product" role="button" data-bs-slide="next">
+                            <i class="text-dark fas fa-chevron-right"></i>
+                            <span class="sr-only">Next</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <!-- Fin columna de imagen -->
+
+            <!-- Columna de detalles del producto -->
+            <div class="col-lg-7 mt-5">
+                <div class="card">
+                    <div class="card-body">
+                        <h1 class="h2">{{ producto.nombre|title }}</h1>
+                        <p class="h3 py-2">${{ producto.precio }}</p>
+                        <p class="py-2">
+                            <i class="fa fa-star text-warning"></i>
+                            <i class="fa fa-star text-warning"></i>
+                            <i class="fa fa-star text-warning"></i>
+                            <i class="fa fa-star text-warning"></i>
+                            <i class="fa fa-star text-secondary"></i>
+                            <span class="list-inline-item text-dark">Rating 4.8 | 36 Comments</span>
+                        </p>
+                        <ul class="list-inline">
+                            <li class="list-inline-item">
+                                <h6>Brand:</h6>
+                            </li>
+                            <li class="list-inline-item">
+                                <p class="text-muted"><strong>{{ producto.marca }}</strong></p>
+                            </li>
+                        </ul>
+
+                        <h6>Description:</h6>
+                        <p>{{ producto.descripcion }}</p>
+
+                        <h6>Tallas y Medidas:</h6>
+
+                        <!-- Medidas para Vestidos y Enteritos -->
+                        {% if producto.categoria.nombre == "Vestidos y Enteritos" %}
+                        <h6>Vestidos y Enteritos</h6>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Medida (cm)</th>
+                                    <th>S</th>
+                                    <th>M</th>
+                                    <th>L</th>
+                                    <th>XL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Contorno de busto</td>
+                                    <td>82</td>
+                                    <td>86</td>
+                                    <td>90</td>
+                                    <td>94</td>
+                                </tr>
+                                <tr>
+                                    <td>Contorno de cintura</td>
+                                    <td>78</td>
+                                    <td>82</td>
+                                    <td>86</td>
+                                    <td>90</td>
+                                </tr>
+                                <tr>
+                                    <td>Largo total</td>
+                                    <td>58</td>
+                                    <td>59</td>
+                                    <td>60</td>
+                                    <td>61</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        {% endif %}
+
+                        <!-- Medidas para Faldas y Shorts -->
+                        {% if producto.categoria.nombre == "Faldas y Shorts" %}
+                        <h6>Faldas y Shorts</h6>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Medida (cm)</th>
+                                    <th>S</th>
+                                    <th>M</th>
+                                    <th>L</th>
+                                    <th>XL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Contorno de cintura</td>
+                                    <td>68</td>
+                                    <td>72</td>
+                                    <td>76</td>
+                                    <td>80</td>
+                                </tr>
+                                <tr>
+                                    <td>Contorno de cadera</td>
+                                    <td>88</td>
+                                    <td>92</td>
+                                    <td>96</td>
+                                    <td>100</td>
+                                </tr>
+                                <tr>
+                                    <td>Largo total</td>
+                                    <td>45</td>
+                                    <td>46</td>
+                                    <td>47</td>
+                                    <td>48</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        {% endif %}
+
+                        <!-- Medidas para Poleras, Blusas, Top y Body -->
+                        {% if producto.categoria.nombre == "Poleras, Blusas, Top y Body" %}
+                        <h6>Poleras, Blusas, Top y Body</h6>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Medida (cm)</th>
+                                    <th>S</th>
+                                    <th>M</th>
+                                    <th>L</th>
+                                    <th>XL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Contorno de busto</td>
+                                    <td>82</td>
+                                    <td>86</td>
+                                    <td>90</td>
+                                    <td>94</td>
+                                </tr>
+                                <tr>
+                                    <td>Contorno de cintura</td>
+                                    <td>78</td>
+                                    <td>82</td>
+                                    <td>86</td>
+                                    <td>90</td>
+                                </tr>
+                                <tr>
+                                    <td>Largo total</td>
+                                    <td>58</td>
+                                    <td>59</td>
+                                    <td>60</td>
+                                    <td>61</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        {% endif %}
+
+                        <!-- Medidas para Pantalones y Jeans -->
+                        {% if producto.categoria.nombre == "Pantalones y Jeans" %}
+                        <h6>Pantalones y Jeans</h6>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Medida (cm)</th>
+                                    <th>40</th>
+                                    <th>42</th>
+                                    <th>44</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Contorno de cintura</td>
+                                    <td>76</td>
+                                    <td>80</td>
+                                    <td>84</td>
+                                </tr>
+                                <tr>
+                                    <td>Contorno de cadera</td>
+                                    <td>96</td>
+                                    <td>100</td>
+                                    <td>104</td>
+                                </tr>
+                                <tr>
+                                    <td>Largo de pierna</td>
+                                    <td>98</td>
+                                    <td>99</td>
+                                    <td>100</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        {% endif %}
+
+                        <!-- Medidas para Zapatos -->
+                        {% if producto.categoria.nombre == "Zapatos" %}
+                        <h6>Zapatos</h6>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Medida (EU)</th>
+                                    <th>37</th>
+                                    <th>38</th>
+                                    <th>39</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Longitud (cm)</td>
+                                    <td>23.5</td>
+                                    <td>24.5</td>
+                                    <td>25.5</td>
+                                </tr>
+                                <tr>
+                                    <td>Ancho del zapato (cm)</td>
+                                    <td>8.5</td>
+                                    <td>9.0</td>
+                                    <td>9.5</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        {% endif %}
+
+                        <!-- Medidas para Accesorios -->
+                        {% if producto.categoria.nombre == "Accesorios" %}
+                        <h6>Accesorios</h6>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Medida</th>
+                                    <th>Size M</th>
+                                    <th>Size Unica</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Longitud del Collar (cm)</td>
+                                    <td>45</td>
+                                    <td>50</td>
+                                </tr>
+                                <tr>
+                                    <td>Diámetro de la Pulsera (cm)</td>
+                                    <td>6.5</td>
+                                    <td>7.0</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        {% endif %}
+
+
+                        <h6>Avaliable Color :</h6>
+                        <p class="text-muted"><strong>{{ producto.colores }}</strong></p>
+
+                        <h6>Specifications:</h6>
+                        <ul class="list-unstyled pb-3">
+                            <li>{{ producto.especificacion_1 }}</li>
+                            <li>{{ producto.especificacion_2 }}</li>
+                            <li>{{ producto.especificacion_3 }}</li>
+                            <!-- Añadir más especificaciones si es necesario -->
+                        </ul>
+
+                        <!-- Formulario para seleccionar tamaño y cantidad -->
+                        <form action="" method="POST">
+                            {% csrf_token %}
+                            <input type="hidden" name="product-title" value="{{ producto.nombre }}">
+
+                            <div class="row">
+                                <div class="col-auto">
+                                    <ul class="list-inline pb-3">
+                                        <li class="list-inline-item">Size :</li>
+                                        {% for talla in producto.tallas.all %}
+                                        <li class="list-inline-item">
+                                            <label class="btn btn-success btn-size">
+                                                <input type="radio" name="product-size" value="{{ talla.talla }}"
+                                                    {% if forloop.first %}checked{% endif %}> {{ talla.talla }}
+                                            </label>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                <div class="col-auto">
+                                    <ul class="list-inline pb-3">
+                                        <li class="list-inline-item text-right">
+                                            Quantity
+                                            <input type="hidden" name="product-quanity" id="product-quanity" value="1">
+                                        </li>
+                                        <li class="list-inline-item"><span class="btn btn-success"
+                                                id="btn-minus">-</span></li>
+                                        <li class="list-inline-item"><span class="badge bg-secondary"
+                                                id="var-value">1</span></li>
+                                        <li class="list-inline-item"><span class="btn btn-success"
+                                                id="btn-plus">+</span></li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="row pb-3">
+                                <div class="col d-grid">
+                                    <a href="{% url 'agregar_al_carrito' slug=producto.slug %}" class="btn btn-primary">Agregar al Carrito</a>
+                                </div>
+                                <div class="col d-grid">
+                                    <button type="submit" class="btn btn-success btn-lg" name="submit"
+                                        value="addtocart">Add To Cart</button>
+                                </div>
+                            </div>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+            <!-- Fin columna de detalles -->
+        </div>
+    </div>
+</section>
+<!-- Close Content -->
+{% endblock %}

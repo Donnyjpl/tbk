@@ -1,0 +1,29 @@
+<!-- subir_imagenes.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subir Imágenes para {{ producto.nombre }}</title>
+</head>
+<body>
+    <h1>Subir Imágenes para {{ producto.nombre }}</h1>
+
+    <!-- Formulario para subir imágenes -->
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Subir Imagen</button>
+    </form>
+
+    <h2>Imágenes subidas:</h2>
+    <ul>
+        {% for imagen in producto.imagenes.all %}
+            <li><img src="{{ imagen.imagen.url }}" alt="Imagen de {{ producto.nombre }}" width="200"></li>
+        {% endfor %}
+    </ul>
+
+    <p><a href="{% url 'agregar_tallas' slug=producto.slug %}">Ir a agregar tallas</a></p>
+</body>
+</html>
+

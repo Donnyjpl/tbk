@@ -92,6 +92,7 @@ def lista_productos(request):
     
     
 def index(request):
+
     return render(request, 'index1.html')
 
 def about(request):
@@ -147,10 +148,26 @@ class producto_detalle(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Accede a las imágenes y tallas asociadas al producto
+        
+        # Accede al producto actual
         producto = context['producto']
+
+        print(f"Producto actual ID: {producto.id}")
+        related_products = Producto.objects.filter(categoria=producto.categoria).exclude(id=producto.id)[:10]
+        print(related_products)
+        
+        # Agregar las imágenes a cada producto relacionado (solo para visualización en el template)
+        for related_product in related_products:
+            related_product.imagenes_list = related_product.imagenes.all()  # Agrega las imágenes al producto relacionado
+
+        # Agregar productos relacionados al contexto
+        context['productos_relacionados'] = related_products
+        
+
+        # Acceder a las imágenes y tallas asociadas al producto
         producto.imagenes_list = producto.imagenes.all()
         producto.tallas_list = producto.tallas.all()
+
         return context
     
 # Vista de contacto
@@ -199,14 +216,18 @@ def ver_carrito(request):
     # Obtener el carrito de la sesión
     carrito = request.session.get('carrito', {})
     
-    # Calcular el total del carrito
+    # Calcular el total y la cantidad total de productos
     total = 0
+    cantidad_total = 0  # Nueva variable para la cantidad total de productos
+    
     for item in carrito.values():
         total += float(item['precio']) * item['cantidad']
-
+        cantidad_total += item['cantidad']  # Sumar la cantidad de cada producto
+    
     return render(request, 'carrito/carrito.html', {
         'carrito': carrito,
         'total': total,
+        'cantidad_total': cantidad_total,  # Pasar la cantidad total al contexto
     })
     
 def eliminar_del_carrito(request, slug):
@@ -247,3 +268,65 @@ def actualizar_carrito(request, slug):
 
     # Respondemos con un JSON indicando que la actualización fue exitosa
     return JsonResponse({'success': True, 'cantidad': cantidad})
+
+
+
+
+# Vista personalizada para solicitar el restablecimiento de contraseña
+def custom_password_reset_request(request):
+    if request.method == "POST":
+        email = request.POST.get('email')
+        user = User.objects.filter(email=email).first()
+        if user:
+            # Generar UID y token para el restablecimiento de contraseña
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            domain = request.get_host()
+            reset_link = f"http://{domain}{reverse('password_reset_confirm', kwargs={'uidb64': uid, 'token': token})}"
+
+            # Enviar el correo con el enlace de restablecimiento
+            subject = "Restablecimiento de contraseña"
+            message = f"""Hola {user.username},
+Hemos recibido una solicitud para restablecer tu contraseña. Si no realizaste esta solicitud, puedes ignorar este correo.
+
+Para restablecer tu contraseña, haz clic en el siguiente enlace:
+<a href="{reset_link}">Restablecer contraseña</a>
+
+Este enlace es válido solo por 24 horas.
+
+Gracias,
+Tu equipo"""
+
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+                fail_silently=False,
+                html_message=message
+            )
+            
+            return render(request, 'registration/password_reset_done.html')
+        else:
+            error_message = "No se encontró un usuario con ese correo electrónico."
+            return render(request, 'registration/password_reset_form.html', {'error_message': error_message})
+
+    return render(request, 'registration/password_reset_form.html')
+
+
+# Vista personalizada para confirmar el restablecimiento de contraseña
+class CustomPasswordResetConfirmView(PasswordResetConfirmView):
+    template_name = 'registration/password_reset_confirm.html'
+    success_url = reverse_lazy('password_reset_complete')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['custom_message'] = "¡Tu contraseña ha sido restablecida con éxito!"
+        return context
+
+# Usamos las vistas por defecto para las siguientes dos etapas
+class CustomPasswordResetDoneView(PasswordResetDoneView):
+    template_name = 'registration/password_reset_done.html'
+
+class CustomPasswordResetCompleteView(PasswordResetCompleteView):
+    template_name = 'registration/password_reset_complete.html'

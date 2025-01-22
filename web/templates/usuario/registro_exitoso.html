@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %} Registro de Usuario Éxitoso - OnlyFlans{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <h1>¡Registro Exitoso!</h1>
+            <p>¡Tu cuenta ha sido creada correctamente!</p>
+            <p><a href="{% url 'user' %}">Volver al formulario de registro</a></p>
+            <a href="{% url 'bienvenido' %}" class="btn btn-outline-info">Volver a la página Bienvenida</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

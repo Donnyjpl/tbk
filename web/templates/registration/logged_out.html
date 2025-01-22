@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Sesión Cerrada - OnlyFlans{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h1 class="card-title text-center">Sesión Sesión</h1>
+                    <p>Has cerrado sesión exitosamente.</p>
+                    <a href="{% url 'inicio' %}">Ir al Inicio</a>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

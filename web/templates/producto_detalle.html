@@ -1,16 +1,14 @@
 {% extends 'baset.html' %}
-
+{% load static %}
 {% block title %} Detalles de Producto {% endblock %}
 
 {% block content %}
-<!-- Open Content -->
+
 <section class="bg-light">
     <div class="container pb-5">
         <div class="row">
-            <!-- Columna de imagen principal del producto -->
             <div class="col-lg-5 mt-5">
                 <div class="card mb-3">
-                    <!-- Imagen principal del producto -->
                     {% if producto.imagenes_list.all %}
                     <img class="card-img img-fluid" src="{{ producto.imagenes_list.first.imagen.url }}"
                         alt="{{ producto.nombre }}" id="product-detail">
@@ -19,17 +17,16 @@
                     {% endif %}
                 </div>
 
+                <!-- Carousel Wrapper -->
                 <div class="row">
-                    <!-- Controles para el carrusel -->
                     <div class="col-1 align-self-center">
-                        <a href="#carousel-related-product" role="button" data-bs-slide="prev">
+                        <a href="#multi-item-example" role="button" data-bs-slide="prev">
                             <i class="text-dark fas fa-chevron-left"></i>
                             <span class="sr-only">Previous</span>
                         </a>
                     </div>
 
-                    <!-- Carrusel de imágenes relacionadas -->
-                    <div id="carousel-related-product" class="col-10 carousel slide carousel-multi-item"
+                    <div id="multi-item-example" class="col-10 carousel slide carousel-multi-item"
                         data-bs-ride="carousel">
                         <div class="carousel-inner product-links-wap" role="listbox">
                             {% for imagen in producto.imagenes_list.all %}
@@ -47,16 +44,15 @@
                         </div>
                     </div>
 
-                    <!-- Controles para el carrusel -->
                     <div class="col-1 align-self-center">
-                        <a href="#carousel-related-product" role="button" data-bs-slide="next">
+                        <a href="#multi-item-example" role="button" data-bs-slide="next">
                             <i class="text-dark fas fa-chevron-right"></i>
                             <span class="sr-only">Next</span>
                         </a>
                     </div>
                 </div>
             </div>
-            <!-- Fin columna de imagen -->
+
 
             <!-- Columna de detalles del producto -->
             <div class="col-lg-7 mt-5">
@@ -292,19 +288,6 @@
                             </tbody>
                         </table>
                         {% endif %}
-
-
-                        <h6>Avaliable Color :</h6>
-                        <p class="text-muted"><strong>{{ producto.colores }}</strong></p>
-
-                        <h6>Specifications:</h6>
-                        <ul class="list-unstyled pb-3">
-                            <li>{{ producto.especificacion_1 }}</li>
-                            <li>{{ producto.especificacion_2 }}</li>
-                            <li>{{ producto.especificacion_3 }}</li>
-                            <!-- Añadir más especificaciones si es necesario -->
-                        </ul>
-
                         <!-- Formulario para seleccionar tamaño y cantidad -->
                         <form action="" method="POST">
                             {% csrf_token %}
@@ -318,7 +301,8 @@
                                         <li class="list-inline-item">
                                             <label class="btn btn-success btn-size">
                                                 <input type="radio" name="product-size" value="{{ talla.talla }}"
-                                                    {% if forloop.first %}checked{% endif %}> {{ talla.talla }}
+                                                    {% if forloop.first %}checked{% endif %}>
+                                                {{ talla.talla }}
                                             </label>
                                         </li>
                                         {% endfor %}
@@ -342,7 +326,8 @@
 
                             <div class="row pb-3">
                                 <div class="col d-grid">
-                                    <a href="{% url 'agregar_al_carrito' slug=producto.slug %}" class="btn btn-primary">Agregar al Carrito</a>
+                                    <a href="{% url 'agregar_al_carrito' slug=producto.slug %}"
+                                        class="btn btn-primary">Agregar al Carrito</a>
                                 </div>
                                 <div class="col d-grid">
                                     <button type="submit" class="btn btn-success btn-lg" name="submit"
@@ -358,5 +343,107 @@
         </div>
     </div>
 </section>
-<!-- Close Content -->
+
+
+<!-- Start Article -->
+<section class="py-5">
+    <div class="container">
+        <div class="row text-left p-2 pb-3">
+            <h4 class="text-uppercase font-weight-bold">Productos Relacionados</h4>
+        </div>
+
+        <div id="carousel-related-product">
+            <div class="p-2 pb-3">
+                <div class="product-wap card rounded-0">
+                    <div class="card rounded-0">
+                        {% if productos_relacionados %}
+                        {% for related_product in productos_relacionados %}
+                        <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                            <div class="product-wap card rounded-0 shadow-sm">
+                                <div class="card rounded-0">
+                                    <!-- Imagen del producto relacionado -->
+                                    {% if related_product.imagenes_list.all %}
+                                    <img class="card-img rounded-0 img-fluid"
+                                        src="{{ related_product.imagenes_list.first.imagen.url }}"
+                                        alt="{{ related_product.nombre }}">
+                                    {% else %}
+                                    <img class="card-img rounded-0 img-fluid"
+                                        src="{% static 'images/default-product.jpg' %}" alt="Imagen no disponible">
+                                    {% endif %}
+                                    <div class="card-body text-center">
+                                        <a href="{% url 'producto_detalle' related_product.slug %}"
+                                            class="h5 text-decoration-none text-dark">
+                                            {{ related_product.nombre }}
+                                        </a>
+                                        <p class="text-muted mb-2">${{ related_product.precio }}</p>
+                                        <div class="d-flex justify-content-center">
+                                            <span class="badge bg-warning text-dark me-1">⭐ 4.5</span>
+                                        </div>
+                                        <a href="{% url 'producto_detalle' related_product.slug %}"
+                                            class="btn btn-outline-primary btn-sm mt-2">Ver Detalles</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <!-- Si no hay productos relacionados, muestra un mensaje o imagen por defecto -->
+                        <div class="carousel-item active">
+                            <div class="product-wap card rounded-0 shadow-sm">
+                                <div class="card rounded-0">
+                                    <img class="card-img rounded-0 img-fluid"
+                                        src="{% static 'images/no-related-products.jpg' %}"
+                                        alt="No hay productos relacionados">
+                                    <div class="card-body text-center">
+                                        <p class="text-muted mb-2">No hay productos relacionados.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+            </div>
+</section>
+<!-- End Article -->
+<!-- Incluir el archivo JS de Slick -->
+<script src="{% static 'js/slick.min.js' %}"></script>
+
+<!-- Inicializar el Slick Slider -->
+<script>
+    $(document).ready(function () {
+        $('#carousel-related-product').slick({
+            infinite: true,
+            arrows: false,
+            slidesToShow: 4,
+            slidesToScroll: 3,
+            dots: true,
+            responsive: [{
+                    breakpoint: 1024,
+                    settings: {
+                        slidesToShow: 3,
+                        slidesToScroll: 3
+                    }
+                },
+                {
+                    breakpoint: 600,
+                    settings: {
+                        slidesToShow: 2,
+                        slidesToScroll: 3
+                    }
+                },
+                {
+                    breakpoint: 480,
+                    settings: {
+                        slidesToShow: 2,
+                        slidesToScroll: 3
+                    }
+                }
+            ]
+        });
+    });
+</script>
+
 {% endblock %}

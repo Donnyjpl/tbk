@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path,include
 
 from django.conf import settings
 from django.conf.urls.static import static
@@ -31,4 +31,15 @@ urlpatterns = [
     path('ver_carrito/', ver_carrito, name='ver_carrito'),
     path('eliminar_del_carrito/<slug:slug>/', eliminar_del_carrito, name='eliminar_del_carrito'),
     path('actualizar_carrito/<slug:slug>/', actualizar_carrito, name='actualizar_carrito'),
-]
+    
+    
+    
+    path('password_reset/', custom_password_reset_request, name='password_reset'),
+    path('password_reset/done/', CustomPasswordResetDoneView.as_view(), name='password_reset_done'),
+    path('password_reset_confirm/<uidb64>/<token>/', CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('reset/done/', CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),
+    
+  
+    path('accounts/', include('django.contrib.auth.urls')),  # Coma al final de esta línea para evitar errores futuros
+]# Solo en desarrollo, servir archivos de medios
+

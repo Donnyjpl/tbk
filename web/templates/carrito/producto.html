@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block title %}prueba - OnlyFlans{% endblock %}
+
+{% block content %}<h1>Detalles del Producto</h1>
+<p>Precio en Pesos Chilenos: {{ precio_clp }} CLP</p>
+{% if precio_convertido %}
+<p>Precio en {{ moneda }}: {{ precio_convertido|floatformat:2 }}</p>
+{% else %}
+<p>No se pudo obtener el precio en {{ moneda }}.</p>
+{% endif %}
+
+{% endblock %}

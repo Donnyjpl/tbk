@@ -145,12 +145,30 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-EMAIL_PORT = 587  # O 465 si es SSL
 EMAIL_USE_TLS = True  # True para TLS, False para SSL (según el servidor SMTP)
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = 'plazadonni@gmail.com'  # Coloca aquí tu dirección de correo
-EMAIL_HOST_PASSWORD = 'u r i h a b y r z p f c s p j u'    # Coloca aquí tu contraseña
-DEFAULT_FROM_EMAIL = 'webmaster@localhost'  # Dirección predeterminada de remitente
+
+from dotenv import load_dotenv
+
+# Cargar el archivo .env
+load_dotenv()
+
+# Ahora puedes usar las variables de entorno en tus configuraciones
+SECRET_KEY = os.getenv('SECRET_KEY')
+DEBUG = os.getenv('DEBUG') == 'True'
+DATABASE_NAME = os.getenv('DATABASE_NAME')
+DATABASE_USER = os.getenv('DATABASE_USER')
+DATABASE_PASSWORD = os.getenv('DATABASE_PASSWORD')
+DATABASE_HOST = os.getenv('DATABASE_HOST')
+DATABASE_PORT = os.getenv('DATABASE_PORT')
+
+MERCADOPAGO_ACCESS_TOKEN = os.getenv('MERCADOPAGO_ACCESS_TOKEN')
+MERCADOPAGO_PUBLIC_KEY = os.getenv('MERCADOPAGO_PUBLIC_KEY')
+
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
+
+api_key = os.getenv('API_KEY')
+
 
 

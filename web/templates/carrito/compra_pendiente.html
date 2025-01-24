@@ -1,0 +1,9 @@
+{% extends 'baset.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <h2>¡Tu pago está pendiente!</h2>
+    <p>Estamos esperando la confirmación de tu pago. Te notificaremos cuando esté procesado.</p>
+    <a href="{% url 'shop' %}" class="btn btn-info">Volver a la tienda</a>
+</div>
+{% endblock %}

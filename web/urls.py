@@ -2,17 +2,16 @@ from django.urls import path,include
 
 from django.conf import settings
 from django.conf.urls.static import static
-from .views import ProductoListView,index,producto_detalle,about,contacto,success,lista_productos,logout_view,custom_login
+from .views import ProductoListView,index,producto_detalle,about,contacto,successs,lista_productos,logout_view,custom_login,procesar_pago_success
 
 from .views import crear_producto, subir_imagenes,agregar_tallas,agregar_al_carrito,ver_carrito,eliminar_del_carrito,actualizar_carrito
 
 from .views import profile_view,register, ProfileUpdateView,custom_password_reset_request,CustomPasswordResetConfirmView,CustomPasswordResetDoneView,CustomPasswordResetCompleteView
-
+from . import views
 
 from django.contrib.auth import views as auth_views
+
 urlpatterns = [
-    
-    
     path('crear/',crear_producto , name='crear_producto'),
     path('subir_imagenes/<slug:slug>/',subir_imagenes, name='subir_imagenes'),
     path('agregar_tallas/<slug:slug>/',agregar_tallas, name='agregar_tallas'),
@@ -20,12 +19,18 @@ urlpatterns = [
     path('', index, name='index'),  # URL para ver la lista de productos
     path('about', about, name='about'),  # URL para ver la lista de productos
     path('contacto', contacto, name='contacto'),  # URL para ver la lista de productos
-    path('success', success, name='success'),  # URL para ver la lista de productos
-    
+    path('successs', successs, name='successs'),  # URL para ver la lista de productos
+ 
     
     path('listar/', lista_productos, name='listar'),  # URL para ver la lista de productos
-     
-     
+    
+    
+    
+    path('procesar_pago', views.procesar_pago, name='procesar_pago'),
+    path('procesar_pago/success/', views.procesar_pago_success, name='success'),
+    path('procesar_pago/failure', views.failure, name='failure'),
+    path('procesar_pago/pending', views.pending, name='pending'),
+    
     path('shop/', ProductoListView.as_view(), name='shop'),  # URL para ver la lista de productos
     path('producto/<slug:slug>/', producto_detalle.as_view(), name='producto_detalle'),
     

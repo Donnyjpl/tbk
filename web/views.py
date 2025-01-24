@@ -2,7 +2,7 @@
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView,ListView,DetailView
-from .models import Producto, ProductoImagen,ProductoTalla,Categoria,Profile
+from .models import Producto, ProductoImagen,ProductoTalla,Categoria,Profile,Venta
 from .forms import ProductoForm, ProductoImagenForm, ProductoFilterForm,ContactoForm,ProductoTallaForm,LoginForm
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
@@ -21,7 +21,7 @@ from .forms import ProductoForm
 from django.core.exceptions import ValidationError
 from django.contrib import messages
 from django.http import JsonResponse
-
+import mercadopago
 #usuario
 from .forms import ProfileForm
 from django.contrib.auth.decorators import login_required
@@ -31,7 +31,7 @@ from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth import authenticate, login
 
-
+from django.conf import settings
 from django.contrib.auth.views import (PasswordResetConfirmView, PasswordResetDoneView, PasswordResetCompleteView)
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
@@ -48,6 +48,140 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.core.mail import send_mail
 
+
+
+
+
+@login_required
+def procesar_pago_success(request):
+    # Obtener el carrito de la sesión
+    carrito = request.session.get('carrito', {})
+
+    # Si el carrito está vacío, redirigir a la tienda o mostrar un mensaje adecuado
+    if not carrito or len(carrito) == 0:
+        return redirect('web:shop')  # O puedes redirigir a una página de error o de la tienda
+
+    # Calcular el total de la compra
+    total = 0
+    for item in carrito.values():
+        total += float(item['precio']) * item['cantidad']
+
+    # Crear las ventas
+    for slug, item in carrito.items():
+        producto = Producto.objects.get(slug=slug)  # Obtener el producto desde la base de datos
+
+        # Crear una venta para cada producto
+        Venta.objects.create(
+            producto=producto,
+            cantidad=item['cantidad'],
+            user=request.user
+        )
+
+    # Vaciar el carrito
+    request.session['carrito'] = {}
+
+    # Mostrar un mensaje de éxito
+    messages.success(request, f'Pago exitoso por un total de ${total}. ¡Gracias por tu compra!')
+
+    # Obtener las ventas del usuario para mostrar en la misma vista
+    ventas = Venta.objects.filter(user=request.user)
+
+    # Calcular el total final
+    total = sum(venta.producto.precio * venta.cantidad for venta in ventas)
+
+    # Redirigir a la misma página para mostrar el resumen de la compra
+    return render(request, 'carrito/compra_confirmacion.html', {
+        'ventas': ventas,
+        'total': total,
+    })
+
+
+
+
+def ver_carrito(request):
+    # Obtener el carrito de la sesión
+    carrito = request.session.get('carrito', {})
+    
+    # Calcular el total y la cantidad total de productos
+    total = 0
+    cantidad_total = 0  # Nueva variable para la cantidad total de productos
+    
+    for item in carrito.values():
+        total += float(item['precio']) * item['cantidad']
+        cantidad_total += item['cantidad']  # Sumar la cantidad de cada producto
+         # Imprimir el total y cantidad_total para depuración
+  
+    
+    return render(request, 'carrito/carrito.html', {
+        'carrito': carrito,
+        'total': total,
+        'cantidad_total': cantidad_total,  # Pasar la cantidad total al contexto
+    })
+    
+@login_required
+def procesar_pago(request):
+    # Obtener el carrito de la sesión
+    carrito = request.session.get('carrito', {})
+    
+    # Verificar si el carrito está vacío
+    if not carrito or sum(item['cantidad'] for item in carrito.values()) == 0:
+        return JsonResponse({'error': 'El carrito está vacío o no tiene productos válidos.'}, status=400)
+    
+    # Calcular el total y la cantidad total de productos
+    total = 0
+    cantidad_total = 0
+    for item in carrito.values():
+        total += float(item['precio']) * item['cantidad']
+        cantidad_total += item['cantidad']
+        
+
+    # Configuración del SDK de Mercado Pago
+    sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
+    
+    # Crear la preferencia de pago
+    preference_data = {
+        "items": [
+            {
+                "title": "Compra en nuestra tienda TBK",  # Nombre del producto (puedes personalizarlo)
+                "quantity": 1,  # Cantidad total de productos en el carrito
+                "unit_price": total  # Total del carrito
+            }
+        ],
+        "back_urls": {
+             "success": request.build_absolute_uri('/web/procesar_pago/success/'),  # URL absoluta
+             "failure": request.build_absolute_uri('/web/procesar_pago/failure/'),
+             "pending": request.build_absolute_uri('/web/procesar_pago/pending/'),
+        },
+        "auto_return": "approved",  # La redirección automática cuando el pago es aprobado
+    }
+
+    # Intentar crear la preferencia
+    try:
+        preference_response = sdk.preference().create(preference_data)
+        preference = preference_response.get("response", {})
+        
+        
+        # Imprimir la respuesta de Mercado Pago para depuración
+
+        # Verificar si la preferencia fue creada correctamente
+        if 'init_point' in preference:
+            # Redirigir al usuario a la página de pago de Mercado Pago
+            return redirect(preference["init_point"])
+        else:
+            # Si no se pudo crear la preferencia, retornar un mensaje de error
+            error_message = preference_response.get("message", "Error desconocido.")
+            return JsonResponse({'error': error_message}, status=400)
+
+    except Exception as e:
+        # Si ocurre un error en el proceso de creación de la preferencia
+        return JsonResponse({'error': str(e)}, status=500)
+    
+
+def failure(request):
+    return render(request, 'carrito/compra_fallo.html')
+
+def pending(request):
+    return render(request, 'carrito/compra_pendiente.html')
 
 def custom_login(request):
     if request.method == 'POST':
@@ -141,7 +275,6 @@ def lista_productos(request):
     
     
 def index(request):
-
     return render(request, 'index1.html')
 
 def about(request):
@@ -231,7 +364,7 @@ def contacto(request):
     return render(request, 'contacto.html', {'formm': formm})
 
 
-def success(request):
+def successs(request):
     return render(request, 'registro_exitoso.html')
 
 
@@ -261,23 +394,7 @@ def agregar_al_carrito(request, slug):
     return redirect('ver_carrito')
 
 
-def ver_carrito(request):
-    # Obtener el carrito de la sesión
-    carrito = request.session.get('carrito', {})
-    
-    # Calcular el total y la cantidad total de productos
-    total = 0
-    cantidad_total = 0  # Nueva variable para la cantidad total de productos
-    
-    for item in carrito.values():
-        total += float(item['precio']) * item['cantidad']
-        cantidad_total += item['cantidad']  # Sumar la cantidad de cada producto
-    
-    return render(request, 'carrito/carrito.html', {
-        'carrito': carrito,
-        'total': total,
-        'cantidad_total': cantidad_total,  # Pasar la cantidad total al contexto
-    })
+
     
 def eliminar_del_carrito(request, slug):
     # Obtener el carrito de la sesión

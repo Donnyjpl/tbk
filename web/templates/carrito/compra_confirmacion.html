@@ -1,0 +1,16 @@
+{% extends 'baset.html' %}
+{% load custom_filters %}
+{% block content %}
+<div class="container py-5">
+    <h2>¡Gracias por tu compra!</h2>
+    <p>Tu pago fue exitoso y hemos recibido tu orden.</p>
+    <p><strong>Resumen de tu compra:</strong></p>
+    <ul>
+        {% for venta in ventas %}
+            <li>Producto: {{ venta.producto.nombre }} | Cantidad: {{ venta.cantidad }} | Precio unitario: ${{ venta.producto.precio }} | Total: ${{ venta.cantidad|multiply:venta.producto.precio }}</li>
+        {% endfor %}
+    </ul>
+    <p><strong>Total: ${{ total }}</strong></p>
+    <a href="{% url 'shop' %}" class="btn btn-primary">Volver a la tienda</a>
+</div>
+{% endblock %}

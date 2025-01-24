@@ -41,7 +41,7 @@
                     </tbody>
                 </table>
                 <h3>Total: ${{ total|floatformat:2 }}</h3>
-                <a href="#" class="btn btn-success">Proceder al Pago</a>
+                <a href="{% url 'procesar_pago' %}" class="btn btn-success">Proceder al Pago</a>
             </div>
         </div>
     {% endif %}

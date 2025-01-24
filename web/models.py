@@ -6,7 +6,7 @@ import uuid
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     rut = models.CharField(max_length=12, unique=True)  # RUT (Ej: 12.345.678-9)
-    telefono = models.CharField(max_length=15)  # Teléfono
+    telefono = models.CharField(max_length=15,unique=True)  # Teléfono
     direccion = models.CharField(max_length=255)  # Dirección
 
     def __str__(self):

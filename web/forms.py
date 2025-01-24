@@ -1,7 +1,10 @@
 # forms.py
 from django import forms
-from .models import Producto, ProductoImagen,Categoria,ProductoTalla,Contacto
+from .models import Producto, ProductoImagen,Categoria,ProductoTalla,Contacto,Profile
 from django.db.models import Min, Max
+from django.contrib.auth.forms import SetPasswordForm,UserCreationForm
+from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 
 class ProductoForm(forms.ModelForm):
     class Meta:
@@ -94,3 +97,119 @@ class ContactoForm(forms.ModelForm):
                 'placeholder': 'Escribe tu mensaje aquí...',  # Placeholder
             }),
         }
+
+class CustomPasswordResetConfirmForm(SetPasswordForm):
+    new_password1 = forms.CharField(
+        label="Nueva Contraseña",
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Ingresa tu nueva contraseña'}),
+    )
+    new_password2 = forms.CharField(
+        label="Confirmar Nueva Contraseña",
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Confirma tu nueva contraseña'}),
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        new_password1 = cleaned_data.get("new_password1")
+        new_password2 = cleaned_data.get("new_password2")
+
+        if new_password1 and new_password2 and new_password1 != new_password2:
+            raise forms.ValidationError("Las contraseñas no coinciden.")
+    
+    
+class CustomEmailForm(forms.Form):
+    email = forms.EmailField(
+        label="Correo Electrónico",
+        max_length=254,
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Ingresa tu correo electrónico'}),
+    )
+    
+class LoginForm(forms.Form):
+    username = forms.CharField(
+        label='Nombre de usuario',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',  # Clase de Bootstrap
+            'placeholder': 'Ingresa tu nombre de usuario',  # Placeholder
+        })
+    )
+    password = forms.CharField(
+        label='Contraseña',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',  # Clase de Bootstrap
+            'placeholder': 'Ingresa tu contraseña',  # Placeholder
+        })
+    )
+# Formulario para crear un usuario con campos adicionales
+# Formulario para crear un usuario con campos adicionales
+class CustomUserCreationForm(UserCreationForm):
+    nombre = forms.CharField(max_length=30, required=True)
+    apellido = forms.CharField(max_length=30, required=True)
+    rut = forms.CharField(max_length=12, required=True)
+    telefono = forms.CharField(max_length=15, required=True)
+    direccion = forms.CharField(widget=forms.Textarea(attrs={'rows': 4, 'cols': 40}), required=True)
+
+    class Meta:
+        model = User
+        fields = ['nombre', 'apellido', 'email', 'password1', 'password2', 'rut', 'telefono', 'direccion']
+        
+    def clean_rut(self):
+        rut = self.cleaned_data.get('rut')
+        if Profile.objects.filter(rut=rut).exists():
+            raise ValidationError("Este correo rut ya está registrado.")
+        return rut
+
+    # Validación personalizada para asegurarse de que el correo y el teléfono sean únicos
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email=email).exists():
+            raise ValidationError("Este correo electrónico ya está registrado.")
+        return email
+    # Validaciones de las contraseñas
+    def clean_password1(self):
+        password = self.cleaned_data.get('password1')
+        password2 = self.cleaned_data.get('password2')
+        
+        # Aquí puedes agregar reglas personalizadas si lo deseas
+        if password and len(password) < 8:
+            raise ValidationError("La contraseña debe tener al menos 8 caracteres.")
+        
+        # No permitir contraseñas completamente numéricas
+        if password and password.isdigit():
+            raise ValidationError("La contraseña no puede ser completamente numérica.")
+       
+        # Validacion de Contraseñas
+        if password == password2:
+            raise ValidationError("La contraseña tiene que ser Iguales.")
+        
+        return password
+
+    def clean_telefono(self):
+        telefono = self.cleaned_data.get('telefono')
+        if Profile.objects.filter(telefono=telefono).exists():
+            raise ValidationError("Este número de teléfono ya está registrado.")
+        return telefono
+
+    def save(self, commit=True):
+        # Guardar el usuario
+        user = super().save(commit=False)
+
+        # Asignar el correo como el username
+        user.username = self.cleaned_data['email']
+        
+        if commit:
+            user.save()
+
+        # Crear el perfil del usuario
+        profile = Profile.objects.create(
+            user=user,
+            rut=self.cleaned_data['rut'],
+            telefono=self.cleaned_data['telefono'],
+            direccion=self.cleaned_data['direccion']
+        )
+        return user
+
+# Formulario para crear o actualizar el perfil del usuario
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = ['rut', 'telefono', 'direccion']

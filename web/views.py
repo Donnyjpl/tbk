@@ -2,15 +2,16 @@
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView,ListView,DetailView
-from .models import Producto, ProductoImagen,ProductoTalla,Categoria
-from .forms import ProductoForm, ProductoImagenForm, ProductoFilterForm,ContactoForm,ProductoTallaForm
+from .models import Producto, ProductoImagen,ProductoTalla,Categoria,Profile
+from .forms import ProductoForm, ProductoImagenForm, ProductoFilterForm,ContactoForm,ProductoTallaForm,LoginForm
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.core.paginator import Paginator
-
-
+from .forms import CustomUserCreationForm
+from django import forms  # Aquí debes importar forms
+from django.contrib.auth import logout
 # @method_decorator(login_required, name='dispatch')
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
@@ -21,7 +22,55 @@ from django.core.exceptions import ValidationError
 from django.contrib import messages
 from django.http import JsonResponse
 
+#usuario
+from .forms import ProfileForm
+from django.contrib.auth.decorators import login_required
+from django.views.generic.edit import UpdateView
+from .models import Profile
+from django.urls import reverse_lazy
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth import authenticate, login
 
+
+from django.contrib.auth.views import (PasswordResetConfirmView, PasswordResetDoneView, PasswordResetCompleteView)
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.tokens import default_token_generator
+from django.conf import settings
+from django.contrib.auth.models import User
+from django.views.generic import ListView
+from django.urls import reverse_lazy, reverse
+from django.utils import timezone
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login
+from django.contrib import messages
+from django.http import HttpResponseRedirect
+from django.core.mail import send_mail
+
+
+def custom_login(request):
+    if request.method == 'POST':
+        form = LoginForm(request.POST)
+
+        if form.is_valid():
+
+            # Recuperar los datos del formulario
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
+            # Intentar autenticar al usuario
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                messages.success(request, f'¡Bienvenido de nuevo, {user.username}!')
+                return redirect('index')  # Redirige después de login exitoso
+            else:
+                messages.error(request, 'Usuario o contraseña incorrectos.')  # Mensaje de error
+        else:
+            messages.error(request, 'Formulario inválido')  # En caso de que el formulario no sea válido
+    else:
+        form = LoginForm()
+    return render(request, 'registration/login.html', {'form': form})
 
 def crear_producto(request):
     if request.method == 'POST':
@@ -269,8 +318,109 @@ def actualizar_carrito(request, slug):
     # Respondemos con un JSON indicando que la actualización fue exitosa
     return JsonResponse({'success': True, 'cantidad': cantidad})
 
+class ProfileUpdateView(LoginRequiredMixin, UpdateView):
+    model = Profile
+    fields = ['telefono', 'direccion']
+    template_name = 'usuario/edit_profile.html'
+    success_url = reverse_lazy('profile')  # Redirige al perfil después de la actualización
+    
+    def get_object(self, queryset=None):
+        """
+        Obtiene el perfil del usuario logueado.
+        Si el perfil no existe, lo crea.
+        """
+        try:
+            return self.request.user.profile
+        except Profile.DoesNotExist:
+            # Si no existe el perfil, lo creamos y lo asociamos al usuario
+            profile = Profile.objects.create(user=self.request.user)
+            return profile
 
+    def get_form(self, form_class=None):
+        """
+        Sobrescribimos este método para incluir los campos adicionales del usuario (nombre, apellido, correo, direccion).
+        """
+        form = super().get_form(form_class)
+        
+        # Añadir los campos del User al formulario de actualización
+        form.fields['username'] = forms.CharField(max_length=150)
+        form.fields['email'] = forms.EmailField()
+        form.fields['first_name'] = forms.CharField(max_length=30)
+        form.fields['last_name'] = forms.CharField(max_length=30)
+        
+        # Campo dirección con tamaño personalizado (más grande)
+        form.fields['direccion'] = forms.CharField(
+            widget=forms.Textarea(attrs={'rows': 5, 'cols': 40})  # Cambié el tamaño del TextArea
+        )
 
+        # Inicializamos los valores de los campos con los valores del usuario logueado
+        form.initial['username'] = self.request.user.username
+        form.initial['email'] = self.request.user.email
+        form.initial['first_name'] = self.request.user.first_name
+        form.initial['last_name'] = self.request.user.last_name
+        form.initial['direccion'] = self.request.user.profile.direccion  # Inicializamos direccion desde el perfil
+
+        return form
+
+    def form_valid(self, form):
+        """
+        Sobrescribimos este método para guardar los datos del User además de los del Profile.
+        """
+        user = self.request.user
+        # Validar que el email no esté registrado
+        email = form.cleaned_data['email']
+        if User.objects.filter(email=email).exclude(username=user.username).exists():
+            form.add_error('email', 'Este correo electrónico ya está registrado.')
+            return self.form_invalid(form)
+
+        # Validar que el teléfono no esté registrado
+        telefono = form.cleaned_data['telefono']
+        if Profile.objects.filter(telefono=telefono).exclude(user=user).exists():
+            form.add_error('telefono', 'Este número de teléfono ya está registrado.')
+            return self.form_invalid(form)
+
+        # Guardar los campos de usuario
+        user.first_name = form.cleaned_data['first_name']
+        user.last_name = form.cleaned_data['last_name']
+        user.email = email  # Asignar el email
+        user.username = email  # Establecer el username como email si es necesario
+        user.save()
+
+        # Guardar los campos de perfil
+        profile = form.save(commit=False)
+        profile.user = user  # Asegurarse de que el perfil está vinculado al usuario
+        profile.direccion = form.cleaned_data['direccion']  # Guardamos la dirección también
+        profile.save()
+
+        # Agregar un mensaje de éxito después de guardar los cambios
+        messages.success(self.request, '¡Perfil actualizado correctamente!')
+
+        return super().form_valid(form)
+    
+def register(request):
+    if request.method == 'POST':
+        form = CustomUserCreationForm(request.POST)
+
+        if form.is_valid():
+            user = form.save()
+            messages.success(request, '¡Cuenta registrada con éxito!')
+            return redirect('login')  # Redirige a la página de éxito
+
+        else:
+            messages.error(request, 'Hubo un error en el registro. Por favor, corrige los errores.')
+
+    else:
+        form = CustomUserCreationForm()
+
+    return render(request, 'registration/register.html', {'form': form})
+
+# Vista de registro exitoso
+def registro_exitoso(request):
+    return render(request, 'usuario/registro_exitoso.html')
+
+def logout_view(request):
+    logout(request)  # Cierra la sesión
+    return redirect('index')  # Redirige a la página de inicio o a la página que desees
 
 # Vista personalizada para solicitar el restablecimiento de contraseña
 def custom_password_reset_request(request):
@@ -330,3 +480,8 @@ class CustomPasswordResetDoneView(PasswordResetDoneView):
 
 class CustomPasswordResetCompleteView(PasswordResetCompleteView):
     template_name = 'registration/password_reset_complete.html'
+    
+    
+@login_required
+def profile_view(request):
+    return render(request, 'usuario/profile.html')

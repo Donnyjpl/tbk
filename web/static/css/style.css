@@ -46,3 +46,25 @@
 .card-body .badge {
     font-size: 12px; /* Tamaño más pequeño para las etiquetas de talla */
 }
+
+.messages {
+    margin: 20px 0;
+  }
+  
+  .message {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+  }
+  
+  .success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+  
+  .error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }

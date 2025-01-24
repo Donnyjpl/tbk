@@ -25,20 +25,22 @@ SECRET_KEY = "django-insecure-c+f!m)6)i8g@$9-6--$1&lk55d1=k@p-^b)0bv(-wugli=1xr^
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
+MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 ALLOWED_HOSTS = []
-
-
+LOGIN_URL = '/web/login/'  # Asegúrate de que esta URL esté definida
+LOGIN_REDIRECT_URL = '/web/'  # Página a la que se redirige después del login
+LOGOUT_REDIRECT_URL = '/web/'  # Página a la que se redirige después del logout
 # Application definition
 
 INSTALLED_APPS = [
+    "web",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "web",
+    
 ]
 
 # Para el manejo de archivos de medios

@@ -145,4 +145,12 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+EMAIL_PORT = 587  # O 465 si es SSL
+EMAIL_USE_TLS = True  # True para TLS, False para SSL (según el servidor SMTP)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST_USER = 'plazadonni@gmail.com'  # Coloca aquí tu dirección de correo
+EMAIL_HOST_PASSWORD = 'u r i h a b y r z p f c s p j u'    # Coloca aquí tu contraseña
+DEFAULT_FROM_EMAIL = 'webmaster@localhost'  # Dirección predeterminada de remitente
+
 

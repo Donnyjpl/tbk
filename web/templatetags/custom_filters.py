@@ -13,3 +13,9 @@ def multiply(value, arg):
         return float(value) * float(arg)
     except (ValueError, TypeError):
         return 0
+    
+@register.filter
+def to(value):
+    """Devuelve un rango hasta el número dado"""
+    return range(1, value + 1)
+

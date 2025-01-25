@@ -1,449 +1,211 @@
 {% extends 'baset.html' %}
 {% load static %}
-{% block title %} Detalles de Producto {% endblock %}
+{% load custom_filters %}
+
+{% block title %}
+    Detalles de Producto
+{% endblock %}
 
 {% block content %}
+    {% if messages %}
+        <div class="alert alert-success">
+            {% for message in messages %}
+                <p>{{ message|title }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
 
-<section class="bg-light">
-    <div class="container pb-5">
-        <div class="row">
-            <div class="col-lg-5 mt-5">
-                <div class="card mb-3">
-                    {% if producto.imagenes_list.all %}
-                    <img class="card-img img-fluid" src="{{ producto.imagenes_list.first.imagen.url }}"
-                        alt="{{ producto.nombre }}" id="product-detail">
-                    {% else %}
-                    <p>No hay imagen principal disponible.</p>
-                    {% endif %}
-                </div>
-
-                <!-- Carousel Wrapper -->
-                <div class="row">
-                    <div class="col-1 align-self-center">
-                        <a href="#multi-item-example" role="button" data-bs-slide="prev">
-                            <i class="text-dark fas fa-chevron-left"></i>
-                            <span class="sr-only">Previous</span>
-                        </a>
+    <section class="bg-light">
+        <div class="container pb-5">
+            <div class="row">
+                <!-- Imagen principal del producto -->
+                <div class="col-lg-5 mt-5">
+                    <div class="card mb-3">
+                        {% if producto.imagenes_list.all %}
+                            <img class="card-img img-fluid" src="{{ producto.imagenes_list.first.imagen.url }}" alt="{{ producto.nombre }}" id="product-detail">
+                        {% else %}
+                            <p>No hay imagen principal disponible.</p>
+                        {% endif %}
                     </div>
 
-                    <div id="multi-item-example" class="col-10 carousel slide carousel-multi-item"
-                        data-bs-ride="carousel">
-                        <div class="carousel-inner product-links-wap" role="listbox">
-                            {% for imagen in producto.imagenes_list.all %}
-                            <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                                <div class="row">
-                                    <div class="col-4">
-                                        <a href="#">
-                                            <img class="card-img img-fluid" src="{{ imagen.imagen.url }}"
-                                                alt="Product Image">
-                                        </a>
+                    <!-- Carousel de imágenes del producto -->
+                    <div class="row">
+                        <div class="col-1 align-self-center">
+                            <a href="#multi-item-example" role="button" data-bs-slide="prev">
+                                <i class="text-dark fas fa-chevron-left"></i>
+                                <span class="sr-only">Previous</span>
+                            </a>
+                        </div>
+
+                        <div id="multi-item-example" class="col-10 carousel slide carousel-multi-item" data-bs-ride="carousel">
+                            <div class="carousel-inner product-links-wap" role="listbox">
+                                {% for imagen in producto.imagenes_list.all %}
+                                    <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                                        <div class="row">
+                                            <div class="col-4">
+                                                <a href="#">
+                                                    <img class="card-img img-fluid" src="{{ imagen.imagen.url }}" alt="Product Image">
+                                                </a>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
+                                {% endfor %}
                             </div>
-                            {% endfor %}
+                        </div>
+
+                        <div class="col-1 align-self-center">
+                            <a href="#multi-item-example" role="button" data-bs-slide="next">
+                                <i class="text-dark fas fa-chevron-right"></i>
+                                <span class="sr-only">Next</span>
+                            </a>
                         </div>
                     </div>
-
-                    <div class="col-1 align-self-center">
-                        <a href="#multi-item-example" role="button" data-bs-slide="next">
-                            <i class="text-dark fas fa-chevron-right"></i>
-                            <span class="sr-only">Next</span>
-                        </a>
-                    </div>
                 </div>
-            </div>
 
+                <!-- Detalles del producto y opiniones -->
+                <div class="col-lg-7 mt-5">
+                    <div class="card">
+                        <div class="card-body">
+                            <h1 class="h2">{{ producto.nombre|title }}</h1>
+                            <p class="h3 py-2">${{ producto.precio}}</p>
+                            <p class="py-2">
 
-            <!-- Columna de detalles del producto -->
-            <div class="col-lg-7 mt-5">
-                <div class="card">
-                    <div class="card-body">
-                        <h1 class="h2">{{ producto.nombre|title }}</h1>
-                        <p class="h3 py-2">${{ producto.precio }}</p>
-                        <p class="py-2">
-                            <i class="fa fa-star text-warning"></i>
-                            <i class="fa fa-star text-warning"></i>
-                            <i class="fa fa-star text-warning"></i>
-                            <i class="fa fa-star text-warning"></i>
-                            <i class="fa fa-star text-secondary"></i>
-                            <span class="list-inline-item text-dark">Rating 4.8 | 36 Comments</span>
-                        </p>
-                        <ul class="list-inline">
-                            <li class="list-inline-item">
-                                <h6>Brand:</h6>
-                            </li>
-                            <li class="list-inline-item">
-                                <p class="text-muted"><strong>{{ producto.marca }}</strong></p>
-                            </li>
-                        </ul>
+                                <ul class="list-unstyled d-flex  mb-1">
+                                    {% for i in rango_estrellas %}
+                                        {% if i <= producto.promedio_valoracion %}
+                                            <li><i class="text-warning fa fa-star"></i></li>
+                                        {% else %}
+                                            <li><i class="text-muted fa fa-star"></i></li>
+                                        {% endif %}
+                                    {% endfor %}
+                                </ul>
+                                <span class="list-inline-item text-dark">{{ producto.promedio_valoracion }} de 5 Estrellas| {{ producto.opiniones_list.count }} Comentarios</span>
+                            </p>
 
-                        <h6>Description:</h6>
-                        <p>{{ producto.descripcion }}</p>
+                            <!-- Pestañas para mostrar detalles del producto y opiniones -->
+                            <ul class="nav nav-tabs" id="productTab" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <a class="nav-link active" id="details-tab" data-bs-toggle="tab" href="#details" role="tab" aria-controls="details" aria-selected="true">Detalles</a>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <a class="nav-link" id="reviews-tab" data-bs-toggle="tab" href="#reviews" role="tab" aria-controls="reviews" aria-selected="false">Opiniones</a>
+                                </li>
+                            </ul>
+                            <div class="tab-content" id="productTabContent">
+                                <!-- Detalles del producto -->
+                                <div class="tab-pane fade show active" id="details" role="tabpanel" aria-labelledby="details-tab">
+                                    <h6>Descripción:</h6>
+                                    <p>{{ producto.descripcion }}</p>
+                                    {% include 'tallas.html' %}
+                                </div>
 
-                        <h6>Tallas y Medidas:</h6>
-
-                        <!-- Medidas para Vestidos y Enteritos -->
-                        {% if producto.categoria.nombre == "Vestidos y Enteritos" %}
-                        <h6>Vestidos y Enteritos</h6>
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Medida (cm)</th>
-                                    <th>S</th>
-                                    <th>M</th>
-                                    <th>L</th>
-                                    <th>XL</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Contorno de busto</td>
-                                    <td>82</td>
-                                    <td>86</td>
-                                    <td>90</td>
-                                    <td>94</td>
-                                </tr>
-                                <tr>
-                                    <td>Contorno de cintura</td>
-                                    <td>78</td>
-                                    <td>82</td>
-                                    <td>86</td>
-                                    <td>90</td>
-                                </tr>
-                                <tr>
-                                    <td>Largo total</td>
-                                    <td>58</td>
-                                    <td>59</td>
-                                    <td>60</td>
-                                    <td>61</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        {% endif %}
-
-                        <!-- Medidas para Faldas y Shorts -->
-                        {% if producto.categoria.nombre == "Faldas y Shorts" %}
-                        <h6>Faldas y Shorts</h6>
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Medida (cm)</th>
-                                    <th>S</th>
-                                    <th>M</th>
-                                    <th>L</th>
-                                    <th>XL</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Contorno de cintura</td>
-                                    <td>68</td>
-                                    <td>72</td>
-                                    <td>76</td>
-                                    <td>80</td>
-                                </tr>
-                                <tr>
-                                    <td>Contorno de cadera</td>
-                                    <td>88</td>
-                                    <td>92</td>
-                                    <td>96</td>
-                                    <td>100</td>
-                                </tr>
-                                <tr>
-                                    <td>Largo total</td>
-                                    <td>45</td>
-                                    <td>46</td>
-                                    <td>47</td>
-                                    <td>48</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        {% endif %}
-
-                        <!-- Medidas para Poleras, Blusas, Top y Body -->
-                        {% if producto.categoria.nombre == "Poleras, Blusas, Top y Body" %}
-                        <h6>Poleras, Blusas, Top y Body</h6>
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Medida (cm)</th>
-                                    <th>S</th>
-                                    <th>M</th>
-                                    <th>L</th>
-                                    <th>XL</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Contorno de busto</td>
-                                    <td>82</td>
-                                    <td>86</td>
-                                    <td>90</td>
-                                    <td>94</td>
-                                </tr>
-                                <tr>
-                                    <td>Contorno de cintura</td>
-                                    <td>78</td>
-                                    <td>82</td>
-                                    <td>86</td>
-                                    <td>90</td>
-                                </tr>
-                                <tr>
-                                    <td>Largo total</td>
-                                    <td>58</td>
-                                    <td>59</td>
-                                    <td>60</td>
-                                    <td>61</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        {% endif %}
-
-                        <!-- Medidas para Pantalones y Jeans -->
-                        {% if producto.categoria.nombre == "Pantalones y Jeans" %}
-                        <h6>Pantalones y Jeans</h6>
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Medida (cm)</th>
-                                    <th>40</th>
-                                    <th>42</th>
-                                    <th>44</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Contorno de cintura</td>
-                                    <td>76</td>
-                                    <td>80</td>
-                                    <td>84</td>
-                                </tr>
-                                <tr>
-                                    <td>Contorno de cadera</td>
-                                    <td>96</td>
-                                    <td>100</td>
-                                    <td>104</td>
-                                </tr>
-                                <tr>
-                                    <td>Largo de pierna</td>
-                                    <td>98</td>
-                                    <td>99</td>
-                                    <td>100</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        {% endif %}
-
-                        <!-- Medidas para Zapatos -->
-                        {% if producto.categoria.nombre == "Zapatos" %}
-                        <h6>Zapatos</h6>
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Medida (EU)</th>
-                                    <th>37</th>
-                                    <th>38</th>
-                                    <th>39</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Longitud (cm)</td>
-                                    <td>23.5</td>
-                                    <td>24.5</td>
-                                    <td>25.5</td>
-                                </tr>
-                                <tr>
-                                    <td>Ancho del zapato (cm)</td>
-                                    <td>8.5</td>
-                                    <td>9.0</td>
-                                    <td>9.5</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        {% endif %}
-
-                        <!-- Medidas para Accesorios -->
-                        {% if producto.categoria.nombre == "Accesorios" %}
-                        <h6>Accesorios</h6>
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Medida</th>
-                                    <th>Size M</th>
-                                    <th>Size Unica</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Longitud del Collar (cm)</td>
-                                    <td>45</td>
-                                    <td>50</td>
-                                </tr>
-                                <tr>
-                                    <td>Diámetro de la Pulsera (cm)</td>
-                                    <td>6.5</td>
-                                    <td>7.0</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        {% endif %}
-                        <!-- Formulario para seleccionar tamaño y cantidad -->
-                        <form action="" method="POST">
-                            {% csrf_token %}
-                            <input type="hidden" name="product-title" value="{{ producto.nombre }}">
-
-                            <div class="row">
-                                <div class="col-auto">
-                                    <ul class="list-inline pb-3">
-                                        <li class="list-inline-item">Size :</li>
-                                        {% for talla in producto.tallas.all %}
-                                        <li class="list-inline-item">
-                                            <label class="btn btn-success btn-size">
-                                                <input type="radio" name="product-size" value="{{ talla.talla }}"
-                                                    {% if forloop.first %}checked{% endif %}>
-                                                {{ talla.talla }}
-                                            </label>
-                                        </li>
+                                <!-- Opiniones -->
+                                <div class="tab-pane fade" id="reviews" role="tabpanel" aria-labelledby="reviews-tab">
+                                    <h3>Opiniones</h3>
+                                    <!-- Mostrar estrellas de valoración -->
+                                    <ul class="list-unstyled d-flex justify-content-center mb-1">
+                                        {% for i in rango_estrellas %}
+                                            {% if i <= producto.promedio_valoracion %}
+                                                <li><i class="text-warning fa fa-star"></i></li>
+                                            {% else %}
+                                                <li><i class="text-muted fa fa-star"></i></li>
+                                            {% endif %}
                                         {% endfor %}
                                     </ul>
-                                </div>
-                                <div class="col-auto">
-                                    <ul class="list-inline pb-3">
-                                        <li class="list-inline-item text-right">
-                                            Quantity
-                                            <input type="hidden" name="product-quanity" id="product-quanity" value="1">
-                                        </li>
-                                        <li class="list-inline-item"><span class="btn btn-success"
-                                                id="btn-minus">-</span></li>
-                                        <li class="list-inline-item"><span class="badge bg-secondary"
-                                                id="var-value">1</span></li>
-                                        <li class="list-inline-item"><span class="btn btn-success"
-                                                id="btn-plus">+</span></li>
-                                    </ul>
+                                    <p>{{ producto.promedio_valoracion }} de 5 estrellas</p>
+
+                                    <!-- Mostrar opiniones -->
+                                    {% for opinion in producto.opiniones_list %}
+                                        <div>
+                                            <strong>{{ opinion.user.first_name }}</strong> (Valoración: {{ opinion.valoracion }})
+                                            <p>{{ opinion.opinion }}</p>
+                                            <small>Publicado el {{ opinion.created_at }}</small>
+                                        </div>
+                                    {% empty %}
+                                        <p>No hay opiniones aún para este producto.</p>
+                                    {% endfor %}
+
+                                    <!-- Formulario para dejar una opinión -->
+                                    {% if user.is_authenticated %}
+                                        <h3>Deja tu opinión</h3>
+                                        <form method="post">
+                                            {% csrf_token %}
+                                            {{ opinion_form.as_p }}
+                                            <button type="submit" class="btn btn-primary">Enviar Opinión</button>
+                                        </form>
+                                    {% else %}
+                                        <p>Debes estar <a href="{% url 'login' %}">logueado</a> para dejar una opinión.</p>
+                                    {% endif %}
                                 </div>
                             </div>
-
-                            <div class="row pb-3">
-                                <div class="col d-grid">
-                                    <a href="{% url 'agregar_al_carrito' slug=producto.slug %}"
-                                        class="btn btn-primary">Agregar al Carrito</a>
-                                </div>
-                                <div class="col d-grid">
-                                    <button type="submit" class="btn btn-success btn-lg" name="submit"
-                                        value="addtocart">Add To Cart</button>
-                                </div>
-                            </div>
-                        </form>
-
+                        </div>
                     </div>
                 </div>
             </div>
-            <!-- Fin columna de detalles -->
         </div>
+    </section>
+    <!-- Productos relacionados -->
+<section class="related-products mt-5 container">
+    <h3>Productos Relacionados</h3>
+    <div class="row">
+        {% for related_product in productos_relacionados %}
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card">
+                {% if related_product.imagenes_list.all %}
+                <img class="card-img-top" src="{{ related_product.imagenes_list.first.imagen.url }}" alt="{{ related_product.nombre }}">
+                {% else %}
+                <img class="card-img-top" src="{% static 'images/no-image.png' %}" alt="Imagen no disponible">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ related_product.nombre }}</h5>
+                    <p class="card-text">${{ related_product.precio }}</p>
+                    <a href="{% url 'producto_detalle' slug=related_product.slug %}" class="btn btn-primary">Ver más</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <p>No hay productos relacionados disponibles.</p>
+        {% endfor %}
     </div>
 </section>
 
+    <!-- Incluir el archivo JS de Slick -->
+    <script src="{% static 'js/slick.min.js' %}"></script>
 
-<!-- Start Article -->
-<section class="py-5">
-    <div class="container">
-        <div class="row text-left p-2 pb-3">
-            <h4 class="text-uppercase font-weight-bold">Productos Relacionados</h4>
-        </div>
-
-        <div id="carousel-related-product">
-            <div class="p-2 pb-3">
-                <div class="product-wap card rounded-0">
-                    <div class="card rounded-0">
-                        {% if productos_relacionados %}
-                        {% for related_product in productos_relacionados %}
-                        <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                            <div class="product-wap card rounded-0 shadow-sm">
-                                <div class="card rounded-0">
-                                    <!-- Imagen del producto relacionado -->
-                                    {% if related_product.imagenes_list.all %}
-                                    <img class="card-img rounded-0 img-fluid"
-                                        src="{{ related_product.imagenes_list.first.imagen.url }}"
-                                        alt="{{ related_product.nombre }}">
-                                    {% else %}
-                                    <img class="card-img rounded-0 img-fluid"
-                                        src="{% static 'images/default-product.jpg' %}" alt="Imagen no disponible">
-                                    {% endif %}
-                                    <div class="card-body text-center">
-                                        <a href="{% url 'producto_detalle' related_product.slug %}"
-                                            class="h5 text-decoration-none text-dark">
-                                            {{ related_product.nombre }}
-                                        </a>
-                                        <p class="text-muted mb-2">${{ related_product.precio }}</p>
-                                        <div class="d-flex justify-content-center">
-                                            <span class="badge bg-warning text-dark me-1">⭐ 4.5</span>
-                                        </div>
-                                        <a href="{% url 'producto_detalle' related_product.slug %}"
-                                            class="btn btn-outline-primary btn-sm mt-2">Ver Detalles</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                        {% else %}
-                        <!-- Si no hay productos relacionados, muestra un mensaje o imagen por defecto -->
-                        <div class="carousel-item active">
-                            <div class="product-wap card rounded-0 shadow-sm">
-                                <div class="card rounded-0">
-                                    <img class="card-img rounded-0 img-fluid"
-                                        src="{% static 'images/no-related-products.jpg' %}"
-                                        alt="No hay productos relacionados">
-                                    <div class="card-body text-center">
-                                        <p class="text-muted mb-2">No hay productos relacionados.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-
-                </div>
-
-            </div>
-</section>
-<!-- End Article -->
-<!-- Incluir el archivo JS de Slick -->
-<script src="{% static 'js/slick.min.js' %}"></script>
-
-<!-- Inicializar el Slick Slider -->
-<script>
-    $(document).ready(function () {
-        $('#carousel-related-product').slick({
-            infinite: true,
-            arrows: false,
-            slidesToShow: 4,
-            slidesToScroll: 3,
-            dots: true,
-            responsive: [{
-                    breakpoint: 1024,
-                    settings: {
-                        slidesToShow: 3,
-                        slidesToScroll: 3
+    <!-- Inicializar el Slick Slider -->
+    <script>
+        $(document).ready(function () {
+            $('#carousel-related-product').slick({
+                infinite: true,
+                arrows: false,
+                slidesToShow: 4,
+                slidesToScroll: 3,
+                dots: true,
+                responsive: [
+                    {
+                        breakpoint: 1024,
+                        settings: {
+                            slidesToShow: 3,
+                            slidesToScroll: 3
+                        }
+                    },
+                    {
+                        breakpoint: 600,
+                        settings: {
+                            slidesToShow: 2,
+                            slidesToScroll: 3
+                        }
+                    },
+                    {
+                        breakpoint: 480,
+                        settings: {
+                            slidesToShow: 2,
+                            slidesToScroll: 3
+                        }
                     }
-                },
-                {
-                    breakpoint: 600,
-                    settings: {
-                        slidesToShow: 2,
-                        slidesToScroll: 3
-                    }
-                },
-                {
-                    breakpoint: 480,
-                    settings: {
-                        slidesToShow: 2,
-                        slidesToScroll: 3
-                    }
-                }
-            ]
+                ]
+            });
         });
-    });
-</script>
+    </script>
 
 {% endblock %}

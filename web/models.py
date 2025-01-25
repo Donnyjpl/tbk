@@ -31,6 +31,14 @@ class Producto(models.Model):
         if not self.slug:
             self.slug = slugify(self.nombre)
         super(Producto, self).save(*args, **kwargs)
+        
+    @property
+    def promedio_valoracion(self):
+        if self.opiniones.exists():
+            total_valoraciones = sum(opinion.valoracion for opinion in self.opiniones.all())
+            return total_valoraciones / self.opiniones.count()
+        else:
+            return 0  # Retorna 0 si no hay opiniones
 
 
     def __str__(self):
@@ -54,6 +62,16 @@ class ProductoImagen(models.Model):
     def __str__(self):
         return f"Imagen de {self.producto.nombre}"
     
+class OpinionCliente(models.Model):
+        producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='opiniones')
+        user = models.ForeignKey(User, on_delete=models.CASCADE)  # opinion la venta con un usuario
+        opinion = models.TextField()
+        valoracion = models.IntegerField(choices=[(1, '1'), (2, '2'), (3, '3'), (4, '4'), (5, '5')])
+        created_at = models.DateTimeField(auto_now_add=True)  # Campo para la fecha de creación
+
+        def __str__(self):
+            return f'Opinión de {self.nombre_cliente} sobre {self.producto.name}'  # Acceso al nombre del producto usando self.producto.name
+        
     
 
 class Factura(models.Model):

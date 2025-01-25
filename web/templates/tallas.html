@@ -1,0 +1,193 @@
+<!-- Sección de Tallas y Medidas -->
+<h6>Tallas y Medidas:</h6>
+
+{% if producto.categoria.nombre == "Vestidos y Enteritos" %}
+    <h6>Vestidos y Enteritos</h6>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Medida (cm)</th>
+                <th>S</th>
+                <th>M</th>
+                <th>L</th>
+                <th>XL</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Contorno de busto</td>
+                <td>82</td>
+                <td>86</td>
+                <td>90</td>
+                <td>94</td>
+            </tr>
+            <tr>
+                <td>Contorno de cintura</td>
+                <td>78</td>
+                <td>82</td>
+                <td>86</td>
+                <td>90</td>
+            </tr>
+            <tr>
+                <td>Largo total</td>
+                <td>58</td>
+                <td>59</td>
+                <td>60</td>
+                <td>61</td>
+            </tr>
+        </tbody>
+    </table>
+{% elif producto.categoria.nombre == "Faldas y Shorts" %}
+    <h6>Faldas y Shorts</h6>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Medida (cm)</th>
+                <th>S</th>
+                <th>M</th>
+                <th>L</th>
+                <th>XL</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Contorno de cintura</td>
+                <td>68</td>
+                <td>72</td>
+                <td>76</td>
+                <td>80</td>
+            </tr>
+            <tr>
+                <td>Contorno de cadera</td>
+                <td>88</td>
+                <td>92</td>
+                <td>96</td>
+                <td>100</td>
+            </tr>
+            <tr>
+                <td>Largo total</td>
+                <td>45</td>
+                <td>46</td>
+                <td>47</td>
+                <td>48</td>
+            </tr>
+        </tbody>
+    </table>
+{% elif producto.categoria.nombre == "Poleras, Blusas, Top y Body" %}
+    <h6>Poleras, Blusas, Top y Body</h6>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Medida (cm)</th>
+                <th>S</th>
+                <th>M</th>
+                <th>L</th>
+                <th>XL</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Contorno de busto</td>
+                <td>82</td>
+                <td>86</td>
+                <td>90</td>
+                <td>94</td>
+            </tr>
+            <tr>
+                <td>Contorno de cintura</td>
+                <td>78</td>
+                <td>82</td>
+                <td>86</td>
+                <td>90</td>
+            </tr>
+            <tr>
+                <td>Largo total</td>
+                <td>58</td>
+                <td>59</td>
+                <td>60</td>
+                <td>61</td>
+            </tr>
+        </tbody>
+    </table>
+{% elif producto.categoria.nombre == "Pantalones y Jeans" %}
+    <h6>Pantalones y Jeans</h6>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Medida (cm)</th>
+                <th>40</th>
+                <th>42</th>
+                <th>44</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Contorno de cintura</td>
+                <td>76</td>
+                <td>80</td>
+                <td>84</td>
+            </tr>
+            <tr>
+                <td>Contorno de cadera</td>
+                <td>96</td>
+                <td>100</td>
+                <td>104</td>
+            </tr>
+            <tr>
+                <td>Largo de pierna</td>
+                <td>98</td>
+                <td>99</td>
+                <td>100</td>
+            </tr>
+        </tbody>
+    </table>
+{% elif producto.categoria.nombre == "Zapatos" %}
+    <h6>Zapatos</h6>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Medida (EU)</th>
+                <th>37</th>
+                <th>38</th>
+                <th>39</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Longitud (cm)</td>
+                <td>23.5</td>
+                <td>24.5</td>
+                <td>25.5</td>
+            </tr>
+            <tr>
+                <td>Ancho del zapato (cm)</td>
+                <td>8.5</td>
+                <td>9.0</td>
+                <td>9.5</td>
+            </tr>
+        </tbody>
+    </table>
+{% elif producto.categoria.nombre == "Accesorios" %}
+    <h6>Accesorios</h6>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Medida</th>
+                <th>Size M</th>
+                <th>Size Unica</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Longitud del Collar (cm)</td>
+                <td>45</td>
+                <td>50</td>
+            </tr>
+            <tr>
+                <td>Diámetro de la Pulsera (cm)</td>
+                <td>6.5</td>
+                <td>7.0</td>
+            </tr>
+        </tbody>
+    </table>
+{% endif %}

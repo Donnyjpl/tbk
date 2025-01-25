@@ -20,8 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-c+f!m)6)i8g@$9-6--$1&lk55d1=k@p-^b)0bv(-wugli=1xr^"
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -164,11 +163,30 @@ DATABASE_PORT = os.getenv('DATABASE_PORT')
 MERCADOPAGO_ACCESS_TOKEN = os.getenv('MERCADOPAGO_ACCESS_TOKEN')
 MERCADOPAGO_PUBLIC_KEY = os.getenv('MERCADOPAGO_PUBLIC_KEY')
 
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
+#EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+#EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+#DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
-api_key = os.getenv('API_KEY')
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST_USER = 'plazadonni@gmail.com'  # Coloca aquí tu dirección de correo
+
+EMAIL_HOST_PASSWORD = 'u r i h a b y r z p f c s p j u'    # Coloca aquí tu contraseña
+DEFAULT_FROM_EMAIL = 'webmaster@localhost'  # Dirección predeterminada de remitente
+
+
+
+DEFAULT_FROM_EMAIL = 'webmaster@localhost'  # Dirección predeterminada de remitente
+
+# Configurar codificación UTF-8 para los correos
+EMAIL_HOST_ENCODING = 'utf-8'
+
 
 
 

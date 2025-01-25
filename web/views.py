@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView,ListView,DetailView
 from .models import Producto, ProductoImagen,ProductoTalla,Categoria,Profile,Venta
-from .forms import ProductoForm, ProductoImagenForm, ProductoFilterForm,ContactoForm,ProductoTallaForm,LoginForm
+from .forms import ProductoForm, ProductoImagenForm, ProductoFilterForm,ContactoForm,ProductoTallaForm,LoginForm,OpinionClienteForm
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.shortcuts import render, get_object_or_404
@@ -16,7 +16,7 @@ from django.contrib.auth import logout
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
-from .models import Producto, ProductoImagen, ProductoTalla
+from .models import Producto, ProductoImagen, ProductoTalla,OpinionCliente
 from .forms import ProductoForm
 from django.core.exceptions import ValidationError
 from django.contrib import messages
@@ -27,7 +27,7 @@ from .forms import ProfileForm
 from django.contrib.auth.decorators import login_required
 from django.views.generic.edit import UpdateView
 from .models import Profile
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth import authenticate, login
 
@@ -39,7 +39,6 @@ from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.views.generic import ListView
-from django.urls import reverse_lazy, reverse
 from django.utils import timezone
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -47,9 +46,35 @@ from django.contrib.auth import authenticate, login
 from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.encoding import smart_str
+from django.core.mail import EmailMessage
+from django.core.mail import EmailMultiAlternatives
 
+def dejar_opinion(request, slug):
+    producto = get_object_or_404(Producto, slug=slug)  # Obtener el producto por su slug
 
+    if request.method == 'POST':
+        form = OpinionClienteForm(request.POST)
+        if form.is_valid():
+            # Asignar el producto a la opinión
+            opinion = form.save(commit=False)
+            opinion.producto = producto  # Asociar la opinión con el producto
+            opinion.save()  # Guardar la opinión
 
+            # Mensaje de éxito
+            messages.success(request, '¡Gracias por tu opinión!')
+            return redirect('detalle_producto', slug=producto.slug)  # Redirigir a la página del producto
+    else:
+        form = OpinionClienteForm()
+
+    return render(request, 'productos/dejar_opinion.html', {
+        'form': form,
+        'producto': producto
+    })
+    
+    
+    
 def procesar_pago_success(request):
     # Obtener el carrito de la sesión
     carrito = request.session.get('carrito', {})
@@ -88,6 +113,48 @@ def procesar_pago_success(request):
 
     # Calcular el total final
     total = sum(venta.producto.precio * venta.cantidad for venta in ventas)
+    
+     # Obtener los datos del perfil del usuario
+     # Obtener los datos del perfil del usuario
+    profile = request.user.profile  # Asegúrate de que el usuario tenga un perfil asociado
+    rut = profile.rut
+    telefono = profile.telefono
+    direccion = profile.direccion
+    
+    # Enviar correo al usuario con los detalles de la compra
+    subject = 'Confirmación de tu compra en Nuestro Sitio'
+    message = render_to_string('carrito/compra_confirmacion.html', {
+        'ventas': ventas,
+        'total': total,
+        'usuario': request.user
+        
+    })
+
+    send_mail(
+        subject,
+        message,
+        settings.DEFAULT_FROM_EMAIL,
+        [request.user.email]
+    )
+
+    # Enviar correo al administrador (correo del contacto del administrador)
+    admin_email = 'donnyjpl@gmail.com'  # Cambiar al correo del administrador
+    admin_subject = 'Nuevo Pedido Realizado'
+    admin_message = render_to_string('correos/nuevo_pedido.html', {
+        'ventas': ventas,
+        'total': total,
+        'usuario': request.user,
+        'rut': rut,
+        'telefono': telefono,
+        'direccion': direccion,
+    })
+
+    send_mail(
+        admin_subject,
+        admin_message,
+        settings.DEFAULT_FROM_EMAIL,
+        [admin_email]
+    )
 
     # Redirigir a la misma página para mostrar el resumen de la compra
     return render(request, 'carrito/compra_confirmacion.html', {
@@ -332,10 +399,7 @@ class producto_detalle(DetailView):
         
         # Accede al producto actual
         producto = context['producto']
-
-        print(f"Producto actual ID: {producto.id}")
         related_products = Producto.objects.filter(categoria=producto.categoria).exclude(id=producto.id)[:10]
-        print(related_products)
         
         # Agregar las imágenes a cada producto relacionado (solo para visualización en el template)
         for related_product in related_products:
@@ -348,20 +412,99 @@ class producto_detalle(DetailView):
         # Acceder a las imágenes y tallas asociadas al producto
         producto.imagenes_list = producto.imagenes.all()
         producto.tallas_list = producto.tallas.all()
+        
+         # Aquí ya estás calculando otros elementos, agrega el rango de 1 a 5
+        context['rango_estrellas'] = range(1, 6)
+        
+        # Opcional: Agregar opiniones/valoraciones (si las tienes)
+         # Mostrar las opiniones del producto
+        producto.opiniones_list = OpinionCliente.objects.filter(producto=producto).order_by('-created_at')[:5]
+        
+        # Si el usuario está autenticado, permitir dejar una opinión
+        # Si el usuario está autenticado, permitir dejar una opinión
+        if self.request.user.is_authenticated:
+            # Verificar si el usuario ya ha dejado una opinión sobre el producto
+            if OpinionCliente.objects.filter(producto=producto, user=self.request.user).exists():
+                context['usuario_tiene_opinion'] = True  # El usuario ya ha dejado una opinión
+            else:
+                context['opinion_form'] = OpinionClienteForm()  # Formulario para dejar opinión
 
         return context
+ 
+    def post(self, request, *args, **kwargs):
+        producto = self.get_object()  # Obtener el producto desde la URL
+        if request.user.is_authenticated:
+            # Verificar si el usuario ya dejó una opinión
+            if OpinionCliente.objects.filter(producto=producto, user=request.user).exists():
+                messages.error(request, '¡Ya has dejado una opinión sobre este producto!')
+                return redirect('producto_detalle', slug=producto.slug)
+
+            form = OpinionClienteForm(request.POST)
+            if form.is_valid():
+                # Crear una nueva opinión en la base de datos
+                OpinionCliente.objects.create(
+                    producto=producto,
+                    user=request.user,
+                    opinion=form.cleaned_data['opinion'],
+                    valoracion=form.cleaned_data['valoracion']
+                )
+                messages.success(request, '¡Gracias por dejar tu opinión!')
+                return redirect('producto_detalle', slug=producto.slug)
+
+        return redirect('producto_detalle', slug=producto.slug)
     
 # Vista de contacto
 def contacto(request):
     if request.method == 'POST':
         formm = ContactoForm(request.POST)
         if formm.is_valid():
-            formm.save()  # Guarda el formulario en la base de datos si es válido
-            return HttpResponseRedirect('success')  # Redirige a donde sea apropiado después de enviar el formulario
+            # Guarda el formulario en la base de datos si es necesario
+            formm.save()  # Este paso es opcional dependiendo de si deseas almacenar los datos
+
+            # Obtener los datos del formulario
+            nombre = formm.cleaned_data['customer_name']
+            correo = formm.cleaned_data['customer_email']
+            mensaje = formm.cleaned_data['message']
+            
+            
+            
+            # Crear el correo en formato texto plano y HTML
+            subject = f'Nuevo mensaje de contacto de {nombre}'
+            from_email = correo
+            to_email = ['donnyjpl@gmail.com']  # Reemplaza con el correo del administrador
+
+            text_content = f'Nuevo mensaje de contacto de {nombre}\n\nMensaje: {mensaje}'
+            html_content = f"""
+                <p><strong>Nuevo mensaje de contacto de {nombre}</strong></p>
+                <p><strong>Mensaje:</strong></p>
+                <p>{mensaje}</p>
+            """
+
+            # Crear el objeto de correo con texto plano y HTML
+            email = EmailMultiAlternatives(
+                subject,
+                text_content,
+                from_email,
+                to_email,
+            )
+
+            # Adjuntar el contenido HTML al correo
+            email.attach_alternative(html_content, "text/html")
+
+            # Enviar el correo
+            email.send(fail_silently=False)
+            
+            
+            # Mensaje de éxito para el usuario
+            messages.success(request, 'Tu mensaje ha sido enviado al administrador. ¡Gracias!')
+            
+            # Redirige a la página que desees
+            return redirect('shop')  # O usa otro nombre de URL adecuado, como 'success', si es necesario.
     else:
         formm = ContactoForm()
-    return render(request, 'contacto.html', {'formm': formm})
 
+    # Renderiza la página con el formulario
+    return render(request, 'contacto.html', {'formm': formm})
 
 def successs(request):
     return render(request, 'registro_exitoso.html')
@@ -389,8 +532,11 @@ def agregar_al_carrito(request, slug):
     # Guardar el carrito de vuelta en la sesión
     request.session['carrito'] = carrito
 
-    # Redirigir a la página del carrito
-    return redirect('ver_carrito')
+   # Agregar un mensaje de éxito
+    messages.success(request, f'{producto.nombre} se ha agregado al carrito con éxito.')
+
+    # Redirigir a la página de donde vino el usuario (permanece en la misma página)
+    return redirect(request.META.get('HTTP_REFERER', 'shop'))  # 'shop' es la página por defecto en caso de que no haya 'HTTP_REFERER'
 
 
 

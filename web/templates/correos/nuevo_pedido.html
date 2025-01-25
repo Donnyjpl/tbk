@@ -1,0 +1,30 @@
+
+{% extends 'baset.html' %}
+{% load static %}
+{% load custom_filters %}
+{% block content %}
+
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow p-4">
+
+                <h1>Nuevo Pedido Realizado</h1>
+                <p>El usuario <strong>{{ usuario.username }}</strong> ha realizado una compra:</p>
+                <p><strong>Detalles del Usuario:</strong></p>
+                <p><strong>RUT:</strong> {{ rut }}</p>
+                <p><strong>Teléfono:</strong> {{ telefono }}</p>
+                <p><strong>Dirección:</strong> {{ direccion }}</p>
+                <ul>
+                    {% for venta in ventas %}
+                        <li>{{ venta.producto.nombre }} - {{ venta.cantidad }} x ${{ venta.producto.precio }} = ${{ venta.cantidad|multiply:venta.producto.precio }}</li>
+                    {% endfor %}
+                </ul>
+                <p><strong>Total: ${{ total }}</strong></p>
+                <p>Por favor, contacta al cliente para confirmar los detalles de su compra.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

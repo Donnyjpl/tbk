@@ -36,12 +36,6 @@
     text-decoration: none;
 }
 
-.card-body p {
-    font-size: 18px; /* Ajusta el tamaño del precio */
-    color: #d9534f; /* Color rojo para el precio */
-    text-align: center;
-    margin-top: 10px;
-}
 
 .card-body .badge {
     font-size: 12px; /* Tamaño más pequeño para las etiquetas de talla */

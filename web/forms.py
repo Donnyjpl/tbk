@@ -1,6 +1,6 @@
 # forms.py
 from django import forms
-from .models import Producto, ProductoImagen,Categoria,ProductoTalla,Contacto,Profile
+from .models import Producto, ProductoImagen, Categoria, ProductoTalla, Contacto, Profile, OpinionCliente
 from django.db.models import Min, Max
 from django.contrib.auth.forms import SetPasswordForm,UserCreationForm
 from django.contrib.auth.models import User
@@ -213,3 +213,14 @@ class ProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
         fields = ['rut', 'telefono', 'direccion']
+        
+        
+class OpinionClienteForm(forms.ModelForm):
+    class Meta:
+        model = OpinionCliente
+        fields = ['opinion', 'valoracion']
+        widgets = {
+            'opinion': forms.Textarea(attrs={'rows': 3, 'cols': 50}),
+        }
+        
+   

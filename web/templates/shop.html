@@ -4,6 +4,14 @@
 
 {% block content %}
 {% load static %}
+{% if messages %}
+    <div class="alert alert-success">
+        {% for message in messages %}
+            <p>{{ message|title }}</p>
+        {% endfor %}
+    </div>
+{% endif %}
+
 
 <!-- Start Content -->
 <div class="container py-5">

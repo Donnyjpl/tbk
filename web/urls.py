@@ -32,6 +32,7 @@ urlpatterns = [
     
     path('shop/', ProductoListView.as_view(), name='shop'),  # URL para ver la lista de productos
     path('producto/<slug:slug>/', producto_detalle.as_view(), name='producto_detalle'),
+    path('dejar_opinion', views.dejar_opinion, name='dejar_opinion'),
     
     path('agregar_al_carrito/<slug:slug>/', agregar_al_carrito, name='agregar_al_carrito'),
     path('ver_carrito/', ver_carrito, name='ver_carrito'),

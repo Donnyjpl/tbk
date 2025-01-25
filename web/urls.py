@@ -10,7 +10,6 @@ from .views import profile_view,register, ProfileUpdateView,custom_password_rese
 from . import views
 
 from django.contrib.auth import views as auth_views
-
 urlpatterns = [
     path('crear/',crear_producto , name='crear_producto'),
     path('subir_imagenes/<slug:slug>/',subir_imagenes, name='subir_imagenes'),
@@ -27,7 +26,7 @@ urlpatterns = [
     
     
     path('procesar_pago', views.procesar_pago, name='procesar_pago'),
-    path('procesar_pago/success/', views.procesar_pago_success, name='success'),
+    path('procesar_pago/exito', views.procesar_pago_success, name='exito'),
     path('procesar_pago/failure', views.failure, name='failure'),
     path('procesar_pago/pending', views.pending, name='pending'),
     

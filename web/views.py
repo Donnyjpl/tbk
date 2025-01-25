@@ -50,16 +50,13 @@ from django.core.mail import send_mail
 
 
 
-
-
-@login_required
 def procesar_pago_success(request):
     # Obtener el carrito de la sesión
     carrito = request.session.get('carrito', {})
 
     # Si el carrito está vacío, redirigir a la tienda o mostrar un mensaje adecuado
     if not carrito or len(carrito) == 0:
-        return redirect('web:shop')  # O puedes redirigir a una página de error o de la tienda
+        return redirect('shop')  # O puedes redirigir a una página de error o de la tienda
 
     # Calcular el total de la compra
     total = 0
@@ -67,15 +64,17 @@ def procesar_pago_success(request):
         total += float(item['precio']) * item['cantidad']
 
     # Crear las ventas
+    ventas = []
     for slug, item in carrito.items():
         producto = Producto.objects.get(slug=slug)  # Obtener el producto desde la base de datos
 
         # Crear una venta para cada producto
-        Venta.objects.create(
+        venta = Venta.objects.create(
             producto=producto,
             cantidad=item['cantidad'],
             user=request.user
         )
+        ventas.append(venta)
 
     # Vaciar el carrito
     request.session['carrito'] = {}
@@ -83,8 +82,9 @@ def procesar_pago_success(request):
     # Mostrar un mensaje de éxito
     messages.success(request, f'Pago exitoso por un total de ${total}. ¡Gracias por tu compra!')
 
-    # Obtener las ventas del usuario para mostrar en la misma vista
-    ventas = Venta.objects.filter(user=request.user)
+    # Obtener solo las ventas de la última compra del usuario
+    last_venta = ventas[-1]  # La última venta es la de la compra actual
+    ventas = Venta.objects.filter(user=request.user, fecha=last_venta.fecha)
 
     # Calcular el total final
     total = sum(venta.producto.precio * venta.cantidad for venta in ventas)
@@ -94,7 +94,6 @@ def procesar_pago_success(request):
         'ventas': ventas,
         'total': total,
     })
-
 
 
 
@@ -148,9 +147,9 @@ def procesar_pago(request):
             }
         ],
         "back_urls": {
-             "success": request.build_absolute_uri('/web/procesar_pago/success/'),  # URL absoluta
-             "failure": request.build_absolute_uri('/web/procesar_pago/failure/'),
-             "pending": request.build_absolute_uri('/web/procesar_pago/pending/'),
+             "success": request.build_absolute_uri('/web/procesar_pago/exito'),  # URL absoluta
+             "failure": request.build_absolute_uri('/web/procesar_pago/failure'),
+             "pending": request.build_absolute_uri('/web/procesar_pago/pending'),
         },
         "auto_return": "approved",  # La redirección automática cuando el pago es aprobado
     }

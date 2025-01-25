@@ -72,10 +72,7 @@ class Venta(models.Model):
     cantidad = models.PositiveIntegerField()
     fecha = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)  # Relacionamos la venta con un usuario
-    total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-
-
-
+    
     def __str__(self):
         return f"Venta {self.id} - {self.producto.nombre} - Usuario: {self.user.username}"
     

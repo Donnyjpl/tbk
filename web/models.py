@@ -44,8 +44,6 @@ class Producto(models.Model):
     def __str__(self):
         return self.nombre
     
-
-    
 class ProductoTalla(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='tallas')
     talla = models.CharField(max_length=10)  # Las tallas pueden ser S, M, L, XL o 40-44 para pantalones
@@ -54,7 +52,6 @@ class ProductoTalla(models.Model):
     def __str__(self):
         return f"{self.producto.nombre} - Talla {self.talla}"
 
-    
 class ProductoImagen(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='imagenes')
     imagen = models.ImageField(upload_to='productos/')  # Carpeta donde se guardarán las imágenes
@@ -71,8 +68,6 @@ class OpinionCliente(models.Model):
 
         def __str__(self):
             return f'Opinión de {self.nombre_cliente} sobre {self.producto.name}'  # Acceso al nombre del producto usando self.producto.name
-        
-    
 
 class Factura(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)

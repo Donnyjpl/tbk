@@ -51,6 +51,8 @@ from django.utils.encoding import smart_str
 from django.core.mail import EmailMessage
 from django.core.mail import EmailMultiAlternatives
 
+
+
 def dejar_opinion(request, slug):
     producto = get_object_or_404(Producto, slug=slug)  # Obtener el producto por su slug
 
@@ -163,27 +165,115 @@ def procesar_pago_success(request):
     })
 
 
+def agregar_al_carrito(request, slug):
+    # Obtener el producto usando el slug
+    producto = get_object_or_404(Producto, slug=slug)
+    talla_id = request.POST.get('talla')  # Asegúrate de que estás obteniendo correctamente la talla
+
+    # Verificar si la talla existe para el producto
+    try:
+        talla = producto.tallas.get(id=talla_id)
+    except ProductoTalla.DoesNotExist:
+        messages.error(request, 'La talla seleccionada no existe para este producto.')
+        return redirect('producto_detalle', slug=slug)  # Redirigir a la página del producto
+
+    # Obtener el carrito de la sesión o inicializarlo si no existe
+    carrito = request.session.get('carrito', {})
+
+    # Verificar si el producto ya está en el carrito
+    if str(slug) in carrito:
+        if str(talla_id) in carrito[str(slug)]['tallas']:
+            carrito[str(slug)]['tallas'][str(talla_id)]['cantidad'] += 1
+        else:
+            carrito[str(slug)]['tallas'][str(talla_id)] = {
+                'talla': talla.talla,
+                'precio': str(producto.precio),
+                'cantidad': 1,
+            }
+    else:
+        carrito[str(slug)] = {
+            'nombre': producto.nombre,
+            'precio': str(producto.precio),
+            'cantidad': 1,
+            'slug': producto.slug,
+            'tallas': {
+                str(talla_id): {
+                    'talla': talla.talla,
+                    'precio': str(producto.precio),
+                    'cantidad': 1,
+                }
+            }
+        }
+
+    # Guardar el carrito en la sesión
+    request.session['carrito'] = carrito
+
+    # Agregar un mensaje de éxito
+    messages.success(request, f'{producto.nombre} con talla {talla.talla} se ha agregado al carrito con éxito.')
+    return redirect('ver_carrito')  # Redirige a la vista del carrito
+
+
 
 def ver_carrito(request):
+    carrito = request.session.get('carrito', {})
+    print(carrito)  # Ver el contenido del carrito
+
+    total = 0
+    for producto_slug, producto_data in carrito.items():
+        # Asegúrate de que 'tallas' está en el diccionario
+        if 'tallas' in producto_data:
+            for talla_id, talla_data in producto_data['tallas'].items():
+                total += float(talla_data['precio']) * talla_data['cantidad']
+        else:
+            print(f"El producto {producto_slug} no tiene tallas.")
+    
+    return render(request, 'carrito/carrito.html', {'carrito': carrito, 'total': total})
+   
+def eliminar_del_carrito(request, slug, talla_id):
+    producto = get_object_or_404(Producto, slug=slug)
+    talla = get_object_or_404(ProductoTalla, id=talla_id, producto=producto)
+
     # Obtener el carrito de la sesión
     carrito = request.session.get('carrito', {})
-    
-    # Calcular el total y la cantidad total de productos
-    total = 0
-    cantidad_total = 0  # Nueva variable para la cantidad total de productos
-    
-    for item in carrito.values():
-        total += float(item['precio']) * item['cantidad']
-        cantidad_total += item['cantidad']  # Sumar la cantidad de cada producto
-         # Imprimir el total y cantidad_total para depuración
-  
-    
-    return render(request, 'carrito/carrito.html', {
-        'carrito': carrito,
-        'total': total,
-        'cantidad_total': cantidad_total,  # Pasar la cantidad total al contexto
-    })
-    
+
+    # Eliminar el producto de la talla seleccionada
+    if str(slug) in carrito:
+        if str(talla_id) in carrito[str(slug)]['tallas']:
+            del carrito[str(slug)]['tallas'][str(talla_id)]
+            if not carrito[str(slug)]['tallas']:  # Si ya no hay tallas, eliminar el producto
+                del carrito[str(slug)]
+            messages.success(request, f'{producto.nombre} con talla {talla.talla} ha sido eliminado del carrito.')
+        else:
+            messages.error(request, 'Error: Talla no encontrada en el carrito.')
+    else:
+        messages.error(request, 'Error: Producto no encontrado en el carrito.')
+
+    # Guardar el carrito actualizado en la sesión
+    request.session['carrito'] = carrito
+    return redirect('ver_carrito')  # Redirige al carrito después de eliminar
+
+
+def actualizar_carrito(request, slug, talla_id):
+    producto = get_object_or_404(Producto, slug=slug)
+    talla = get_object_or_404(ProductoTalla, id=talla_id, producto=producto)
+
+    # Obtener el carrito de la sesión
+    carrito = request.session.get('carrito', {})
+
+    # Verificar si el producto y la talla están en el carrito
+    if str(slug) in carrito and str(talla_id) in carrito[str(slug)]['tallas']:
+        # Actualizar la cantidad de la talla
+        cantidad = int(request.POST.get('cantidad', 1))
+        carrito[str(slug)]['tallas'][str(talla_id)]['cantidad'] = cantidad
+
+        # Guardar el carrito en la sesión
+        request.session['carrito'] = carrito
+        messages.success(request, f"La cantidad del producto {producto.nombre} con talla {talla.talla} ha sido actualizada.")
+    else:
+        messages.error(request, "El producto o talla no está en tu carrito.")
+
+    return redirect('ver_carrito')
+
 @login_required
 def procesar_pago(request):
     # Obtener el carrito de la sesión
@@ -418,7 +508,7 @@ class producto_detalle(DetailView):
         
         # Opcional: Agregar opiniones/valoraciones (si las tienes)
          # Mostrar las opiniones del producto
-        producto.opiniones_list = OpinionCliente.objects.filter(producto=producto).order_by('-created_at')[:5]
+        producto.opiniones_list = OpinionCliente.objects.filter(producto=producto).order_by('-created_at')[:3]
         
         # Si el usuario está autenticado, permitir dejar una opinión
         # Si el usuario está autenticado, permitir dejar una opinión
@@ -509,76 +599,6 @@ def contacto(request):
 def successs(request):
     return render(request, 'registro_exitoso.html')
 
-
-def agregar_al_carrito(request, slug):
-    # Obtener el producto usando el slug
-    producto = get_object_or_404(Producto, slug=slug)
-    
-    # Obtener el carrito de la sesión o inicializarlo si no existe
-    carrito = request.session.get('carrito', {})
-
-    # Si el producto ya está en el carrito, incrementar su cantidad
-    if str(slug) in carrito:
-        carrito[str(slug)]['cantidad'] += 1
-    else:
-        # Si no, agregarlo con cantidad 1
-        carrito[str(slug)] = {
-            'nombre': producto.nombre,
-            'precio': str(producto.precio),
-            'cantidad': 1,
-            'slug': producto.slug,  # Guardamos el slug para futuras referencias
-        }
-
-    # Guardar el carrito de vuelta en la sesión
-    request.session['carrito'] = carrito
-
-   # Agregar un mensaje de éxito
-    messages.success(request, f'{producto.nombre} se ha agregado al carrito con éxito.')
-
-    # Redirigir a la página de donde vino el usuario (permanece en la misma página)
-    return redirect(request.META.get('HTTP_REFERER', 'shop'))  # 'shop' es la página por defecto en caso de que no haya 'HTTP_REFERER'
-
-
-
-    
-def eliminar_del_carrito(request, slug):
-    # Obtener el carrito de la sesión
-    carrito = request.session.get('carrito', {})
-    
-    # Eliminar el producto del carrito
-    if str(slug) in carrito:
-        del carrito[str(slug)]
-    
-    # Guardar el carrito actualizado
-    request.session['carrito'] = carrito
-    
-    return redirect('ver_carrito')
-
-def actualizar_carrito(request, slug):
-    cantidad = int(request.GET.get('cantidad', 1))  # Tomamos la cantidad pasada en la URL (GET)
-    
-    # Obtener el producto
-    producto = Producto.objects.get(slug=slug)
-    
-    # Obtener el carrito actual
-    carrito = request.session.get('carrito', {})
-
-    # Si el producto ya está en el carrito, actualizamos la cantidad
-    if slug in carrito:
-        carrito[slug]['cantidad'] = cantidad
-    else:
-        # Si no está en el carrito, lo agregamos
-        carrito[slug] = {
-            'nombre': producto.nombre,
-            'precio': str(producto.precio),
-            'cantidad': cantidad
-        }
-
-    # Guardamos el carrito de nuevo en la sesión
-    request.session['carrito'] = carrito
-
-    # Respondemos con un JSON indicando que la actualización fue exitosa
-    return JsonResponse({'success': True, 'cantidad': cantidad})
 
 class ProfileUpdateView(LoginRequiredMixin, UpdateView):
     model = Profile

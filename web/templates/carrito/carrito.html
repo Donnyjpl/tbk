@@ -1,49 +1,69 @@
 {% extends 'baset.html' %}
 
 {% block content %}
+{% if messages %}
+    <div class="alert alert-success">
+        {% for message in messages %}
+            <p>{{ message|title }}</p>
+        {% endfor %}
+    </div>
+{% endif %}
 <div class="container py-5">
     <h2>Mi Carrito de Compras</h2>
 
-    {% if carrito.items|length == 0 %}
-        <div class="alert alert-info">
-            ¡Tu carrito está vacío! <a href="{% url 'shop' %}">Visita nuestra tienda</a> para agregar productos.
-        </div>
+    {% if carrito|length == 0 %}
+    <div class="alert alert-info">
+        ¡Tu carrito está vacío! <a href="{% url 'shop' %}">Visita nuestra tienda</a> para agregar productos.
+    </div>
     {% else %}
-        <div class="row">
-            <div class="col-md-12">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Producto</th>
-                            <th>Cantidad</th>
-                            <th>Precio</th>
-                            <th>Total</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for slug, producto in carrito.items %}
-                        <tr>
-                            <td>{{ producto.nombre }}</td>
-                            <td>
-                                <form method="GET" action="{% url 'actualizar_carrito' producto.slug %}">
-                                    <input type="number" name="cantidad" value="{{ producto.cantidad }}" min="1" required>
-                                    <button type="submit" class="btn btn-warning">Actualizar</button>
-                                </form>
-                            </td>
-                            <td>${{ producto.precio }}</td>
-                            <td>${{ producto.precio|floatformat:2 }}</td>
-                            <td>
-                                <a href="{% url 'eliminar_del_carrito' slug=slug %}" class="btn btn-danger">Eliminar</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                <h3>Total: ${{ total|floatformat:2 }}</h3>
-                <a href="{% url 'procesar_pago' %}" class="btn btn-success">Proceder al Pago</a>
-            </div>
+    <div class="row">
+        <div class="col-md-12">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Talla</th>
+                        <th>Cantidad</th>
+                        <th>Precio</th>
+                        <th>Total</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for slug, producto in carrito.items %}
+                        {% if producto.tallas %}
+                            {% for talla_id, talla_data in producto.tallas.items %}
+                                <tr>
+                                    <td>{{ producto.nombre }}</td>
+                                    <td>{{ talla_data.talla }}</td>  <!-- Mostrar la talla -->
+                                    <td>
+                                        <form method="POST" action="{% url 'actualizar_carrito' producto.slug talla_id %}">
+                                            {% csrf_token %}
+                                            <input type="number" name="cantidad" value="{{ talla_data.cantidad }}" min="1" required>
+                                            <button type="submit" class="btn btn-warning">Actualizar</button>
+                                        </form>
+                                    </td>
+                                    <td>${{ talla_data.precio }}</td>
+                                    <td>${{ talla_data.precio }}</td>
+                                    <td>
+                                        <a href="{% url 'eliminar_del_carrito' slug=slug talla_id=talla_id %}" class="btn btn-danger">Eliminar</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Si no tiene tallas, mostrar algo especial -->
+                            <tr>
+                                <td>{{ producto.nombre }}</td>
+                                <td colspan="5">Producto sin tallas disponibles</td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+            <h3>Total: ${{ total}}</h3>
+            <a href="{% url 'procesar_pago' %}" class="btn btn-success">Proceder al Pago</a>
         </div>
+    </div>
     {% endif %}
 </div>
 {% endblock %}

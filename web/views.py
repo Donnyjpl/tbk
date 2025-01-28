@@ -122,6 +122,10 @@ def procesar_pago_success(request):
                     'precio': talla_data['precio'],
                     'precio_total': float(talla_data['precio']) * talla_data['cantidad']
                 })
+                # Imprimir para verificar que la talla se está agregando correctamente
+                # Para depurar y ver los valores correctos
+                print(f"Producto: {producto.nombre}, Talla: {talla.talla}, Cantidad: {talla_data['cantidad']}, Precio: {talla_data['precio']}")
+
 
         else:
             venta = Venta.objects.create(
@@ -137,6 +141,10 @@ def procesar_pago_success(request):
                 'precio': producto_data['precio'],
                 'precio_total': float(producto_data['precio']) * producto_data['cantidad']
             })
+            # Imprimir para verificar que la talla se está agregando correctamente
+            # Para depurar y ver los valores correctos
+            print(f"Producto: {producto.nombre}, Talla: {talla.talla}, Cantidad: {talla_data['cantidad']}, Precio: {talla_data['precio']}")
+
 
     # Vaciar el carrito
     request.session['carrito'] = {}
@@ -607,7 +615,7 @@ class ProductoListView(ListView):
     model = Producto
     template_name = 'shop.html'
     context_object_name = 'productos'
-    paginate_by = 9  # Número de productos por página
+    paginate_by = 30  # Número de productos por página
 
     def get_queryset(self):
         queryset = Producto.objects.filter(activo=True)  # Filtramos solo productos activos

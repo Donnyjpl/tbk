@@ -67,7 +67,7 @@
                 <tbody>
                     {% for venta in ventas %}
                     <tr>
-                        <td>{{ venta.producto.nombre|title }}{% if venta.talla %} - Talla: {{ venta.talla.nombre }}{% endif %}</td>
+                        <td>{{ venta.producto.nombre|title }}{% if venta.talla %} - Talla: {{ venta.talla.talla}}{% endif %}</td>
                         <td>{{ venta.cantidad }}</td>
                         <td>${{ venta.precio|floatformat:0 }}</td>
                         <td>${{ venta.precio_total|floatformat:0 }}</td>

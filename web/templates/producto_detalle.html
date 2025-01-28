@@ -69,7 +69,7 @@ Detalles de Producto
             <div class="col-lg-7 mt-5">
                 <div class="card">
                     <div class="card-body">
-                        <h1 class="h2">{{ producto.nombre|title }}</h1>
+                        <h1 class="h2 fw-bold">{{ producto.nombre|title }}</h1>
                         <p class="h3 py-2">${{ producto.precio|floatformat:0}}</p>
                         <p class="py-2">
 
@@ -156,7 +156,7 @@ Detalles de Producto
 </section>
 <!-- Productos relacionados -->
 <section class="related-products mt-5 container">
-    <h3>Productos Relacionados</h3>
+    <h3 class="text-center mb-5">Productos Relacionados:</h3>
     <div class="row">
         {% for related_product in productos_relacionados %}
         <div class="col-md-3 col-6 mb-3">
@@ -168,7 +168,7 @@ Detalles de Producto
                 <img class="card-img-top product-card-img" src="{% static 'images/no-image.png' %}" alt="Imagen no disponible">
                 {% endif %}
                 <div class="card-body">
-                    <h5 class="card-title">{{ related_product.nombre|title }}</h5>
+                    <h5 class="card-title fw-bold">{{ related_product.nombre|title }}</h5>
                     <p class="card-text">${{ related_product.precio|floatformat:0 }}</p>
                     <!-- Valoración -->
                     <p class="py-2">

@@ -128,7 +128,7 @@ Detalles de Producto
                                 <form method="post">
                                     {% csrf_token %}
                                     {{ opinion_form.as_p }}
-                                    <button type="submit" class="btn btn-primary">Enviar Opinión</button>
+                                    <button type="submit" class="btn btn-success">Enviar Opinión</button>
                                 </form>
                                 {% else %}
                                 <p>Debes estar <a href="{% url 'login' %}">logueado</a> para dejar una opinión.</p>

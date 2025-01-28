@@ -20,7 +20,7 @@
                 <form method="post">
                     {% csrf_token %}
                     {{ form.as_p }}
-                    <button class="btn btn-info mt-3 d-block mx-auto" type="submit">Guardar</button>
+                    <button class="btn btn-success mt-3 d-block mx-auto" type="submit">Guardar</button>
                     <a href="{% url 'profile' %}">Volver al perfil</a>
                 </form>
             </div>

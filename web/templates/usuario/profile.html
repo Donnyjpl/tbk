@@ -1,7 +1,14 @@
 {% extends "baset.html" %}
 
 {% block content %}
-<div class="container mt-5">
+{% if messages %}
+<div class="alert alert-success">
+    {% for message in messages %}
+    <p>{{ message|title }}</p>
+    {% endfor %}
+</div>
+{% endif %}
+<div class="container mt-5 mb-5">
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card shadow-sm rounded">
@@ -28,7 +35,7 @@
                         </div>
                     </div>
                     <div class="text-center mt-4">
-                        <a href="{% url 'edit_profile' %}" class="btn btn-primary">Editar perfil</a>
+                        <a href="{% url 'edit_profile' %}" class="btn btn-success">Editar perfil</a>
                     </div>
                 </div>
             </div>

@@ -57,10 +57,12 @@
   margin-bottom: 5px;
 }
 
-
 /* Estilos solo para las imágenes dentro de las tarjetas de producto */
 .product-card-img {
   width: 100%; /* Ocupa todo el ancho disponible */
   height: 200px; /* Altura fija para mantener uniformidad */
   object-fit: cover; /* Asegura que la imagen se recorte para llenar el espacio */
 }
+
+
+ 

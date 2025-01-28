@@ -1,12 +1,86 @@
-{% load custom_filters %}
-<h1>¡Gracias por tu compra, {{ usuario.username }}!</h1>
-<p>Tu pago ha sido exitoso. A continuación, te presentamos un resumen de tu compra:</p>
-<ul>
-    {% for venta in ventas %}
-    <li>{{ venta.producto.nombre|title }} (Talla: {{ venta.talla }}) x {{ venta.cantidad }} - ${{ venta.precio }} x
-        {{ venta.cantidad }} = ${{ venta.precio|multiply:venta.cantidad }}</li>
-    {% endfor %}
-</ul>
-<p>Total: ${{ total }}</p>
-<p>Nos pondremos en contacto contigo en breve para confirmar los detalles de tu pedido y el envío.</p>
-<p>También te enviaremos un comprobante de compra a tu correo electrónico una vez que se haya procesado tu pedido.</p>
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        .email-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #0066cc;
+        }
+        .order-details {
+            margin-top: 20px;
+        }
+        .order-details table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .order-details table th, .order-details table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .order-details table th {
+            background-color: #f4f4f4;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Agregar imagen (por ejemplo, logo) al principio del correo -->
+        <img src="{% static 'img/logot.png' %}" alt="Logo" style="width: 150px; margin-bottom: 20px;">
+        
+        <h1>¡Gracias por tu compra, {{ usuario.get_full_name }}!</h1>
+        <p>Hemos recibido tu pedido y se está procesando. A continuación, te proporcionamos los detalles de tu compra:</p>
+
+        <div class="order-details">
+            <h3>Detalles de tu pedido</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Precio</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for venta in ventas %}
+                    <tr>
+                        <td>{{ venta.producto.nombre|title }}{% if venta.talla %} - Talla: {{ venta.talla.nombre }}{% endif %}</td>
+                        <td>{{ venta.cantidad }}</td>
+                        <td>${{ venta.precio|floatformat:0 }}</td>
+                        <td>${{ venta.precio_total|floatformat:0 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <p><strong>Total a pagar: ${{ total|floatformat:0 }}</strong></p>
+
+        <p class="footer">Si tienes alguna pregunta o necesitas asistencia, no dudes en contactarnos. ¡Gracias por elegirnos!</p>
+        <a class="footer"></a>
+    </div>
+</body>
+</html>

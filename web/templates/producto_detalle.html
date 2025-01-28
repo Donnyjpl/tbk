@@ -70,7 +70,7 @@ Detalles de Producto
                 <div class="card">
                     <div class="card-body">
                         <h1 class="h2">{{ producto.nombre|title }}</h1>
-                        <p class="h3 py-2">${{ producto.precio}}</p>
+                        <p class="h3 py-2">${{ producto.precio|floatformat:0}}</p>
                         <p class="py-2">
 
                             <ul class="list-unstyled d-flex  mb-1">
@@ -169,7 +169,7 @@ Detalles de Producto
                 {% endif %}
                 <div class="card-body">
                     <h5 class="card-title">{{ related_product.nombre|title }}</h5>
-                    <p class="card-text">${{ related_product.precio }}</p>
+                    <p class="card-text">${{ related_product.precio|floatformat:0 }}</p>
                     <!-- Valoración -->
                     <p class="py-2">
                         <ul class="list-unstyled d-flex mb-1">
@@ -208,43 +208,41 @@ Detalles de Producto
         {% endfor %}
     </div>
 </section>
-
-<!-- Incluir el archivo JS de Slick -->
-<script src="{% static 'js/slick.min.js' %}"></script>
-
-<!-- Inicializar el Slick Slider -->
+<!-- Agregar el código de Slick para la funcionalidad del carrusel -->
 <script>
-    $(document).ready(function () {
-        $('#carousel-related-product').slick({
-            infinite: true,
-            arrows: false,
-            slidesToShow: 4,
-            slidesToScroll: 3,
-            dots: true,
-            responsive: [{
-                    breakpoint: 1024,
-                    settings: {
-                        slidesToShow: 3,
-                        slidesToScroll: 3
-                    }
-                },
-                {
-                    breakpoint: 600,
-                    settings: {
-                        slidesToShow: 2,
-                        slidesToScroll: 3
-                    }
-                },
-                {
-                    breakpoint: 480,
-                    settings: {
-                        slidesToShow: 2,
-                        slidesToScroll: 3
-                    }
+$(document).ready(function () {
+    // Iniciar el carrusel con Slick
+    $('#multi-item-example .carousel-inner').slick({
+        infinite: true,  // Desplazamiento infinito
+        slidesToShow: 3,  // Mostrar 3 imágenes a la vez
+        slidesToScroll: 1,  // Desplazar 1 imagen a la vez
+        dots: true,  // Mostrar puntos de navegación
+        arrows: false,  // Desactivar las flechas (las vamos a manejar por separado)
+        responsive: [
+            {
+                breakpoint: 1024,  // Pantallas medianas
+                settings: {
+                    slidesToShow: 2,
+                    slidesToScroll: 1
                 }
-            ]
-        });
+            },
+            {
+                breakpoint: 600,  // Pantallas pequeñas
+                settings: {
+                    slidesToShow: 1,
+                    slidesToScroll: 1
+                }
+            },
+            {
+                breakpoint: 480,  // Pantallas muy pequeñas
+                settings: {
+                    slidesToShow: 1,
+                    slidesToScroll: 1
+                }
+            }
+        ]
     });
+});
 </script>
 
 {% endblock %}

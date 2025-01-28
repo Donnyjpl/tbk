@@ -81,6 +81,13 @@ def dejar_opinion(request, slug):
         'producto': producto
     })
     
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.conf import settings
+from django.contrib import messages
+from django.shortcuts import render, redirect
+from .models import Producto, ProductoTalla, Venta
+
 @login_required
 def procesar_pago_success(request):
     carrito = request.session.get('carrito', {})
@@ -96,19 +103,16 @@ def procesar_pago_success(request):
         producto = Producto.objects.get(slug=producto_slug)  # Obtener el producto de la DB
 
         if 'tallas' in producto_data:
-            # Si el producto tiene tallas
             for talla_id, talla_data in producto_data['tallas'].items():
-                talla = ProductoTalla.objects.get(id=talla_id)  # Obtener la talla correspondiente
+                talla = ProductoTalla.objects.get(id=talla_id)
 
-                # Crear la venta con talla asociada
                 venta = Venta.objects.create(
                     producto=producto,
                     cantidad=talla_data['cantidad'],
                     user=request.user,
-                    talla=talla  # Asocia la talla a la venta
+                    talla=talla
                 )
 
-                # Sumar el total de la compra
                 total += float(talla_data['precio']) * talla_data['cantidad']
 
                 ventas.append({
@@ -120,7 +124,6 @@ def procesar_pago_success(request):
                 })
 
         else:
-            # Si no hay tallas (producto sin tallas)
             venta = Venta.objects.create(
                 producto=producto,
                 cantidad=producto_data['cantidad'],
@@ -147,8 +150,8 @@ def procesar_pago_success(request):
     telefono = profile.telefono
     direccion = profile.direccion
 
-    # Enviar el correo de confirmación al usuario
-    admin_email = 'donnyjpl@gmail.com' # correo de prueba
+    # Correo al usuario
+    admin_email = 'donnyjpl@gmail.com'  # Correo de prueba
     subject = 'Confirmación de tu compra en Nuestro Sitio'
     message = render_to_string('correos/compra_confirmacion.html', {
         'ventas': ventas,
@@ -158,35 +161,48 @@ def procesar_pago_success(request):
 
     send_mail(
         subject,
-        message,
+        message,  # Correo en texto plano (opcional)
         settings.DEFAULT_FROM_EMAIL,
-        [admin_email]
-        #[request.user.email]
+        [admin_email],
+        html_message=message  # Correo en formato HTML
     )
 
-    # Enviar el correo de pedido al administrador
+    # Correo al administrador
     admin_email = 'donnyjpl@gmail.com'
     admin_subject = 'Nuevo Pedido Realizado'
-    admin_message = render_to_string('correos/nuevo_pedido.html', {
-        'ventas': ventas,
-        'total': total,
-        'usuario': request.user,
-        'rut': rut,
-        'telefono': telefono,
-        'direccion': direccion,
-    })
 
-    send_mail(
-        admin_subject,
-        admin_message,
-        settings.DEFAULT_FROM_EMAIL,
-        [admin_email]
-    )
+    try:
+        # Intentar renderizar el mensaje HTML
+        admin_message = render_to_string('correos/nuevo_pedido.html', {
+            'ventas': ventas,
+            'total': total,
+            'usuario': request.user,
+            'rut': rut,
+            'telefono': telefono,
+            'direccion': direccion,
+        })
+    except Exception as e:
+        # En caso de error en el renderizado, asignar un valor predeterminado
+        admin_message = f"Error al generar el mensaje del pedido: {str(e)}"
+
+    # Asegurarse de que admin_message tiene un valor válido
+    if admin_message:
+        send_mail(
+            admin_subject,
+            'Detalles del pedido',  # El cuerpo en texto plano (opcional)
+            settings.DEFAULT_FROM_EMAIL,
+            [admin_email],
+            html_message=admin_message  # Correo en formato HTML
+        )
+    else:
+        # Manejar caso donde admin_message no se genera correctamente
+        print("No se generó el mensaje HTML para el administrador.")
 
     return render(request, 'carrito/compra_confirmacion.html', {
         'ventas': ventas,
         'total': total,
     })
+
 
 def agregar_al_carrito(request, slug):
     # Obtener el producto usando el slug
@@ -697,6 +713,11 @@ class producto_detalle(DetailView):
         return redirect('producto_detalle', slug=producto.slug)
     
 # Vista de contacto
+from django.core.mail import EmailMultiAlternatives
+from django.contrib import messages
+from django.shortcuts import render, redirect
+from .forms import ContactoForm
+
 def contacto(request):
     if request.method == 'POST':
         formm = ContactoForm(request.POST)
@@ -709,20 +730,26 @@ def contacto(request):
             correo = formm.cleaned_data['customer_email']
             mensaje = formm.cleaned_data['message']
             
-            
-            
-            # Crear el correo en formato texto plano y HTML
+            # Crear el correo en formato texto plano y HTML para el administrador
             subject = f'Nuevo mensaje de contacto de {nombre}'
             from_email = correo
             to_email = ['donnyjpl@gmail.com']  # Reemplaza con el correo del administrador
 
-            text_content = f'Nuevo mensaje de contacto de {nombre}\n\nMensaje: {mensaje}'
+            # Texto plano para el correo
+            text_content = f'Nuevo mensaje de contacto de {nombre}\n\nCorreo: {correo}\n\nMensaje:\n{mensaje}'
+            
+            # HTML para el correo
             html_content = f"""
-                <p><strong>Nuevo mensaje de contacto de {nombre}</strong></p>
-                <p><strong>Mensaje:</strong></p>
-                <p>{mensaje}</p>
+                <html>
+                    <body>
+                        <h2>Nuevo mensaje de contacto de {nombre}</h2>
+                        <p><strong>Correo:</strong> {correo}</p>
+                        <p><strong>Mensaje:</strong></p>
+                        <p>{mensaje}</p>
+                    </body>
+                </html>
             """
-
+            
             # Crear el objeto de correo con texto plano y HTML
             email = EmailMultiAlternatives(
                 subject,
@@ -730,17 +757,39 @@ def contacto(request):
                 from_email,
                 to_email,
             )
-
+            
             # Adjuntar el contenido HTML al correo
             email.attach_alternative(html_content, "text/html")
 
-            # Enviar el correo
+            # Enviar el correo al administrador
             email.send(fail_silently=False)
-            
-            
+
+            # Si también deseas enviar un correo al usuario de confirmación
+            user_subject = f'Gracias por tu mensaje, {nombre}'
+            user_message = f"""
+                <html>
+                    <body>
+                        <h2>Gracias por ponerte en contacto con nosotros, {nombre}!</h2>
+                        <p>Hemos recibido tu mensaje y nos pondremos en contacto contigo pronto.</p>
+                        <p><strong>Tu mensaje:</strong></p>
+                        <p>{mensaje}</p>
+                    </body>
+                </html>
+            """
+            user_email = EmailMultiAlternatives(
+                user_subject,
+                user_message, 
+                'no-reply@tusitio.com',  # Dirección del remitente (puedes cambiarla)
+                [correo]
+            )
+
+            # Adjuntar el contenido HTML al correo del usuario
+            user_email.attach_alternative(user_message, "text/html")
+            user_email.send(fail_silently=False)
+
             # Mensaje de éxito para el usuario
             messages.success(request, 'Tu mensaje ha sido enviado al administrador. ¡Gracias!')
-            
+
             # Redirige a la página que desees
             return redirect('shop')  # O usa otro nombre de URL adecuado, como 'success', si es necesario.
     else:
@@ -748,6 +797,7 @@ def contacto(request):
 
     # Renderiza la página con el formulario
     return render(request, 'contacto.html', {'formm': formm})
+
 
 def successs(request):
     return render(request, 'registro_exitoso.html')

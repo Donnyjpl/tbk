@@ -6,7 +6,13 @@ Formulario de Contacto - TBK-DESIRE
 {% endblock %}
 
 {% block content %}
-
+{% if messages %}
+<div class="alert alert-success">
+    {% for message in messages %}
+    <p>{{ message|title }}</p>
+    {% endfor %}
+</div>
+{% endif %}
 
 <div class="container py-5">
     <div class="row justify-content-center">

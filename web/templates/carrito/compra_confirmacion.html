@@ -7,13 +7,13 @@
     <p>Tu pago ha sido exitoso. A continuación, te presentamos un resumen de tu compra:</p>
     <ul>
         {% for venta in ventas %}
-            <li>{{ venta.producto.nombre|title }} (Talla: {{ venta.talla }}) x {{ venta.cantidad }} - ${{ venta.precio }} x {{ venta.cantidad }} = ${{ venta.precio|multiply:venta.cantidad }}</li>
+            <li>{{ venta.producto.nombre|title }} (Talla: {{ venta.talla }}) x {{ venta.cantidad }} - ${{ venta.precio|floatformat:0 }} x {{ venta.cantidad }} = ${{ venta.precio|multiply:venta.cantidad|floatformat:0 }}</li>
         {% endfor %}
     </ul>
-    <p><strong>Total: ${{ total }}</strong></p>
+    <p><strong>Total: ${{ total|floatformat:0 }}</strong></p>
     <p>Nos pondremos en contacto contigo en breve para confirmar los detalles de tu pedido y el envío.</p>
     <p>También te enviaremos un comprobante de compra a tu correo electrónico una vez que se haya procesado tu pedido.</p>
 
-    <a href="{% url 'shop' %}" class="btn btn-primary">Volver a la tienda</a>
+    <a href="{% url 'shop' %}" class="btn btn-success">Volver a la tienda</a>
 </div>
 {% endblock %}

@@ -7,7 +7,7 @@
     <form method="POST">
       {% csrf_token %}
       {{ form.as_p }}  <!-- Muestra el formulario de forma ordenada -->
-      <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+      <button type="submit" class="btn btn-success">Guardar Cambios</button>
     </form>
 
     <a href="{% url 'producto_detalle' slug=producto.slug %}" class="btn btn-secondary mt-3">Cancelar</a>

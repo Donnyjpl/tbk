@@ -82,7 +82,8 @@ Detalles de Producto
                                 {% endif %}
                                 {% endfor %}
                             </ul>
-                            <span class="list-inline-item text-dark">{{ producto.promedio_valoracion|floatformat:0  }} de 5 Estrellas |
+                            <span class="list-inline-item text-dark">{{ producto.promedio_valoracion|floatformat:0  }}
+                                de 5 Estrellas |
                                 {{ producto.opiniones_list.count }} Comentarios</span>
                         </p>
 
@@ -139,17 +140,17 @@ Detalles de Producto
                                 <label for="talla">Selecciona tu talla:</label>
                                 <select name="talla" id="talla">
                                     {% for talla in producto.tallas_list %}
-                                        <option value="{{ talla.id }}">{{ talla.talla|upper }}</option>
+                                    <option value="{{ talla.id }}">{{ talla.talla|upper }}</option>
                                     {% endfor %}
                                 </select>
                                 <button type="submit" class="btn btn-success">Agregar al Carrito</button>
                             </form>
-                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
     </div>
 
 </section>
@@ -161,15 +162,44 @@ Detalles de Producto
         <div class="col-md-3 col-6 mb-3">
             <div class="card">
                 {% if related_product.imagenes_list.all %}
-                <img class="card-img-top" src="{{ related_product.imagenes_list.first.imagen.url }}"
+                <img class="card-img-top product-card-img" src="{{ related_product.imagenes_list.first.imagen.url }}"
                     alt="{{ related_product.nombre }}">
                 {% else %}
-                <img class="card-img-top" src="{% static 'images/no-image.png' %}" alt="Imagen no disponible">
+                <img class="card-img-top product-card-img" src="{% static 'images/no-image.png' %}" alt="Imagen no disponible">
                 {% endif %}
                 <div class="card-body">
-                    <h5 class="card-title">{{ related_product.nombre }}</h5>
+                    <h5 class="card-title">{{ related_product.nombre|title }}</h5>
                     <p class="card-text">${{ related_product.precio }}</p>
-                    <a href="{% url 'producto_detalle' slug=related_product.slug %}" class="btn btn-primary">Ver más</a>
+                    <!-- Valoración -->
+                    <p class="py-2">
+                        <ul class="list-unstyled d-flex mb-1">
+                            {% for i in rango_estrellas %}
+                            {% if i <= producto.promedio_valoracion %}
+                            <li><i class="text-warning fa fa-star"></i></li>
+                            {% else %}
+                            <li><i class="text-muted fa fa-star"></i></li>
+                            {% endif %}
+                            {% endfor %}
+                        </ul>
+                        <span class="list-inline-item text-dark">{{ producto.promedio_valoracion|floatformat:0 }}
+                            de 5 Estrellas |
+                            {{ producto.opiniones_list.count }} Comentarios</span>
+                    </p>
+
+                    <!-- Tallas Disponibles -->
+                    <p class="text-center">
+                        <strong>Tallas disponibles:</strong>
+                        {% if producto.tallas.all %}
+                        <span class="badge bg-info">
+                            {% for producto_talla in producto.tallas.all %}
+                            {{ producto_talla.talla|upper }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </span>
+                        {% else %}
+                        <span>No disponible</span>
+                        {% endif %}
+                    </p>
+                    <a href="{% url 'producto_detalle' slug=related_product.slug %}" class="btn btn-success">Ver más</a>
                 </div>
             </div>
         </div>

@@ -626,6 +626,9 @@ class ProductoListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['form'] = ProductoFilterForm(self.request.GET)  # Agregar el formulario a la vista
+        
+        # Aquí agregamos el rango de 1 a 5 para las estrellas
+        context['rango_estrellas'] = range(1, 6)
         return context
 
 

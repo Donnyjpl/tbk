@@ -1,16 +1,20 @@
-<!-- subir_imagenes.html -->
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Subir Imágenes para {{ producto.nombre }}</title>
-</head>
-<body>
-    <h1>Subir Imágenes para {{ producto.nombre }}</h1>
+{% extends 'baset.html' %}
+{% block title %}Subir Imágenes para {{ producto.nombre }}{% endblock %}
+{% block content %}
+{% if messages %}
+<div class="alert-container">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
 
+   <div class="container">     <h1>Subir Imágenes para {{ producto.nombre|title }}</h1>
+   
     <!-- Formulario para subir imágenes -->
-    <form method="POST" enctype="multipart/form-data">
+    <form method="POST" enctype="multipart/form-data" class="bg-light p-4 rounded shadow-sm">
         {% csrf_token %}
         {{ form.as_p }}
         <button type="submit">Subir Imagen</button>
@@ -24,6 +28,8 @@
     </ul>
 
     <p><a href="{% url 'agregar_tallas' slug=producto.slug %}">Ir a agregar tallas</a></p>
-</body>
-</html>
+
+    
+</div>
+    {% endblock %}
 

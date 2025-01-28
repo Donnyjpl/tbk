@@ -11,18 +11,21 @@ from . import views
 
 from django.contrib.auth import views as auth_views
 urlpatterns = [
-    path('crear/',crear_producto , name='crear_producto'),
+    path('crear/',crear_producto , name='crear'),
     path('subir_imagenes/<slug:slug>/',subir_imagenes, name='subir_imagenes'),
     path('agregar_tallas/<slug:slug>/',agregar_tallas, name='agregar_tallas'),
+    
+    path('producto/editar/<slug:slug>/', views.editar_producto, name='editar_producto'),
+    path('producto/modificar_imagenes/<slug:slug>/', views.modificar_imagenes, name='modificar_imagenes'),
+    path('producto/modificar_tallas/<slug:slug>/', views.modificar_tallas, name='modificar_tallas'),
+    path('producto/eliminar_talla/<int:talla_id>/', views.eliminar_talla, name='eliminar_talla'),
+     path('producto/eliminar_imagen/<int:imagen_id>/', views.eliminar_imagen, name='eliminar_imagen'),
     
     path('', index, name='index'),  # URL para ver la lista de productos
     path('about', about, name='about'),  # URL para ver la lista de productos
     path('contacto', contacto, name='contacto'),  # URL para ver la lista de productos
     path('successs', successs, name='successs'),  # URL para ver la lista de productos
- 
-    
     path('listar/', lista_productos, name='listar'),  # URL para ver la lista de productos
-    
     
     
     path('procesar_pago', views.procesar_pago, name='procesar_pago'),

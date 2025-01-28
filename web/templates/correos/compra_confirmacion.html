@@ -1,0 +1,12 @@
+{% load custom_filters %}
+<h1>¡Gracias por tu compra, {{ usuario.username }}!</h1>
+<p>Tu pago ha sido exitoso. A continuación, te presentamos un resumen de tu compra:</p>
+<ul>
+    {% for venta in ventas %}
+    <li>{{ venta.producto.nombre|title }} (Talla: {{ venta.talla }}) x {{ venta.cantidad }} - ${{ venta.precio }} x
+        {{ venta.cantidad }} = ${{ venta.precio|multiply:venta.cantidad }}</li>
+    {% endfor %}
+</ul>
+<p>Total: ${{ total }}</p>
+<p>Nos pondremos en contacto contigo en breve para confirmar los detalles de tu pedido y el envío.</p>
+<p>También te enviaremos un comprobante de compra a tu correo electrónico una vez que se haya procesado tu pedido.</p>

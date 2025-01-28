@@ -1,5 +1,5 @@
 {% extends 'baset.html' %}
-
+{% load custom_filters %}
 {% block content %}
 {% if messages %}
     <div class="alert alert-success">
@@ -34,8 +34,8 @@
                         {% if producto.tallas %}
                             {% for talla_id, talla_data in producto.tallas.items %}
                                 <tr>
-                                    <td>{{ producto.nombre }}</td>
-                                    <td>{{ talla_data.talla }}</td>  <!-- Mostrar la talla -->
+                                    <td>{{ producto.nombre|title }}</td>
+                                    <td>{{ talla_data.talla|title }}</td>  <!-- Mostrar la talla -->
                                     <td>
                                         <form method="POST" action="{% url 'actualizar_carrito' producto.slug talla_id %}">
                                             {% csrf_token %}
@@ -44,7 +44,7 @@
                                         </form>
                                     </td>
                                     <td>${{ talla_data.precio }}</td>
-                                    <td>${{ talla_data.precio }}</td>
+                                    <td>${{ talla_data.precio|multiply:talla_data.cantidad }}</td>
                                     <td>
                                         <a href="{% url 'eliminar_del_carrito' slug=slug talla_id=talla_id %}" class="btn btn-danger">Eliminar</a>
                                     </td>

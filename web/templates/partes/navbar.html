@@ -57,6 +57,17 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'contacto' %}">Contacto</a>
                     </li>
+                    <!-- Opciones solo visibles para el superusuario -->
+                    {% if user.is_superuser %}
+                   
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'crear' %}">Crear Producto</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'listar' %}">Lista de Productos</a>
+                    </li>
+                    {% endif %}
+
                 </ul>
             </div>
             <div class="navbar align-self-center d-flex">

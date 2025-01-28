@@ -82,6 +82,7 @@ class Factura(models.Model):
 
 class Venta(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    talla = models.ForeignKey(ProductoTalla, null=True, blank=True, on_delete=models.SET_NULL)  # Agregar esta relación
     cantidad = models.PositiveIntegerField()
     fecha = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)  # Relacionamos la venta con un usuario

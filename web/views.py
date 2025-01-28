@@ -50,9 +50,15 @@ from django.template.loader import render_to_string
 from django.utils.encoding import smart_str
 from django.core.mail import EmailMessage
 from django.core.mail import EmailMultiAlternatives
+from django.shortcuts import render
+from django.contrib.auth.decorators import user_passes_test
+
+# Función que verifica si el usuario es un superusuario
+def es_superusuario(user):
+    return user.is_superuser
 
 
-
+@login_required
 def dejar_opinion(request, slug):
     producto = get_object_or_404(Producto, slug=slug)  # Obtener el producto por su slug
 
@@ -75,33 +81,59 @@ def dejar_opinion(request, slug):
         'producto': producto
     })
     
-    
-    
+@login_required
 def procesar_pago_success(request):
-    # Obtener el carrito de la sesión
     carrito = request.session.get('carrito', {})
 
-    # Si el carrito está vacío, redirigir a la tienda o mostrar un mensaje adecuado
     if not carrito or len(carrito) == 0:
-        return redirect('shop')  # O puedes redirigir a una página de error o de la tienda
+        return redirect('shop')
 
-    # Calcular el total de la compra
     total = 0
-    for item in carrito.values():
-        total += float(item['precio']) * item['cantidad']
-
-    # Crear las ventas
     ventas = []
-    for slug, item in carrito.items():
-        producto = Producto.objects.get(slug=slug)  # Obtener el producto desde la base de datos
 
-        # Crear una venta para cada producto
-        venta = Venta.objects.create(
-            producto=producto,
-            cantidad=item['cantidad'],
-            user=request.user
-        )
-        ventas.append(venta)
+    # Procesar cada producto en el carrito
+    for producto_slug, producto_data in carrito.items():
+        producto = Producto.objects.get(slug=producto_slug)  # Obtener el producto de la DB
+
+        if 'tallas' in producto_data:
+            # Si el producto tiene tallas
+            for talla_id, talla_data in producto_data['tallas'].items():
+                talla = ProductoTalla.objects.get(id=talla_id)  # Obtener la talla correspondiente
+
+                # Crear la venta con talla asociada
+                venta = Venta.objects.create(
+                    producto=producto,
+                    cantidad=talla_data['cantidad'],
+                    user=request.user,
+                    talla=talla  # Asocia la talla a la venta
+                )
+
+                # Sumar el total de la compra
+                total += float(talla_data['precio']) * talla_data['cantidad']
+
+                ventas.append({
+                    'producto': producto,
+                    'cantidad': talla_data['cantidad'],
+                    'talla': talla,
+                    'precio': talla_data['precio'],
+                    'precio_total': float(talla_data['precio']) * talla_data['cantidad']
+                })
+
+        else:
+            # Si no hay tallas (producto sin tallas)
+            venta = Venta.objects.create(
+                producto=producto,
+                cantidad=producto_data['cantidad'],
+                user=request.user
+            )
+            total += float(producto_data['precio']) * producto_data['cantidad']
+
+            ventas.append({
+                'producto': producto,
+                'cantidad': producto_data['cantidad'],
+                'precio': producto_data['precio'],
+                'precio_total': float(producto_data['precio']) * producto_data['cantidad']
+            })
 
     # Vaciar el carrito
     request.session['carrito'] = {}
@@ -109,38 +141,31 @@ def procesar_pago_success(request):
     # Mostrar un mensaje de éxito
     messages.success(request, f'Pago exitoso por un total de ${total}. ¡Gracias por tu compra!')
 
-    # Obtener solo las ventas de la última compra del usuario
-    last_venta = ventas[-1]  # La última venta es la de la compra actual
-    ventas = Venta.objects.filter(user=request.user, fecha=last_venta.fecha)
-
-    # Calcular el total final
-    total = sum(venta.producto.precio * venta.cantidad for venta in ventas)
-    
-     # Obtener los datos del perfil del usuario
-     # Obtener los datos del perfil del usuario
-    profile = request.user.profile  # Asegúrate de que el usuario tenga un perfil asociado
+    # Obtener los datos del perfil
+    profile = request.user.profile
     rut = profile.rut
     telefono = profile.telefono
     direccion = profile.direccion
-    
-    # Enviar correo al usuario con los detalles de la compra
+
+    # Enviar el correo de confirmación al usuario
+    admin_email = 'donnyjpl@gmail.com' # correo de prueba
     subject = 'Confirmación de tu compra en Nuestro Sitio'
-    message = render_to_string('carrito/compra_confirmacion.html', {
+    message = render_to_string('correos/compra_confirmacion.html', {
         'ventas': ventas,
         'total': total,
         'usuario': request.user
-        
     })
 
     send_mail(
         subject,
         message,
         settings.DEFAULT_FROM_EMAIL,
-        [request.user.email]
+        [admin_email]
+        #[request.user.email]
     )
 
-    # Enviar correo al administrador (correo del contacto del administrador)
-    admin_email = 'donnyjpl@gmail.com'  # Cambiar al correo del administrador
+    # Enviar el correo de pedido al administrador
+    admin_email = 'donnyjpl@gmail.com'
     admin_subject = 'Nuevo Pedido Realizado'
     admin_message = render_to_string('correos/nuevo_pedido.html', {
         'ventas': ventas,
@@ -158,12 +183,10 @@ def procesar_pago_success(request):
         [admin_email]
     )
 
-    # Redirigir a la misma página para mostrar el resumen de la compra
     return render(request, 'carrito/compra_confirmacion.html', {
         'ventas': ventas,
         'total': total,
     })
-
 
 def agregar_al_carrito(request, slug):
     # Obtener el producto usando el slug
@@ -210,7 +233,7 @@ def agregar_al_carrito(request, slug):
 
     # Agregar un mensaje de éxito
     messages.success(request, f'{producto.nombre} con talla {talla.talla} se ha agregado al carrito con éxito.')
-    return redirect('ver_carrito')  # Redirige a la vista del carrito
+    return redirect('producto_detalle', slug=slug)  # Redirige a la vista del carrito
 
 
 
@@ -283,13 +306,35 @@ def procesar_pago(request):
     if not carrito or sum(item['cantidad'] for item in carrito.values()) == 0:
         return JsonResponse({'error': 'El carrito está vacío o no tiene productos válidos.'}, status=400)
     
-    # Calcular el total y la cantidad total de productos
+       # Calcular el total y la cantidad total de productos
     total = 0
     cantidad_total = 0
-    for item in carrito.values():
-        total += float(item['precio']) * item['cantidad']
-        cantidad_total += item['cantidad']
-        
+    items = []  # Aquí se guardarán los productos y tallas del carrito
+
+    for producto_slug, producto_data in carrito.items():
+        if 'tallas' in producto_data:  # Si el producto tiene tallas
+            for talla_id, talla_data in producto_data['tallas'].items():
+                # Calcular el total del carrito con tallas y cantidades
+                total += float(talla_data['precio']) * talla_data['cantidad']
+                cantidad_total += talla_data['cantidad']
+                
+                # Agregar cada talla como un item en los items de la preferencia
+                items.append({
+                    "title": f"{producto_data['nombre']} - Talla {talla_data['talla']}",  # Nombre con la talla
+                    "quantity": talla_data['cantidad'],  # Cantidad de esta talla
+                    "unit_price": float(talla_data['precio'])  # Precio de la talla
+                })
+        else:
+            # Si no tiene tallas, agregar solo el producto
+            total += float(producto_data['precio']) * producto_data['cantidad']
+            cantidad_total += producto_data['cantidad']
+            
+            # Agregar el producto como un item en los items de la preferencia
+            items.append({
+                "title": producto_data['nombre'],
+                "quantity": producto_data['cantidad'],
+                "unit_price": float(producto_data['precio'])
+            })
 
     # Configuración del SDK de Mercado Pago
     sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
@@ -332,10 +377,10 @@ def procesar_pago(request):
         # Si ocurre un error en el proceso de creación de la preferencia
         return JsonResponse({'error': str(e)}, status=500)
     
-
+@login_required
 def failure(request):
     return render(request, 'carrito/compra_fallo.html')
-
+@login_required
 def pending(request):
     return render(request, 'carrito/compra_pendiente.html')
 
@@ -362,6 +407,84 @@ def custom_login(request):
         form = LoginForm()
     return render(request, 'registration/login.html', {'form': form})
 
+
+@user_passes_test(es_superusuario)
+def editar_producto(request, slug):
+    producto = get_object_or_404(Producto, slug=slug)  # Obtener el producto a editar por su slug
+
+    if request.method == 'POST':
+        form = ProductoForm(request.POST, instance=producto)  # Inicializamos el formulario con los datos del producto
+        if form.is_valid():
+            form.save()  # Guardamos los cambios en el producto
+            messages.success(request, f'Producto {producto.nombre} actualizado exitosamente.')
+            return redirect('producto_detalle', slug=producto.slug)  # Redirigimos a los detalles del producto
+    else:
+        form = ProductoForm(instance=producto)  # En GET, prellenamos el formulario con el producto existente
+
+    return render(request, 'productos/editar_producto.html', {'form': form, 'producto': producto})
+
+@user_passes_test(es_superusuario)
+def modificar_imagenes(request, slug):
+    producto = get_object_or_404(Producto, slug=slug)
+    imagenes = producto.imagenes.all()  # Obtener las imágenes existentes
+
+    if request.method == 'POST':
+        form = ProductoImagenForm(request.POST, request.FILES)
+        if form.is_valid():
+            imagen = form.save(commit=False)
+            imagen.producto = producto  # Asignar la imagen al producto
+            imagen.save()
+            messages.success(request, 'Imagen modificada exitosamente.')
+            return redirect('modificar_imagenes', slug=producto.slug)
+    else:
+        form = ProductoImagenForm()
+
+    return render(request, 'productos/modificar_imagenes.html', {'form': form, 'producto': producto, 'imagenes': imagenes})
+
+@user_passes_test(es_superusuario)
+def modificar_tallas(request, slug):
+    producto = get_object_or_404(Producto, slug=slug)
+    tallas = producto.tallas.all()  # Obtener las tallas existentes
+
+    if request.method == 'POST':
+        form = ProductoTallaForm(request.POST, producto=producto)
+        if form.is_valid():
+            talla = form.save(commit=False)
+            talla.producto = producto  # Asignar la talla al producto
+            talla.save()
+            messages.success(request, f'Talla {form.cleaned_data["talla"]} modificada correctamente.')
+            return redirect('modificar_tallas', slug=producto.slug)
+    else:
+        form = ProductoTallaForm(producto=producto)
+
+    return render(request, 'productos/modificar_tallas.html', {'form': form, 'producto': producto, 'tallas': tallas})
+
+@user_passes_test(es_superusuario)
+def eliminar_imagen(request, imagen_id):
+    # Obtener la imagen por su ID
+    imagen = get_object_or_404(ProductoImagen, id=imagen_id)
+
+    # Guardar el producto relacionado
+    producto_slug = imagen.producto.slug
+
+    # Eliminar la imagen
+    imagen.delete()
+
+    # Mensaje de éxito
+    messages.success(request, 'Imagen eliminada exitosamente.')
+
+    # Redirigir al usuario a la página de modificación de imágenes del producto
+    return redirect('modificar_imagenes', slug=producto_slug)
+
+@user_passes_test(es_superusuario)
+def eliminar_talla(request, talla_id):
+    talla = get_object_or_404(ProductoTalla, id=talla_id)
+    producto_slug = talla.producto.slug
+    talla.delete()
+    messages.success(request, f'Talla {talla.talla} eliminada correctamente.')
+    return redirect('modificar_tallas', slug=producto_slug)
+
+@user_passes_test(es_superusuario)
 def crear_producto(request):
     if request.method == 'POST':
         form = ProductoForm(request.POST)
@@ -374,61 +497,88 @@ def crear_producto(request):
 
     return render(request, 'productos/crear_producto.html', {'form': form})
 
-# views.py
+@user_passes_test(es_superusuario)
 def subir_imagenes(request, slug):
     producto = get_object_or_404(Producto, slug=slug)  # Recuperamos el producto por su slug
+    
     if request.method == 'POST':
-        form = ProductoImagenForm(request.POST, request.FILES)  # Para manejar archivos
+        # Obtener la lista de imágenes actuales para el producto
+        imagenes_actuales = producto.imagenes.all()
+
+        # Si ya se han subido 5 imágenes, no permitir más
+        if imagenes_actuales.count() >= 5:
+            messages.error(request, 'Ya se han subido el máximo de imágenes (5).')
+            return redirect('agregar_tallas', slug=producto.slug)
+        
+        form = ProductoImagenForm(request.POST, request.FILES)
         if form.is_valid():
-            imagen = form.save()  # Guardamos la imagen
+            imagen = form.save(commit=False)  # No guardar aún
+            imagen.producto = producto  # Asignamos el producto a la imagen
+            imagen.save()  # Guardamos la imagen
             messages.success(request, 'Imagen subida exitosamente.')
-            # Si todas las imágenes se han subido, redirigir a la página para agregar tallas
-            return redirect('agregar_tallas', slug=producto.slug)  # Cambiar a 'agregar_tallas' después de subir imágenes
+
+            # Si ya se subieron las 5 imágenes, redirigir a la siguiente fase
+            if producto.imagenes.count() >= 3:
+                messages.success(request, 'Se han subido todas las imágenes. Ahora puedes agregar las tallas.')
+                return redirect('agregar_tallas', slug=producto.slug)
+            else:
+                # Mostrar el número de imágenes restantes
+                restantes = 3 - producto.imagenes.count()
+                messages.info(request, f'Aún te quedan {restantes} imágenes por subir.')
+                return redirect('subir_imagenes', slug=producto.slug)
     else:
-        form = ProductoImagenForm(initial={'producto': producto})
+        form = ProductoImagenForm(initial={'producto': producto})  # Inicializamos el formulario con el producto
 
     return render(request, 'productos/subir_imagenes.html', {'form': form, 'producto': producto})
 
+
+@user_passes_test(es_superusuario)
 def agregar_tallas(request, slug):
     producto = get_object_or_404(Producto, slug=slug)  # Recuperamos el producto por su slug
 
     if request.method == 'POST':
         form = ProductoTallaForm(request.POST, producto=producto)  # Pasamos el producto al formulario como un argumento
         if form.is_valid():
-            # Creamos una instancia del modelo ProductoTalla sin guardar todavía
             producto_talla = form.save(commit=False)
             producto_talla.producto = producto  # Asignamos el producto manualmente
             producto_talla.save()  # Guardamos el objeto ProductoTalla
             messages.success(request, f'Talla {form.cleaned_data["talla"]} agregada correctamente.')
-            return redirect('producto_detalle', slug=producto.slug)  # Redirigir a la vista de detalles del producto
+            return redirect('agregar_tallas', slug=producto.slug)  # Redirige a la misma página para agregar más tallas
     else:
         form = ProductoTallaForm(producto=producto)  # Inicializamos el formulario pasando el producto
 
-    return render(request, 'productos/agregar_tallas.html', {'form': form, 'producto': producto})
-    
-    
+    tallas_existentes = producto.tallas.all()  # Listar las tallas existentes de este producto
+
+    return render(request, 'productos/agregar_tallas.html', {'form': form, 'producto': producto, 'tallas_existentes': tallas_existentes})
+
+
+
+
 def lista_productos(request):
+    print("Request GET data:", request.GET)  # Imprimir los datos GET para depurar
     form = ProductoFilterForm(request.GET)  # Recibimos los datos del formulario a través de GET
     productos = Producto.objects.all()  # Comienza con todos los productos
 
-    # Aplicar filtros según el formulario
-    if form.is_valid():
-        if form.cleaned_data.get('categoria'):
-            productos = productos.filter(categorias=form.cleaned_data['categoria'])
-        
-        if form.cleaned_data.get('min_precio'):
-            productos = productos.filter(precio__gte=form.cleaned_data['min_precio'])
-        
-        if form.cleaned_data.get('max_precio'):
-            productos = productos.filter(precio__lte=form.cleaned_data['max_precio'])
-             # Acceder a las imágenes y tallas de cada producto
-    for producto in productos:
+    # Filtro por slug si se proporciona
+    slug_buscar = request.GET.get('slug', '')  # Filtro por slug
+    print("Slug to search:", slug_buscar)  # Ver el slug que estamos buscando
+
+    if slug_buscar:
+        productos = productos.filter(slug__icontains=slug_buscar)  # Filtramos por el slug
+
+    # Paginar productos
+    paginator = Paginator(productos, 10)  # 9 productos por página
+    page_number = request.GET.get('page')  # Número de página
+    productos_paginados = paginator.get_page(page_number)
+
+    # Añadir listas de imágenes y tallas a cada producto
+    for producto in productos_paginados:
         producto.imagenes_list = producto.imagenes.all()  # Accede a las imágenes del producto
         producto.tallas_list = producto.tallas.all()  # Accede a las tallas del producto
 
-    return render(request, 'producto_list.html', {'productos': productos, 'form': form})
+    print("Productos paginados:", productos_paginados)  # Verificar si hay productos paginados
 
-    
+    return render(request, 'producto_list.html', {'productos': productos_paginados, 'form': form})
     
 def index(request):
     return render(request, 'index1.html')
@@ -444,7 +594,7 @@ class ProductoListView(ListView):
     paginate_by = 9  # Número de productos por página
 
     def get_queryset(self):
-        queryset = Producto.objects.all()
+        queryset = Producto.objects.filter(activo=True)  # Filtramos solo productos activos
 
         # Aplicar filtros según el formulario
         form = ProductoFilterForm(self.request.GET)

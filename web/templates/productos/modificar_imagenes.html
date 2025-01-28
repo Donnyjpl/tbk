@@ -1,0 +1,35 @@
+{% extends "baset.html" %}
+
+{% block content %}
+<h2 class="text-center my-4">Modificar Imágenes del Producto</h2>
+<div class="container">
+    <!-- Formulario para subir nuevas imágenes -->
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3">
+            {{ form.as_p }}
+        </div>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+    </form>
+
+    <h3 class="mt-5">Imágenes existentes</h3>
+    <div class="row">
+        {% for imagen in imagenes %}
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <img src="{{ imagen.imagen.url }}" class="card-img-top" alt="Imagen del producto">
+                <div class="card-body">
+                    <h5 class="card-title">Imagen {{ forloop.counter }}</h5>
+                    <p class="card-text">¿Estás seguro de que deseas eliminar esta imagen?</p>
+                    <!-- Formulario para eliminar la imagen -->
+                    <form action="{% url 'eliminar_imagen' imagen.id %}" method="POST" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('¿Estás seguro de que deseas eliminar esta imagen?');">Eliminar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

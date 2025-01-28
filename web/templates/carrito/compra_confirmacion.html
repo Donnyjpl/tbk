@@ -7,7 +7,7 @@
     <p>Tu pago ha sido exitoso. A continuación, te presentamos un resumen de tu compra:</p>
     <ul>
         {% for venta in ventas %}
-            <li>{{ venta.producto.nombre }} - {{ venta.cantidad }} x ${{ venta.producto.precio }} = ${{ venta.cantidad|multiply:venta.producto.precio }}</li>
+            <li>{{ venta.producto.nombre|title }} (Talla: {{ venta.talla }}) x {{ venta.cantidad }} - ${{ venta.precio }} x {{ venta.cantidad }} = ${{ venta.precio|multiply:venta.cantidad }}</li>
         {% endfor %}
     </ul>
     <p><strong>Total: ${{ total }}</strong></p>

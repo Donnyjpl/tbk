@@ -1,0 +1,15 @@
+{% extends 'baset.html' %}
+
+{% block content %}
+  <div class="container">
+    <h1>Editar Producto: {{ producto.nombre }}</h1>
+
+    <form method="POST">
+      {% csrf_token %}
+      {{ form.as_p }}  <!-- Muestra el formulario de forma ordenada -->
+      <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+    </form>
+
+    <a href="{% url 'producto_detalle' slug=producto.slug %}" class="btn btn-secondary mt-3">Cancelar</a>
+  </div>
+{% endblock %}

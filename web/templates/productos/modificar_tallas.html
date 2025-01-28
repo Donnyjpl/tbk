@@ -1,0 +1,36 @@
+{% extends "baset.html" %}
+
+{% block content %}
+<div class="container mt-4 mb-5">
+    <h2 class="text-center">Modificar Tallas del Producto</h2>
+
+    <h3 class="mt-4">Tallas Existentes</h3>
+    <ul class="list-group">
+        {% for talla in tallas %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+                <strong>{{ talla.talla }}</strong> (Cantidad: {{ talla.cantidad }})
+            </div>
+            <div>
+                {% if talla.id %}
+                <form action="{% url 'eliminar_talla' talla.id %}" method="POST" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de que deseas eliminar esta talla?');">Eliminar</button>
+                </form>
+                {% endif %}
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <h3 class="mt-4">Agregar Nueva Talla</h3>
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-group">
+            {{ form.as_p }}  <!-- Aquí se renderiza el formulario de nueva talla -->
+        </div>
+        <button type="submit" class="btn btn-success">Agregar Talla</button>
+    </form>
+</div>
+
+{% endblock %}

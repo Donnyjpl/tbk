@@ -20,22 +20,29 @@ class ProductoTallaForm(forms.ModelForm):
         fields = ['talla', 'cantidad']
 
     def __init__(self, *args, **kwargs):
-        producto = kwargs.pop('producto', None)  # Eliminamos el producto del kwargs
+        self.producto = kwargs.pop('producto', None)  # Recuperamos el producto del kwargs
         super(ProductoTallaForm, self).__init__(*args, **kwargs)
 
-        if producto:
+        if self.producto:
             # Filtramos las tallas según la categoría del producto
-            if producto.categoria.nombre == 'Zapatos':
+            if self.producto.categoria.nombre == 'Zapatos':
                 self.fields['talla'].choices = [('37', '37'), ('38', '38'), ('39', '39')]
-            elif producto.categoria.nombre == 'Pantalones y Jeans':
+            elif self.producto.categoria.nombre == 'Pantalones y Jeans':
                 self.fields['talla'].choices = [('40', '40'), ('41', '41'), ('42', '42'), ('43', '43'), ('44', '44')]
             else:
                 self.fields['talla'].choices = [('S', 'S'), ('M', 'M'), ('L', 'L'), ('XL', 'XL')]
+
+    def clean_talla(self):
+        talla = self.cleaned_data['talla']
+        if ProductoTalla.objects.filter(producto=self.producto, talla=talla).exists():
+            raise forms.ValidationError(f'La talla {talla} ya ha sido agregada para este producto.')
+        return talla
+    
     
 class ProductoImagenForm(forms.ModelForm):
     class Meta:
         model = ProductoImagen
-        fields = ['producto', 'imagen']
+        fields = ['imagen']
 
     def __init__(self, *args, **kwargs):
         super(ProductoImagenForm, self).__init__(*args, **kwargs)

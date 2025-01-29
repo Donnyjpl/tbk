@@ -22,20 +22,20 @@ urlpatterns = [
      path('producto/eliminar_imagen/<int:imagen_id>/', views.eliminar_imagen, name='eliminar_imagen'),
     
     path('', views.IndexView.as_view(), name='index'),  # URL para ver la lista de productos
-    path('about', about, name='about'),  # URL para ver la lista de productos
-    path('contacto', contacto, name='contacto'),  # URL para ver la lista de productos
-    path('successs', successs, name='successs'),  # URL para ver la lista de productos
+    path('about/', about, name='about'),  # URL para ver la lista de productos
+    path('contacto/', contacto, name='contacto'),  # URL para ver la lista de productos
+    path('successs/', successs, name='successs'),  # URL para ver la lista de productos
     path('listar/', lista_productos, name='listar'),  # URL para ver la lista de productos
     
     
-    path('procesar_pago', views.procesar_pago, name='procesar_pago'),
-    path('procesar_pago/exito', views.procesar_pago_success, name='exito'),
-    path('procesar_pago/failure', views.failure, name='failure'),
-    path('procesar_pago/pending', views.pending, name='pending'),
+    path('procesar_pago/', views.procesar_pago, name='procesar_pago'),
+    path('procesar_pago/exito/', views.procesar_pago_success, name='exito'),
+    path('procesar_pago/failure/', views.failure, name='failure'),
+    path('procesar_pago/pending/', views.pending, name='pending'),
     
     path('shop/', ProductoListView.as_view(), name='shop'),  # URL para ver la lista de productos
     path('producto/<slug:slug>/', producto_detalle.as_view(), name='producto_detalle'),
-    path('dejar_opinion', views.dejar_opinion, name='dejar_opinion'),
+    path('dejar_opinion/', views.dejar_opinion, name='dejar_opinion'),
     
     path('agregar_al_carrito/<slug:slug>/', agregar_al_carrito, name='agregar_al_carrito'),
     path('ver_carrito/', ver_carrito, name='ver_carrito'),

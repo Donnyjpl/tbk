@@ -13,6 +13,11 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import os
 
+from dotenv import load_dotenv
+
+# Cargar el archivo .env
+load_dotenv()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,10 +25,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
-
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 ALLOWED_HOSTS = []
 LOGIN_URL = '/web/login/'  # Asegúrate de que esta URL esté definida
@@ -47,10 +48,6 @@ STATIC_URL = '/static/'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-
-
-STATICFILES_DIRS = [BASE_DIR / "static"]
 
 
 MIDDLEWARE = [
@@ -82,7 +79,9 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "tbk.wsgi.application"
-
+# Ahora puedes usar las variables de entorno en tus configuraciones
+SECRET_KEY = os.getenv('SECRET_KEY')
+DEBUG = os.getenv('DEBUG') == 'True'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
@@ -91,16 +90,15 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'tbk',
-        'USER': 'postgres',
-        'PASSWORD': '123456',
-        'HOST': 'localhost',  # o la dirección de tu servidor PostgreSQL
-        'PORT': '5432',  # o el puerto en el que PostgreSQL está corriendo
+        'USER': os.getenv('DATABASE_USER'),
+        'PASSWORD': os.getenv('DATABASE_PASSWORD'),
+        'HOST': os.getenv('DATABASE_HOST'),
+        'PORT': os.getenv('DATABASE_PORT'),
         'OPTIONS': {
             'client_encoding': 'UTF8',
         },
     }
 }
-
 
 
 # Password validation
@@ -146,44 +144,17 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 EMAIL_USE_TLS = True  # True para TLS, False para SSL (según el servidor SMTP)
 
-from dotenv import load_dotenv
 
-# Cargar el archivo .env
-load_dotenv()
-
-# Ahora puedes usar las variables de entorno en tus configuraciones
-SECRET_KEY = os.getenv('SECRET_KEY')
-DEBUG = os.getenv('DEBUG') == 'True'
-DATABASE_NAME = os.getenv('DATABASE_NAME')
-DATABASE_USER = os.getenv('DATABASE_USER')
-DATABASE_PASSWORD = os.getenv('DATABASE_PASSWORD')
-DATABASE_HOST = os.getenv('DATABASE_HOST')
-DATABASE_PORT = os.getenv('DATABASE_PORT')
 
 MERCADOPAGO_ACCESS_TOKEN = os.getenv('MERCADOPAGO_ACCESS_TOKEN')
 MERCADOPAGO_PUBLIC_KEY = os.getenv('MERCADOPAGO_PUBLIC_KEY')
 
-#EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-#EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-#DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
-
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = 'plazadonni@gmail.com'  # Coloca aquí tu dirección de correo
-
-EMAIL_HOST_PASSWORD = 'u r i h a b y r z p f c s p j u'    # Coloca aquí tu contraseña
-DEFAULT_FROM_EMAIL = 'webmaster@localhost'  # Dirección predeterminada de remitente
-
-
-
-DEFAULT_FROM_EMAIL = 'webmaster@localhost'  # Dirección predeterminada de remitente
-
 # Configurar codificación UTF-8 para los correos
 EMAIL_HOST_ENCODING = 'utf-8'
 

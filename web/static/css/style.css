@@ -63,6 +63,23 @@
   height: 200px; /* Altura fija para mantener uniformidad */
   object-fit: cover; /* Asegura que la imagen se recorte para llenar el espacio */
 }
+/* Estilos solo s tarjetas de producto destacados en el index */
+.featured-product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease-in-out;
+}
 
+.featured-product-card .card-body {
+  padding: 1.5rem;
+}
+
+.featured-product-card .product-card-img {
+  transition: all 0.3s ease;
+}
+
+.featured-product-card:hover .product-card-img {
+  transform: scale(1.05);
+}
 
  

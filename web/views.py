@@ -52,6 +52,107 @@ from django.core.mail import EmailMessage
 from django.core.mail import EmailMultiAlternatives
 from django.shortcuts import render
 from django.contrib.auth.decorators import user_passes_test
+from django.db.models import Avg
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.conf import settings
+from django.contrib import messages
+from django.shortcuts import render, redirect
+from .models import Producto, ProductoTalla, Venta
+# Vista de contacto
+from django.core.mail import EmailMultiAlternatives
+from django.contrib import messages
+from django.shortcuts import render, redirect
+from .forms import ContactoForm
+
+
+class producto_detalle(DetailView):
+    model = Producto
+    template_name = 'producto_detalle.html'
+    context_object_name = 'producto'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Accede al producto actual
+        producto = context['producto']
+        related_products = Producto.objects.filter(categoria=producto.categoria).exclude(id=producto.id)[:10]
+        
+        # Agregar las imágenes a cada producto relacionado (solo para visualización en el template)
+        for related_product in related_products:
+            related_product.imagenes_list = related_product.imagenes.all()  # Agrega las imágenes al producto relacionado
+
+        # Agregar productos relacionados al contexto
+        context['productos_relacionados'] = related_products
+        
+
+        # Acceder a las imágenes y tallas asociadas al producto
+        producto.imagenes_list = producto.imagenes.all()
+        producto.tallas_list = producto.tallas.all()
+        
+         # Aquí ya estás calculando otros elementos, agrega el rango de 1 a 5
+        context['rango_estrellas'] = range(1, 6)
+        
+        # Opcional: Agregar opiniones/valoraciones (si las tienes)
+         # Mostrar las opiniones del producto
+        producto.opiniones_list = OpinionCliente.objects.filter(producto=producto).order_by('-created_at')[:3]
+        
+        # Si el usuario está autenticado, permitir dejar una opinión
+        # Si el usuario está autenticado, permitir dejar una opinión
+        if self.request.user.is_authenticated:
+            # Verificar si el usuario ya ha dejado una opinión sobre el producto
+            if OpinionCliente.objects.filter(producto=producto, user=self.request.user).exists():
+                context['usuario_tiene_opinion'] = True  # El usuario ya ha dejado una opinión
+            else:
+                context['opinion_form'] = OpinionClienteForm()  # Formulario para dejar opinión
+
+        return context
+ 
+    def post(self, request, *args, **kwargs):
+        producto = self.get_object()  # Obtener el producto desde la URL
+        if request.user.is_authenticated:
+            # Verificar si el usuario ya dejó una opinión
+            if OpinionCliente.objects.filter(producto=producto, user=request.user).exists():
+                messages.error(request, '¡Ya has dejado una opinión sobre este producto!')
+                return redirect('producto_detalle', slug=producto.slug)
+
+            form = OpinionClienteForm(request.POST)
+            if form.is_valid():
+                # Crear una nueva opinión en la base de datos
+                OpinionCliente.objects.create(
+                    producto=producto,
+                    user=request.user,
+                    opinion=form.cleaned_data['opinion'],
+                    valoracion=form.cleaned_data['valoracion']
+                )
+                messages.success(request, '¡Gracias por dejar tu opinión!')
+                return redirect('producto_detalle', slug=producto.slug)
+
+        return redirect('producto_detalle', slug=producto.slug)
+
+class IndexView(ListView):
+    model = Producto
+    template_name = 'index1.html'  # Plantilla para mostrar productos
+    context_object_name = 'productos_destacados'  # Nombre con el que accederemos a los productos en la plantilla
+    paginate_by = 3  # Número de productos por página
+
+    def get_queryset(self):
+        # Filtramos los productos con una valoración promedio alta
+        return Producto.objects.annotate(promedio=Avg('opiniones__valoracion')) \
+                               .filter(promedio__gte=4.5)  # Filtrar solo productos con promedio >= 4.5 estrellas
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        rango_estrellas = range(1, 6)  # Rango de 1 a 5 estrellas
+        context['rango_estrellas'] = rango_estrellas
+
+        # Añadir listas de imágenes y tallas a cada producto
+        for producto in context['productos_destacados']:
+            producto.imagenes_list = producto.imagenes.all()  # Accede a las imágenes del producto
+            producto.tallas_list = producto.tallas.all()  # Accede a las tallas del producto
+
+        return context
+
 
 # Función que verifica si el usuario es un superusuario
 def es_superusuario(user):
@@ -81,12 +182,7 @@ def dejar_opinion(request, slug):
         'producto': producto
     })
     
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
-from django.conf import settings
-from django.contrib import messages
-from django.shortcuts import render, redirect
-from .models import Producto, ProductoTalla, Venta
+
 
 @login_required
 def procesar_pago_success(request):
@@ -122,11 +218,7 @@ def procesar_pago_success(request):
                     'precio': talla_data['precio'],
                     'precio_total': float(talla_data['precio']) * talla_data['cantidad']
                 })
-                # Imprimir para verificar que la talla se está agregando correctamente
-                # Para depurar y ver los valores correctos
-                print(f"Producto: {producto.nombre}, Talla: {talla.talla}, Cantidad: {talla_data['cantidad']}, Precio: {talla_data['precio']}")
-
-
+               
         else:
             venta = Venta.objects.create(
                 producto=producto,
@@ -141,11 +233,7 @@ def procesar_pago_success(request):
                 'precio': producto_data['precio'],
                 'precio_total': float(producto_data['precio']) * producto_data['cantidad']
             })
-            # Imprimir para verificar que la talla se está agregando correctamente
-            # Para depurar y ver los valores correctos
-            print(f"Producto: {producto.nombre}, Talla: {talla.talla}, Cantidad: {talla_data['cantidad']}, Precio: {talla_data['precio']}")
-
-
+            
     # Vaciar el carrito
     request.session['carrito'] = {}
 
@@ -604,8 +692,6 @@ def lista_productos(request):
 
     return render(request, 'producto_list.html', {'productos': productos_paginados, 'form': form})
     
-def index(request):
-    return render(request, 'index1.html')
 
 def about(request):
     return render(request, 'about.html')
@@ -656,75 +742,8 @@ class ProductoListView(ListView):
         return context
 
 
-class producto_detalle(DetailView):
-    model = Producto
-    template_name = 'producto_detalle.html'
-    context_object_name = 'producto'
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        
-        # Accede al producto actual
-        producto = context['producto']
-        related_products = Producto.objects.filter(categoria=producto.categoria).exclude(id=producto.id)[:10]
-        
-        # Agregar las imágenes a cada producto relacionado (solo para visualización en el template)
-        for related_product in related_products:
-            related_product.imagenes_list = related_product.imagenes.all()  # Agrega las imágenes al producto relacionado
-
-        # Agregar productos relacionados al contexto
-        context['productos_relacionados'] = related_products
-        
-
-        # Acceder a las imágenes y tallas asociadas al producto
-        producto.imagenes_list = producto.imagenes.all()
-        producto.tallas_list = producto.tallas.all()
-        
-         # Aquí ya estás calculando otros elementos, agrega el rango de 1 a 5
-        context['rango_estrellas'] = range(1, 6)
-        
-        # Opcional: Agregar opiniones/valoraciones (si las tienes)
-         # Mostrar las opiniones del producto
-        producto.opiniones_list = OpinionCliente.objects.filter(producto=producto).order_by('-created_at')[:3]
-        
-        # Si el usuario está autenticado, permitir dejar una opinión
-        # Si el usuario está autenticado, permitir dejar una opinión
-        if self.request.user.is_authenticated:
-            # Verificar si el usuario ya ha dejado una opinión sobre el producto
-            if OpinionCliente.objects.filter(producto=producto, user=self.request.user).exists():
-                context['usuario_tiene_opinion'] = True  # El usuario ya ha dejado una opinión
-            else:
-                context['opinion_form'] = OpinionClienteForm()  # Formulario para dejar opinión
-
-        return context
- 
-    def post(self, request, *args, **kwargs):
-        producto = self.get_object()  # Obtener el producto desde la URL
-        if request.user.is_authenticated:
-            # Verificar si el usuario ya dejó una opinión
-            if OpinionCliente.objects.filter(producto=producto, user=request.user).exists():
-                messages.error(request, '¡Ya has dejado una opinión sobre este producto!')
-                return redirect('producto_detalle', slug=producto.slug)
-
-            form = OpinionClienteForm(request.POST)
-            if form.is_valid():
-                # Crear una nueva opinión en la base de datos
-                OpinionCliente.objects.create(
-                    producto=producto,
-                    user=request.user,
-                    opinion=form.cleaned_data['opinion'],
-                    valoracion=form.cleaned_data['valoracion']
-                )
-                messages.success(request, '¡Gracias por dejar tu opinión!')
-                return redirect('producto_detalle', slug=producto.slug)
-
-        return redirect('producto_detalle', slug=producto.slug)
     
-# Vista de contacto
-from django.core.mail import EmailMultiAlternatives
-from django.contrib import messages
-from django.shortcuts import render, redirect
-from .forms import ContactoForm
 
 def contacto(request):
     if request.method == 'POST':

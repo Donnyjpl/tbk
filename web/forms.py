@@ -51,7 +51,7 @@ class ProductoImagenForm(forms.ModelForm):
             self.fields['producto'].initial = producto
         
 class ProductoFilterForm(forms.Form):
-    categoria = forms.ModelChoiceField(queryset=Categoria.objects.all(), required=False, label='Categoría', empty_label=None)
+    categoria = forms.ModelChoiceField(queryset=Categoria.objects.all(), required=False, label='Categoría', empty_label='Selecciona una categoría' )
     min_precio = forms.DecimalField(required=False, label='Precio Mínimo', min_value=0)
     max_precio = forms.DecimalField(required=False, label='Precio Máximo', min_value=0)
 

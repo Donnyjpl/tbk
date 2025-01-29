@@ -3,12 +3,11 @@
 {% block title %} TBK{% endblock %}
 
 {% block content %}
-
 {% load static %}
-    
+{% load custom_filters %}
 
 <body>
-   
+
     <!-- Modal -->
     <div class="modal fade bg-white" id="templatemo_search" tabindex="-1" role="dialog"
         aria-labelledby="exampleModalLabel" aria-hidden="true">
@@ -48,10 +47,9 @@
                                 <h1 class="h1 text-success"><b>Bienvenida a</b> TBK-DESIRE</h1>
                                 <h3 class="h2">Tu tienda online de moda para todas las ocasiones</h3>
                                 <p>
-                                    En TBK, nos dedicamos a ofrecer lo mejor de la moda con una amplia
-                                    selección de ropa de marca de alta calidad. Somos una tienda virtual que ha
-                                    evolucionado, ahora con una ubicación física para brindarte una experiencia de
-                                    compra aún más cercana y personalizada.
+                                    En TBK, nos dedicamos a ofrecer lo mejor de la moda con una amplia selección de ropa
+                                    de marca de alta calidad. Somos una tienda virtual que te brinda una experiencia de
+                                    compra cercana y personalizada.
                                 </p>
                             </div>
                         </div>
@@ -67,10 +65,13 @@
                         <div class="col-lg-6 mb-0 d-flex align-items-center">
                             <div class="text-align-left">
                                 <h1 class="h1">Explorar la Tienda</h1>
-                                <h3 class="h2"> <!-- Botón para ir a la tienda -->
-                                    <a href="{% url 'shop' %}" class="btn btn-lg btn-success shadow-sm">Explorar la Tienda</a></h3>
+                                <h3 class="h2">
+                                    <!-- Botón para ir a la tienda -->
+                                    <a href="{% url 'shop' %}" class="btn btn-lg btn-success shadow-sm">Explorar la
+                                        Tienda</a></h3>
                                 <p>
-                                    ¿Estás lista para tu próxima compra? ¡Explora nuestras colecciones y encuentra tu look perfecto!
+                                    ¿Estás lista para tu próxima compra? ¡Explora nuestras colecciones y encuentra tu
+                                    look perfecto!
                                 </p>
                             </div>
                         </div>
@@ -86,9 +87,10 @@
                         <div class="col-lg-6 mb-0 d-flex align-items-center">
                             <div class="text-align-left">
                                 <h1 class="h1">Tendencias de Moda 2025</h1>
-                                <h3 class="h2">Revoluciona tu guardarropa con lo último en estilo.</h3>
+                                <h3 class="h2">Revoluciona tu closet con lo último en estilo.</h3>
                                 <p>
-                                    Desde ropa casual hasta elegante, tenemos todo lo que necesitas para que luzcas espectacular.
+                                    Desde ropa casual hasta elegante, tenemos todo lo que necesitas para que luzcas
+                                    espectacular.
                                 </p>
                             </div>
                         </div>
@@ -120,118 +122,99 @@
         </div>
         <div class="row">
             <div class="col-12 col-md-4 p-5 mt-3">
-                <a href="#"><img src=" {% static 'img/category_img_01.jpg' %}"
+                <a href="{% url 'shop' %}"><img src=" {% static 'img/shop_03.jpg' %}"
                         class="rounded-circle img-fluid border"></a>
-                <h5 class="text-center mt-3 mb-3">Relojes</h5>
-                <p class="text-center"><a class="btn btn-success">Explorar</a></p>
+                <h5 class="text-center mt-3 mb-3">Vestidos y Enteritos</h5>
+                <p class="text-center"><a class="btn btn-success" href="{% url 'shop' %}">Explorar</a></p>
             </div>
             <div class="col-12 col-md-4 p-5 mt-3">
-                <a href="#"><img src=" {% static 'img/category_img_02.jpg' %}"
+                <a href="{% url 'shop' %}"><img src=" {% static 'img/shop_02.jpg' %}"
                         class="rounded-circle img-fluid border"></a>
-                <h2 class="h5 text-center mt-3 mb-3">Zapatos</h2>
-                <p class="text-center"><a class="btn btn-success">Explorar</a></p>
+                <h2 class="h5 text-center mt-3 mb-3">Poleras, Blusas , Tops y Bodys</h2>
+                <p class="text-center"><a class="btn btn-success" href="{% url 'shop' %}">Explorar</a></p>
             </div>
             <div class="col-12 col-md-4 p-5 mt-3">
-                <a href="#"><img src=" {% static 'img/category_img_03.jpg' %}"
+                <a href="{% url 'shop' %}"><img src=" {% static 'img/shop_01.jpg' %}"
                         class="rounded-circle img-fluid border"></a>
                 <h2 class="h5 text-center mt-3 mb-3">Accesorios</h2>
-                <p class="text-center"><a class="btn btn-success">Explorar</a></p>
+                <p class="text-center"><a class="btn btn-success" href="{% url 'shop' %}">Explorar</a></p>
             </div>
         </div>
     </section>
     <!-- End Categories of The Month -->
+    <!-- Productos destacados -->
+    <section class="featured-products m-5 container">
+        <div class="col-lg-6 m-auto">
+            <h1 class="h1 text-center">Productos Destacados</h1>
+            <p class="text-center">
+                Productos especialmente seleccionados para ti, diseñados para resaltar tu estilo único.
+            </p>
+        </div>
 
+        <div class="row mt-5">
+            {% for producto in productos_destacados %}
+            <div class="col-md-4 col-6 mb-4">
+                <div class="card shadow-lg border-0 rounded featured-product-card">
+                    <!-- Mostrar imagen del producto -->
+                    {% if producto.imagenes_list.all %}
+                    <img class="card-img-top product-card-img" src="{{ producto.imagenes_list.first.imagen.url }}"
+                        alt="{{ producto.nombre }}">
+                    {% else %}
+                    <img class="card-img-top product-card-img" src="{% static 'images/no-image.png' %}"
+                        alt="Imagen no disponible">
+                    {% endif %}
 
-    <!-- Start Featured Product -->
-    <section class="bg-light">
-        <div class="container py-5">
-            <div class="row text-center py-3">
-                <div class="col-lg-6 m-auto">
-                    <h1 class="h1">Producto Destacado</h1>
-                    <p>
-                        Productos especialmente seleccionados para ti, diseñados para resaltar tu estilo único.
-                    </p>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-12 col-md-4 mb-4">
-                    <div class="card h-100">
-                        <a href="shop-single.html">
-                            <img src=" {% static 'img/feature_prod_01.jpg' %}" class="card-img-top" alt="...">
-                        </a>
-                        <div class="card-body">
-                            <ul class="list-unstyled d-flex justify-content-between">
-                                <li>
-                                    <i class="text-warning fa fa-star"></i>
-                                    <i class="text-warning fa fa-star"></i>
-                                    <i class="text-warning fa fa-star"></i>
-                                    <i class="text-warning fa fa-star"></i>
-                                    <i class="text-warning fa fa-star"></i>
-                                </li>
-                                <li class="text-muted text-right">$240.00</li>
+                    <div class="card-body text-center">
+                        <h5 class="card-title fw-bold text-dark">{{ producto.nombre|title }}</h5>
+                        <p class="card-text text-muted">${{ producto.precio|formatear_precio  }}</p>
+
+                        <!-- Mostrar valoración -->
+                        <p class="py-2">
+                            <ul class="list-unstyled d-flex justify-content-center mb-1">
+                                {% for i in rango_estrellas %}
+                                {% if i <= producto.promedio %}
+                                <li><i class="text-warning fa fa-star"></i></li> <!-- Estrella llena -->
+                                {% else %}
+                                <li><i class="fa fa-star"></i></li> <!-- Estrella vacía -->
+                                {% endif %}
+                                {% endfor %}
                             </ul>
-                            <a href="shop-single.html" class="h2 text-decoration-none text-dark">Gym Weight</a>
-                            <p class="card-text">
-                                Lorem ipsum dolor sit amet, consectetur adipisicing elit. Sunt in culpa qui officia
-                                deserunt.
-                            </p>
-                            <p class="text-muted">Reviews (24)</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12 col-md-4 mb-4">
-                    <div class="card h-100">
-                        <a href="shop-single.html">
-                            <img src=" {% static 'img/feature_prod_02.jpg' %}" class="card-img-top" alt="...">
-                        </a>
-                        <div class="card-body">
-                            <ul class="list-unstyled d-flex justify-content-between">
-                                <li>
-                                    <i class="text-warning fa fa-star"></i>
-                                    <i class="text-warning fa fa-star"></i>
-                                    <i class="text-warning fa fa-star"></i>
-                                    <i class="text-warning fa fa-star"></i>
-                                    <i class="text-warning fa fa-star"></i>
-                                </li>
-                                <li class="text-muted text-right">$480.00</li>
-                            </ul>
-                            <a href="shop-single.html" class="h2 text-decoration-none text-dark">Cloud Nike Shoes</a>
-                            <p class="card-text">
-                                Aenean gravida dignissim finibus. Nullam ipsum diam, posuere vitae pharetra sed, commodo
-                                ullamcorper.
-                            </p>
-                            <p class="text-muted">Reviews (48)</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12 col-md-4 mb-4">
-                    <div class="card h-100">
-                        <a href="shop-single.html">
-                            <img src=" {% static 'img/feature_prod_03.jpg' %}" class="card-img-top" alt="...">
-                        </a>
-                        <div class="card-body">
-                            <ul class="list-unstyled d-flex justify-content-between">
-                                <li>
-                                    <i class="text-warning fa fa-star"></i>
-                                    <i class="text-warning fa fa-star"></i>
-                                    <i class="text-warning fa fa-star"></i>
-                                    <i class="text-warning fa fa-star"></i>
-                                    <i class="text-warning fa fa-star"></i>
-                                </li>
-                                <li class="text-muted text-right">$360.00</li>
-                            </ul>
-                            <a href="shop-single.html" class="h2 text-decoration-none text-dark">Summer Addides
-                                Shoes</a>
-                            <p class="card-text">
-                                Curabitur ac mi sit amet diam luctus porta. Phasellus pulvinar sagittis diam, et
-                                scelerisque ipsum lobortis nec.
-                            </p>
-                            <p class="text-muted">Reviews (74)</p>
-                        </div>
+                            <span class="list-inline-item text-dark">
+                                {{ producto.promedio|floatformat:0 }} de 5 Estrellas |
+                                {{ producto.opiniones.count }} Comentarios
+                            </span>
+                        </p>
+
+                        <!-- Tallas disponibles -->
+                        <p class="text-center">
+                            <strong>Tallas disponibles:</strong>
+                            {% if producto.tallas_list %}
+                            <span class="badge bg-info">
+                                {% for producto_talla in producto.tallas_list %}
+                                {{ producto_talla.talla|upper }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            </span>
+                            {% else %}
+                            <span>No disponible</span>
+                            {% endif %}
+                        </p>
+
+                        <!-- Enlace al detalle del producto -->
+                        <a href="{% url 'producto_detalle' slug=producto.slug %}" class="btn btn-success mt-2">Ver
+                            más</a>
                     </div>
                 </div>
             </div>
+
+            {% empty %}
+            <p class="text-center">No hay productos destacados disponibles.</p>
+            {% endfor %}
         </div>
     </section>
+
+
+    </section>
+
+
     <!-- End Featured Product -->
     {% endblock  %}

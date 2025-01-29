@@ -70,7 +70,7 @@ Detalles de Producto
                 <div class="card">
                     <div class="card-body">
                         <h1 class="h2 fw-bold">{{ producto.nombre|title }}</h1>
-                        <p class="h3 py-2">${{ producto.precio|floatformat:0}}</p>
+                        <p class="h3 py-2">${{ producto.precio|formatear_precio}}</p>
                         <p class="py-2">
 
                             <ul class="list-unstyled d-flex  mb-1">
@@ -169,7 +169,7 @@ Detalles de Producto
                 {% endif %}
                 <div class="card-body">
                     <h5 class="card-title fw-bold">{{ related_product.nombre|title }}</h5>
-                    <p class="card-text">${{ related_product.precio|floatformat:0 }}</p>
+                    <p class="card-text">${{ related_product.precio|formatear_precio }}</p>
                     <!-- Valoración -->
                     <p class="py-2">
                         <ul class="list-unstyled d-flex mb-1">

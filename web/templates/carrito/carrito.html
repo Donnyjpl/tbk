@@ -2,7 +2,7 @@
 {% load custom_filters %}
 {% block content %}
 {% if messages %}
-    <div class="alert alert-success">
+    <div class="alert alert-success container">
         {% for message in messages %}
             <p>{{ message|title }}</p>
         {% endfor %}
@@ -43,8 +43,8 @@
                                             <button type="submit" class="btn btn-warning">Actualizar</button>
                                         </form>
                                     </td>
-                                    <td>${{ talla_data.precio }}</td>
-                                    <td>${{ talla_data.precio|multiply:talla_data.cantidad|floatformat:0 }}</td>
+                                    <td>${{ talla_data.precio|formatear_precio }}</td>
+                                    <td>${{ talla_data.precio|multiply:talla_data.cantidad|formatear_precio}}</td>
                                     <td>
                                         <a href="{% url 'eliminar_del_carrito' slug=slug talla_id=talla_id %}" class="btn btn-danger">Eliminar</a>
                                     </td>
@@ -60,7 +60,7 @@
                     {% endfor %}
                 </tbody>
             </table>
-            <h3>Total: ${{ total|floatformat:0}}</h3>
+            <h3>Total: ${{ total|formatear_precio}}</h3>
             <a href="{% url 'procesar_pago' %}" class="btn btn-success">Proceder al Pago</a>
         </div>
     </div>

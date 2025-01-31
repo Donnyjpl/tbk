@@ -55,5 +55,9 @@ urlpatterns = [
     path('password_reset/done/', CustomPasswordResetDoneView.as_view(), name='password_reset_done'),
     path('password_reset_confirm/<uidb64>/<token>/', CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('reset/done/', CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),
+    
+     path('test-email/', views.test_email, name='test_email'),
+    path('test-email-spanish/', views.test_email_spanish, name='test_email_spanish'),
+    path('test-email-mime/', views.test_email_mime, name='test_email_mime'),
 ]# Solo en desarrollo, servir archivos de medios
 

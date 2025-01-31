@@ -12,11 +12,13 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
+import environ
 
-from dotenv import load_dotenv
+# Inicializar el objeto de entorno
+env = environ.Env()
 
-# Cargar el archivo .env
-load_dotenv()
+# Leer el archivo .env
+environ.Env.read_env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -80,27 +82,26 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "tbk.wsgi.application"
 # Ahora puedes usar las variables de entorno en tus configuraciones
-SECRET_KEY = os.getenv('SECRET_KEY')
-DEBUG = os.getenv('DEBUG') == 'True'
+# Configuración de la clave secreta
+SECRET_KEY = env('SECRET_KEY')  # Cargar desde el archivo .env
 
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
+# Modo debug (es mejor no dejar DEBUG=True en producción)
+DEBUG = env.bool('DEBUG', default=True)  # También desde .env con valor por defecto
 
+# Configuración de la base de datos
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'tbk',
-        'USER': os.getenv('DATABASE_USER'),
-        'PASSWORD': os.getenv('DATABASE_PASSWORD'),
-        'HOST': os.getenv('DATABASE_HOST'),
-        'PORT': os.getenv('DATABASE_PORT'),
+        'NAME': env('DATABASE_NAME'),  # Cargar desde .env
+        'USER': env('DATABASE_USER'),  # Cargar desde .env
+        'PASSWORD': env('DATABASE_PASSWORD'),  # Cargar desde .env
+        'HOST': env('DATABASE_HOST', default='localhost'),  # Valor predeterminado para el host
+        'PORT': env.int('DATABASE_PORT', default=5432),  # Usar .int() para el puerto
         'OPTIONS': {
             'client_encoding': 'UTF8',
         },
     }
 }
-
-
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
@@ -145,19 +146,43 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 EMAIL_USE_TLS = True  # True para TLS, False para SSL (según el servidor SMTP)
 
 
+# Cargar las variables de MercadoPago
+MERCADOPAGO_ACCESS_TOKEN = env('MERCADOPAGO_ACCESS_TOKEN')
+MERCADOPAGO_PUBLIC_KEY = env('MERCADOPAGO_PUBLIC_KEY')
 
-MERCADOPAGO_ACCESS_TOKEN = os.getenv('MERCADOPAGO_ACCESS_TOKEN')
-MERCADOPAGO_PUBLIC_KEY = os.getenv('MERCADOPAGO_PUBLIC_KEY')
 
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
+from django.core.exceptions import ImproperlyConfigured
 
+
+# Forzar UTF-8 en lugar de ASCII para emails
+from email import charset
+charset.add_charset('utf-8', charset.SHORTEST, charset.QP, 'utf-8')
+
+# Configuración de correo SMTP
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_PORT = 587
-# Configurar codificación UTF-8 para los correos
-EMAIL_HOST_ENCODING = 'utf-8'
+EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')  # Valor predeterminado en caso de que no esté en .env
+EMAIL_PORT = env.int('EMAIL_PORT', default=587)  # Usamos .int() para convertirlo a un número
+EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)  # .bool() para valores booleanos
+EMAIL_USE_SSL = env.bool('EMAIL_USE_SSL', default=False)  # .bool() para valores booleanos
 
+EMAIL_HOST_USER = env('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='webmaster@localhost')
 
+# Validación de configuración crítica
+def validate_email_settings():
+    required_settings = [
+        ('EMAIL_HOST_USER', EMAIL_HOST_USER),
+        ('EMAIL_HOST_PASSWORD', EMAIL_HOST_PASSWORD),
+        ('DEFAULT_FROM_EMAIL', DEFAULT_FROM_EMAIL),
+    ]
+    
+    for setting_name, setting_value in required_settings:
+        if not setting_value:
+            raise ImproperlyConfigured(
+                f"La variable de entorno {setting_name} no está configurada. "
+                "Es necesaria para el funcionamiento del email."
+            )
 
-
+# Ejecutar validación al inicio
+validate_email_settings()

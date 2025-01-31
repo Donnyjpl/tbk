@@ -44,7 +44,7 @@
                         </div>
                         <div class="col-lg-6 mb-0 d-flex align-items-center">
                             <div class="text-align-left align-self-center">
-                                <h1 class="h1 text-success"><b>Bienvenida a</b> TBK-DESIRE</h1>
+                                <h1 class="h1 text-success"><b>Bienvenida a</b> TBK</h1>
                                 <h3 class="h2">Tu tienda online de moda para todas las ocasiones</h3>
                                 <p>
                                     En TBK, nos dedicamos a ofrecer lo mejor de la moda con una amplia selección de ropa
@@ -143,18 +143,21 @@
     </section>
     <!-- End Categories of The Month -->
     <!-- Productos destacados -->
-    <section class="featured-products m-5 container">
-        <div class="col-lg-6 m-auto">
-            <h1 class="h1 text-center">Productos Destacados</h1>
-            <p class="text-center">
-                Productos especialmente seleccionados para ti, diseñados para resaltar tu estilo único.
-            </p>
+    <!-- Start Productos Destacados -->
+    <section class="container py-5">
+        <div class="row text-center pt-3">
+            <div class="col-lg-6 m-auto">
+                <h1 class="h1">Productos Destacados</h1>
+                <p>
+                    Productos especialmente seleccionados para ti, diseñados para resaltar tu estilo único.
+                </p>
+            </div>
         </div>
 
-        <div class="row mt-5">
+        <div class="row mt-5 justify-content-center">
             {% for producto in productos_destacados %}
-            <div class="col-md-4 col-6 mb-4">
-                <div class="card shadow-lg border-0 rounded featured-product-card">
+            <div class="col-12 col-md-4 mb-4">
+                <div class="card shadow-lg border-0 rounded">
                     <!-- Mostrar imagen del producto -->
                     {% if producto.imagenes_list.all %}
                     <img class="card-img-top product-card-img" src="{{ producto.imagenes_list.first.imagen.url }}"
@@ -166,9 +169,9 @@
 
                     <div class="card-body text-center">
                         <h5 class="card-title fw-bold text-dark">{{ producto.nombre|title }}</h5>
-                        <p class="card-text text-muted">${{ producto.precio|formatear_precio  }}</p>
+                        <p class="card-text text-muted">${{ producto.precio|formatear_precio }}</p>
 
-                        <!-- Mostrar valoración -->
+                        <!-- Valoración de estrellas -->
                         <p class="py-2">
                             <ul class="list-unstyled d-flex justify-content-center mb-1">
                                 {% for i in rango_estrellas %}
@@ -205,16 +208,12 @@
                     </div>
                 </div>
             </div>
-
             {% empty %}
             <p class="text-center">No hay productos destacados disponibles.</p>
             {% endfor %}
         </div>
     </section>
-
-
-    </section>
-
-
+    <!-- End Productos Destacados -->
+ </body>
     <!-- End Featured Product -->
     {% endblock  %}

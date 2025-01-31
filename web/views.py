@@ -351,16 +351,12 @@ def agregar_al_carrito(request, slug):
 
 def ver_carrito(request):
     carrito = request.session.get('carrito', {})
-    print(carrito)  # Ver el contenido del carrito
-
     total = 0
     for producto_slug, producto_data in carrito.items():
         # Asegúrate de que 'tallas' está en el diccionario
         if 'tallas' in producto_data:
             for talla_id, talla_data in producto_data['tallas'].items():
                 total += float(talla_data['precio']) * talla_data['cantidad']
-        else:
-            print(f"El producto {producto_slug} no tiene tallas.")
     
     return render(request, 'carrito/carrito.html', {'carrito': carrito, 'total': total})
    
@@ -934,6 +930,8 @@ def logout_view(request):
     logout(request)  # Cierra la sesión
     return redirect('index')  # Redirige a la página de inicio o a la página que desees
 
+
+
 # Vista personalizada para solicitar el restablecimiento de contraseña
 def custom_password_reset_request(request):
     if request.method == "POST":
@@ -992,8 +990,114 @@ class CustomPasswordResetDoneView(PasswordResetDoneView):
 
 class CustomPasswordResetCompleteView(PasswordResetCompleteView):
     template_name = 'registration/password_reset_complete.html'
+
+
+# Vista de inicio que muestra los flanes públicos
     
     
 @login_required
 def profile_view(request):
     return render(request, 'usuario/profile.html')
+
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+@csrf_exempt  # Solo para pruebas, no usar en producción
+def test_email(request):
+    try:
+        # Email básico sin caracteres especiales
+        email_message = EmailMessage(
+            subject='Password Reset',
+            body='Test message without special characters',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=['correo_destino@ejemplo.com']  # Reemplaza con el correo de prueba
+        )
+        email_message.send(fail_silently=False)
+        return HttpResponse("Email enviado exitosamente!")
+    
+    except Exception as e:
+        error_message = f"Error al enviar email: {str(e)}"
+        print(error_message)  # Para ver el error en la consola
+        return HttpResponse(error_message)
+
+
+
+
+
+# Segundo test con caracteres especiales
+@csrf_exempt  # Solo para pruebas, no usar en producción
+def test_email_spanish(request):
+    try:
+        # Email con caracteres especiales
+        email_message = EmailMessage(
+            subject='Prueba de contraseña',
+            body='Este es un mensaje de prueba con caracteres especiales: áéíóú ñ',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=['correo_destino@ejemplo.com']  # Reemplaza con el correo de prueba
+        )
+        email_message.send(fail_silently=False)
+        return HttpResponse("Email con caracteres especiales enviado exitosamente!")
+    
+    except Exception as e:
+        error_message = f"Error al enviar email: {str(e)}"
+        print(error_message)  # Para ver el error en la consola
+        return HttpResponse(error_message)
+    
+    
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from django.core.mail import get_connection
+
+
+@csrf_exempt
+
+@csrf_exempt
+def test_email_mime(request):
+    try:
+        # Crear mensaje multipart
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = 'Prueba de Email'
+        msg['From'] = settings.EMAIL_HOST_USER  # Usa EMAIL_HOST_USER directamente
+        recipient_email = 'correo_destino@ejemplo.com'  # Reemplaza con tu correo de prueba
+        msg['To'] = recipient_email
+
+        # Crear las partes del mensaje
+        text = "Este es un mensaje de prueba con caracteres especiales: áéíóú ñ"
+        html = """
+        <html>
+          <head></head>
+          <body>
+            <p>Este es un mensaje de prueba con caracteres especiales: áéíóú ñ</p>
+          </body>
+        </html>
+        """
+
+        # Crear ambas partes con codificación UTF-8 explícita
+        part1 = MIMEText(text.encode('utf-8'), 'plain', 'utf-8')
+        part2 = MIMEText(html.encode('utf-8'), 'html', 'utf-8')
+
+        # Agregar partes al mensaje
+        msg.attach(part1)
+        msg.attach(part2)
+
+        # Crear EmailMessage con el mensaje MIME
+        email = EmailMessage(
+            subject='',
+            body='',
+            from_email=settings.EMAIL_HOST_USER,  # Usa EMAIL_HOST_USER directamente
+            to=[recipient_email],
+            connection=get_connection(),
+        )
+        
+        # Establecer el mensaje MIME
+        email.message = msg
+        
+        # Enviar el email
+        email.send()
+        
+        return HttpResponse("Email enviado exitosamente!")
+        
+    except Exception as e:
+        error_message = f"Error detallado al enviar email: {str(e)}"
+        import traceback
+        traceback.print_exc()
+        return HttpResponse(error_message)

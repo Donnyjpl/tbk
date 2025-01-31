@@ -1,0 +1,85 @@
+/* Aseguramos que todas las tarjetas tengan el mismo tamaño */
+.messages {
+    margin: 20px 0;
+  }
+  
+  .message {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+  }
+  
+  .success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+  
+  .error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+
+
+    /* Estilo para la imagen principal */
+    #product-detail {
+        max-height: 500px; /* Limitar la altura máxima de la imagen principal */
+        object-fit: contain; /* Asegura que la imagen se ajuste dentro de su contenedor */
+    }
+
+    /* Estilo para las imágenes del carrusel */
+    .carousel-item img {
+        max-width: 100%; /* Asegura que las imágenes en el carrusel no se salgan */
+        object-fit: cover; /* Ajusta las imágenes manteniendo la proporción */
+    }
+
+/* Personaliza el botón WhatsApp */
+/* Estilo para el botón de WhatsApp */
+.whatsapp-fijo {
+  position: fixed;
+  bottom: 20px;   /* Ajusta la distancia desde el borde inferior */
+  right: 20px;    /* Ajusta la distancia desde el borde derecho */
+  z-index: 100;   /* Asegura que el botón esté sobre otros elementos */
+  text-decoration: none;
+}
+
+.whatsapp-fijo img {
+  border-radius: 50%; 
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.whatsapp-fijo div {
+  text-align: center;
+  color: hsla(178, 81%, 15%, 0.685); 
+  font-weight: bold; 
+  font-size: 14px; 
+  margin-bottom: 5px;
+}
+
+/* Estilos solo para las imágenes dentro de las tarjetas de producto */
+.product-card-img {
+  width: 100%; /* Ocupa todo el ancho disponible */
+  height: 200px; /* Altura fija para mantener uniformidad */
+  object-fit: cover; /* Asegura que la imagen se recorte para llenar el espacio */
+}
+/* Estilos solo s tarjetas de producto destacados en el index */
+.featured-product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease-in-out;
+}
+
+.featured-product-card .card-body {
+  padding: 1.5rem;
+}
+
+.featured-product-card .product-card-img {
+  transition: all 0.3s ease;
+}
+
+.featured-product-card:hover .product-card-img {
+  transform: scale(1.05);
+}
+
+ 

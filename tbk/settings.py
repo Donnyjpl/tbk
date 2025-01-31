@@ -28,7 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['tbkdesire.cl','www.tbkdesire.cl','127.0.0.1']
 LOGIN_URL = '/web/login/'  # Asegúrate de que esta URL esté definida
 LOGIN_REDIRECT_URL = '/web/'  # Página a la que se redirige después del login
 LOGOUT_REDIRECT_URL = '/web/'  # Página a la que se redirige después del logout
@@ -47,6 +47,10 @@ INSTALLED_APPS = [
 
 # Para el manejo de archivos de medios
 STATIC_URL = '/static/'
+
+# Para producción, debes configurar dónde almacenar los archivos estáticos
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -133,10 +137,8 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = "static/"
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

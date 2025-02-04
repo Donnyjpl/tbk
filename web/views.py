@@ -338,7 +338,11 @@ def procesar_pago_success(request):
     direccion = profile.direccion
 
     # Correo al usuario
+<<<<<<< Updated upstream
     email_cliente = request.user.email # Correo de prueba
+=======
+    email_cliente =request.user.email 
+>>>>>>> Stashed changes
     subject = 'Confirmación de tu compra en Nuestro Sitio'
     message = render_to_string('correos/compra_confirmacion.html', {
         'ventas': ventas,
@@ -355,7 +359,7 @@ def procesar_pago_success(request):
     )
 
     # Correo al administrador
-    admin_email = 'donnyjpl@gmail.com'
+    admin_email = 'theblondiekatty@gmail.com'
     admin_subject = 'Nuevo Pedido Realizado'
 
     try:
@@ -748,8 +752,12 @@ def agregar_tallas(request, slug):
     return render(request, 'productos/agregar_tallas.html', {'form': form, 'producto': producto, 'tallas_existentes': tallas_existentes})
 
 
+<<<<<<< Updated upstream
 def lista_productos(request):
     form = ProductoFilterForm(request.GET)
+=======
+
+>>>>>>> Stashed changes
     
     # Obtener todos los productos
     productos = Producto.objects.all()
@@ -778,6 +786,35 @@ def lista_productos(request):
 
 def about(request):
     return render(request, 'about.html')
+
+
+def lista_productos(request):
+    form = ProductoFilterForm(request.GET)
+    
+    # Obtener todos los productos
+    productos = Producto.objects.all()
+
+    # Aplicar filtros según los datos del formulario
+    slug_buscar = request.GET.get('slug', '')
+    if slug_buscar:
+        productos = productos.filter(slug__icontains=slug_buscar)
+
+    # Ordenar productos por nombre
+    productos = productos.order_by('nombre')
+
+    # Optimización: Usamos prefetch_related para obtener imágenes y tallas de una sola consulta
+    productos = productos.prefetch_related('imagenes', 'tallas')
+
+    # Paginación
+    paginator = Paginator(productos, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Pasar productos y formulario al contexto
+    return render(request, 'producto_list.html', {
+        'page_obj': page_obj,  # Usamos 'page_obj' para el template
+        'form': form,
+    })
 
 
 class ProductoListView(ListView):
@@ -841,7 +878,11 @@ def contacto(request):
             # Crear el correo en formato texto plano y HTML para el administrador
             subject = f'Nuevo mensaje de contacto de {nombre}'
             from_email = correo
+<<<<<<< Updated upstream
             to_email = ['info@tbkdesire.cl']  # Reemplaza con el correo del administrador
+=======
+            to_email = ['theblondiekatty@gmail.com']  # Reemplaza con el correo del administrador
+>>>>>>> Stashed changes
 
             # Texto plano para el correo
             text_content = f'Nuevo mensaje de contacto de {nombre}\n\nCorreo: {correo}\n\nMensaje:\n{mensaje}'
@@ -1082,3 +1123,109 @@ class CustomPasswordResetCompleteView(PasswordResetCompleteView):
 @login_required
 def profile_view(request):
     return render(request, 'usuario/profile.html')
+<<<<<<< Updated upstream
+=======
+
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+@csrf_exempt  # Solo para pruebas, no usar en producción
+def test_email(request):
+    try:
+        # Email básico sin caracteres especiales
+        email_message = EmailMessage(
+            subject='Password Reset',
+            body='Test message without special characters',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=['correo_destino@ejemplo.com']  # Reemplaza con el correo de prueba
+        )
+        email_message.send(fail_silently=False)
+        return HttpResponse("Email enviado exitosamente!")
+    
+    except Exception as e:
+        error_message = f"Error al enviar email: {str(e)}"
+        print(error_message)  # Para ver el error en la consola
+        return HttpResponse(error_message)
+
+
+
+
+
+# Segundo test con caracteres especiales
+@csrf_exempt  # Solo para pruebas, no usar en producción
+def test_email_spanish(request):
+    try:
+        # Email con caracteres especiales
+        email_message = EmailMessage(
+            subject='Prueba de contraseña',
+            body='Este es un mensaje de prueba con caracteres especiales: áéíóú ñ',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=['correo_destino@ejemplo.com']  # Reemplaza con el correo de prueba
+        )
+        email_message.send(fail_silently=False)
+        return HttpResponse("Email con caracteres especiales enviado exitosamente!")
+    
+    except Exception as e:
+        error_message = f"Error al enviar email: {str(e)}"
+        print(error_message)  # Para ver el error en la consola
+        return HttpResponse(error_message)
+    
+    
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from django.core.mail import get_connection
+
+
+@csrf_exempt
+
+@csrf_exempt
+def test_email_mime(request):
+    try:
+        # Crear mensaje multipart
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = 'Prueba de Email'
+        msg['From'] = settings.EMAIL_HOST_USER  # Usa EMAIL_HOST_USER directamente
+        recipient_email = 'correo_destino@ejemplo.com'  # Reemplaza con tu correo de prueba
+        msg['To'] = recipient_email
+
+        # Crear las partes del mensaje
+        text = "Este es un mensaje de prueba con caracteres especiales: áéíóú ñ"
+        html = """
+        <html>
+          <head></head>
+          <body>
+            <p>Este es un mensaje de prueba con caracteres especiales: áéíóú ñ</p>
+          </body>
+        </html>
+        """
+
+        # Crear ambas partes con codificación UTF-8 explícita
+        part1 = MIMEText(text.encode('utf-8'), 'plain', 'utf-8')
+        part2 = MIMEText(html.encode('utf-8'), 'html', 'utf-8')
+
+        # Agregar partes al mensaje
+        msg.attach(part1)
+        msg.attach(part2)
+
+        # Crear EmailMessage con el mensaje MIME
+        email = EmailMessage(
+            subject='',
+            body='',
+            from_email=settings.EMAIL_HOST_USER,  # Usa EMAIL_HOST_USER directamente
+            to=[recipient_email],
+            connection=get_connection(),
+        )
+        
+        # Establecer el mensaje MIME
+        email.message = msg
+        
+        # Enviar el email
+        email.send()
+        
+        return HttpResponse("Email enviado exitosamente!")
+        
+    except Exception as e:
+        error_message = f"Error detallado al enviar email: {str(e)}"
+        import traceback
+        traceback.print_exc()
+        return HttpResponse(error_message)
+>>>>>>> Stashed changes

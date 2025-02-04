@@ -16,7 +16,6 @@ import environ
 
 # Inicializar el objeto de entorno
 env = environ.Env()
-
 # Leer el archivo .env
 environ.Env.read_env()
 
@@ -90,7 +89,7 @@ WSGI_APPLICATION = "tbk.wsgi.application"
 SECRET_KEY = env('SECRET_KEY')  # Cargar desde el archivo .env
 
 # Modo debug (es mejor no dejar DEBUG=True en producción)
-DEBUG = False
+DEBUG = True
 
 # Configuración de la base de datos
 DATABASES = {
@@ -100,7 +99,7 @@ DATABASES = {
         'USER': env('DATABASE_USER'),  # Cargar desde .env
         'PASSWORD': env('DATABASE_PASSWORD'),  # Cargar desde .env
         'HOST': env('DATABASE_HOST', default='localhost'),  # Valor predeterminado para el host
-        'PORT': env.int('DATABASE_PORT', default=5432),  # Usar .int() para el puerto
+        'PORT': env.int('DATABASE_PORT'),  # Usar .int() para el puerto
         'OPTIONS': {
             'client_encoding': 'UTF8',
         },
@@ -137,9 +136,6 @@ USE_I18N = True
 USE_TZ = True
 
 
-
-
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
@@ -162,8 +158,8 @@ charset.add_charset('utf-8', charset.SHORTEST, charset.QP, 'utf-8')
 
 # Configuración de correo SMTP
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')  # Valor predeterminado en caso de que no esté en .env
-EMAIL_PORT = env.int('EMAIL_PORT', default=587)  # Usamos .int() para convertirlo a un número
+EMAIL_HOST = env('EMAIL_HOST')  # Valor predeterminado en caso de que no esté en .env
+EMAIL_PORT = env.int('EMAIL_PORT')  # Usamos .int() para convertirlo a un número
 EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)  # .bool() para valores booleanos
 EMAIL_USE_SSL = env.bool('EMAIL_USE_SSL', default=False)  # .bool() para valores booleanos
 

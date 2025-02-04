@@ -11,10 +11,11 @@
                 <a class="navbar-sm-brand text-light text-decoration-none" href="tel:010-020-0340">+56 968-961-483</a>
             </div>
             <div>
-                <a class="text-light" href="https://www.facebook.com/people/theblondiekatty/100036392116838/?mibextid=wwXIfr" target="_blank" rel="sponsored"><i
-                        class="fab fa-facebook-f fa-sm fa-fw me-2"></i></a>
-                <a class="text-light" href="https://www.instagram.com/tbk_desire/?igsh=dmVuOWljbmlpbmZn&utm_source=qr#" target="_blank"><i
-                        class="fab fa-instagram fa-sm fa-fw me-2"></i></a>
+                <a class="text-light"
+                    href="https://www.facebook.com/people/theblondiekatty/100036392116838/?mibextid=wwXIfr"
+                    target="_blank" rel="sponsored"><i class="fab fa-facebook-f fa-sm fa-fw me-2"></i></a>
+                <a class="text-light" href="https://www.instagram.com/tbk_desire/?igsh=dmVuOWljbmlpbmZn&utm_source=qr#"
+                    target="_blank"><i class="fab fa-instagram fa-sm fa-fw me-2"></i></a>
                 <a class="text-light" href="https://www.tiktok.com/@tbkdesire?_t=ZM-8tRskdLfQ85&_r=1" target="_blank"><i
                         class="fab fa-tiktok fa-sm fa-fw"></i></a>
             </div>
@@ -57,7 +58,7 @@
                     </li>
                     <!-- Opciones solo visibles para el superusuario -->
                     {% if user.is_superuser %}
-                   
+
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'crear' %}">Crear Producto</a>
                     </li>
@@ -68,10 +69,16 @@
 
                 </ul>
             </div>
+
             <div class="navbar align-self-center d-flex">
-                <a class="nav-icon d-none d-lg-inline" href="#" data-bs-toggle="modal"
-                    data-bs-target="#templatemo_search">
-                    <i class="fa fa-fw fa-search text-dark mr-2"></i>
+                <!-- Ícono de Favoritos -->
+                <a class="nav-icon position-relative text-decoration-none" href="{% url 'ver_favoritos' %}">
+                    <i class="fa fa-fw fa-heart text-dark mr-1"></i>
+                    <span
+                        class="position-absolute top-0 left-100 translate-middle badge rounded-pill bg-light text-dark">
+                        {{ cantidad_favoritos }}
+                        <!-- Aquí puedes mostrar el número de productos en favoritos -->
+                    </span>
                 </a>
                 <a class="nav-icon position-relative text-decoration-none" href="{% url 'ver_carrito' %}">
                     <i class="fa fa-fw fa-cart-arrow-down text-dark mr-1"></i>
@@ -81,27 +88,27 @@
                         <!-- Mostrar la cantidad total de productos -->
                     </span>
                 </a>
-                 <!-- Menú de Usuario -->
-                 <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown"
-                        aria-expanded="false">
+                <!-- Menú de Usuario -->
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fa fa-fw fa-user text-dark mr-3"></i>
                         {% if user.is_authenticated %}
-                            <span>Bienvenido, {{ user.username }}</span>
+                        <span>Bienvenido, {{ user.username }}</span>
                         {% else %}
-                            <span>Iniciar sesión</span>
+                        <span>Iniciar sesión</span>
                         {% endif %}
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                         {% if user.is_authenticated %}
-                            <li><a class="dropdown-item" href="{% url 'edit_profile' %}">Editar perfil</a></li>
-                            <form action="{% url 'logout' %}" method="post">
-                                {% csrf_token %}
-                                <button type="submit" class="dropdown-item">Cerrar sesión</button>
-                            </form>
+                        <li><a class="dropdown-item" href="{% url 'edit_profile' %}">Editar perfil</a></li>
+                        <form action="{% url 'logout' %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="dropdown-item">Cerrar sesión</button>
+                        </form>
                         {% else %}
-                            <li><a class="dropdown-item" href="{% url 'login' %}">Iniciar sesión</a></li>
-                            <li><a class="dropdown-item" href="{% url 'register' %}">Registrarse</a></li>
+                        <li><a class="dropdown-item" href="{% url 'login' %}">Iniciar sesión</a></li>
+                        <li><a class="dropdown-item" href="{% url 'register' %}">Registrarse</a></li>
                         {% endif %}
                     </ul>
                 </div>

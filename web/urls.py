@@ -8,6 +8,7 @@ from .views import crear_producto, subir_imagenes,agregar_tallas,agregar_al_carr
 
 from .views import profile_view,register, ProfileUpdateView,custom_password_reset_request,CustomPasswordResetConfirmView,CustomPasswordResetDoneView,CustomPasswordResetCompleteView
 from . import views
+from .views import agregar_a_favoritos, ver_favoritos, eliminar_de_favoritos, actualizar_favoritos
 
 from django.contrib.auth import views as auth_views
 urlpatterns = [
@@ -41,6 +42,12 @@ urlpatterns = [
     path('ver_carrito/', ver_carrito, name='ver_carrito'),
     path('eliminar_del_carrito/<slug:slug>/<int:talla_id>/', views.eliminar_del_carrito, name='eliminar_del_carrito'),
     path('actualizar_carrito/<slug:slug>/<int:talla_id>/', views.actualizar_carrito, name='actualizar_carrito'),
+    
+    
+    path('favoritos/', ver_favoritos, name='ver_favoritos'),
+    path('favoritos/agregar/<slug:slug>/', agregar_a_favoritos, name='agregar_a_favoritos'),
+    path('favoritos/eliminar/<slug:slug>/', eliminar_de_favoritos, name='eliminar_de_favoritos'),
+    path('favoritos/actualizar/<slug:slug>/', actualizar_favoritos, name='actualizar_favoritos'),
 
     
     
@@ -55,9 +62,5 @@ urlpatterns = [
     path('password_reset/done/', CustomPasswordResetDoneView.as_view(), name='password_reset_done'),
     path('password_reset_confirm/<uidb64>/<token>/', CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('reset/done/', CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),
-    
-     path('test-email/', views.test_email, name='test_email'),
-    path('test-email-spanish/', views.test_email_spanish, name='test_email_spanish'),
-    path('test-email-mime/', views.test_email_mime, name='test_email_mime'),
 ]# Solo en desarrollo, servir archivos de medios
 

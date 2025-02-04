@@ -136,7 +136,7 @@ class LoginForm(forms.Form):
         label='Nombre de usuario',
         widget=forms.TextInput(attrs={
             'class': 'form-control',  # Clase de Bootstrap
-            'placeholder': 'Ingresa tu nombre de usuario',  # Placeholder
+            'placeholder': 'Ingresa tu correo',  # Placeholder
         })
     )
     password = forms.CharField(

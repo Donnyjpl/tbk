@@ -64,8 +64,68 @@ from django.core.mail import EmailMultiAlternatives
 from django.contrib import messages
 from django.shortcuts import render, redirect
 from .forms import ContactoForm
+import traceback
+def agregar_a_favoritos(request, slug):
+    # Obtener el producto usando el slug
+    producto = get_object_or_404(Producto, slug=slug)
+    
+    # Obtener las imágenes del producto (tomamos la primera imagen disponible)
+    imagen_producto = producto.imagenes.first()  # Si no hay imagen, será None
+    
+    # Obtener los favoritos de la sesión o inicializarlo si no existe
+    favoritos = request.session.get('favoritos', {})
+
+    # Verificar si el producto ya está en favoritos
+    if str(slug) not in favoritos:
+        favoritos[str(slug)] = {
+            'nombre': producto.nombre,
+            'precio': str(producto.precio),
+            'slug': producto.slug,
+            'imagen': imagen_producto.imagen.url if imagen_producto else None,  # Usar la URL de la imagen
+        }
+        # Guardar los favoritos en la sesión
+        request.session['favoritos'] = favoritos
+        messages.success(request, f'{producto.nombre} ha sido agregado a tus favoritos.')
+    else:
+        messages.info(request, f'{producto.nombre} ya está en tus favoritos.')
+
+    return redirect('producto_detalle', slug=slug)  # Redirige a la página del producto
 
 
+def ver_favoritos(request):
+    favoritos = request.session.get('favoritos', {})
+    return render(request, 'favoritos/favoritos.html', {'favoritos': favoritos})
+
+def eliminar_de_favoritos(request, slug):
+    # Obtener los favoritos de la sesión
+    favoritos = request.session.get('favoritos', {})
+
+    # Eliminar el producto de los favoritos
+    if str(slug) in favoritos:
+        del favoritos[str(slug)]
+        request.session['favoritos'] = favoritos
+        messages.success(request, f'Producto {slug} ha sido eliminado de tus favoritos.')
+    else:
+        messages.error(request, 'Producto no encontrado en tus favoritos.')
+
+    return redirect('ver_favoritos')  # Redirige a la vista de favoritos
+def actualizar_favoritos(request, slug):
+    # Obtener los favoritos de la sesión
+    favoritos = request.session.get('favoritos', {})
+
+    # Si el producto está en los favoritos
+    if str(slug) in favoritos:
+        # Aquí puedes actualizar detalles adicionales si lo necesitas
+        # Por ejemplo, puedes agregar un campo de "comentarios" o algo similar
+        favoritos[str(slug)]['comentarios'] = request.POST.get('comentarios', '')
+        request.session['favoritos'] = favoritos
+        messages.success(request, 'Favoritos actualizados correctamente.')
+    else:
+        messages.error(request, 'Producto no encontrado en tus favoritos.')
+
+    return redirect('ver_favoritos')  # Redirige a la vista de favoritos
+
+    
 class producto_detalle(DetailView):
     model = Producto
     template_name = 'producto_detalle.html'
@@ -150,9 +210,44 @@ class IndexView(ListView):
         for producto in context['productos_destacados']:
             producto.imagenes_list = producto.imagenes.all()  # Accede a las imágenes del producto
             producto.tallas_list = producto.tallas.all()  # Accede a las tallas del producto
+            from django.db.models import Avg
+from django.shortcuts import render
+
+class IndexView(ListView):
+    model = Producto
+    template_name = 'index1.html'  # Plantilla para mostrar productos
+    context_object_name = 'productos_destacados'  # Nombre con el que accederemos a los productos en la plantilla
+    paginate_by = 3  # Número de productos por página
+
+    def get_queryset(self):
+        # Filtramos los productos con una valoración promedio alta
+        return Producto.objects.annotate(promedio=Avg('opiniones__valoracion')) \
+                               .filter(promedio__gte=4.5)  # Filtrar solo productos con promedio >= 4.5 estrellas
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        rango_estrellas = range(1, 6)  # Rango de 1 a 5 estrellas
+        context['rango_estrellas'] = rango_estrellas
+
+        # Añadir listas de imágenes y tallas a cada producto
+        for producto in context['productos_destacados']:
+            producto.imagenes_list = producto.imagenes.all()  # Accede a las imágenes del producto
+            producto.tallas_list = producto.tallas.all()  # Accede a las tallas del producto
+        
+        # Obtener el carrito y contar los productos
+        carrito = self.request.session.get('carrito', {})
+        cantidad_carrito = sum(item['cantidad'] for producto in carrito.values() for item in producto.get('tallas', {}).values())
+        
+        # Obtener los favoritos y contar la cantidad de productos
+        favoritos = self.request.session.get('favoritos', {})
+        cantidad_favoritos = len(favoritos)  # Contamos el número de productos en favoritos
+
+        # Añadir las cantidades al contexto
+        context['cantidad_carrito'] = cantidad_carrito
+        context['cantidad_favoritos'] = cantidad_favoritos
+        
 
         return context
-
 
 # Función que verifica si el usuario es un superusuario
 def es_superusuario(user):
@@ -247,7 +342,7 @@ def procesar_pago_success(request):
     direccion = profile.direccion
 
     # Correo al usuario
-    admin_email = 'donnyjpl@gmail.com'  # Correo de prueba
+    email_cliente = request.user.email # Correo de prueba
     subject = 'Confirmación de tu compra en Nuestro Sitio'
     message = render_to_string('correos/compra_confirmacion.html', {
         'ventas': ventas,
@@ -259,7 +354,7 @@ def procesar_pago_success(request):
         subject,
         message,  # Correo en texto plano (opcional)
         settings.DEFAULT_FROM_EMAIL,
-        [admin_email],
+        [email_cliente],
         html_message=message  # Correo en formato HTML
     )
 
@@ -346,8 +441,6 @@ def agregar_al_carrito(request, slug):
     # Agregar un mensaje de éxito
     messages.success(request, f'{producto.nombre} con talla {talla.talla} se ha agregado al carrito con éxito.')
     return redirect('producto_detalle', slug=slug)  # Redirige a la vista del carrito
-
-
 
 def ver_carrito(request):
     carrito = request.session.get('carrito', {})
@@ -457,9 +550,9 @@ def procesar_pago(request):
             }
         ],
         "back_urls": {
-             "success": request.build_absolute_uri('/web/procesar_pago/exito'),  # URL absoluta
-             "failure": request.build_absolute_uri('/web/procesar_pago/failure'),
-             "pending": request.build_absolute_uri('/web/procesar_pago/pending'),
+             "success": request.build_absolute_uri('/procesar_pago/exito'),  # URL absoluta
+             "failure": request.build_absolute_uri('/procesar_pago/failure'),
+             "pending": request.build_absolute_uri('/procesar_pago/pending'),
         },
         "auto_return": "approved",  # La redirección automática cuando el pago es aprobado
     }
@@ -660,34 +753,34 @@ def agregar_tallas(request, slug):
     return render(request, 'productos/agregar_tallas.html', {'form': form, 'producto': producto, 'tallas_existentes': tallas_existentes})
 
 
-
-
 def lista_productos(request):
-    print("Request GET data:", request.GET)  # Imprimir los datos GET para depurar
-    form = ProductoFilterForm(request.GET)  # Recibimos los datos del formulario a través de GET
-    productos = Producto.objects.all()  # Comienza con todos los productos
-
-    # Filtro por slug si se proporciona
-    slug_buscar = request.GET.get('slug', '')  # Filtro por slug
-    print("Slug to search:", slug_buscar)  # Ver el slug que estamos buscando
-
-    if slug_buscar:
-        productos = productos.filter(slug__icontains=slug_buscar)  # Filtramos por el slug
-
-    # Paginar productos
-    paginator = Paginator(productos, 10)  # 9 productos por página
-    page_number = request.GET.get('page')  # Número de página
-    productos_paginados = paginator.get_page(page_number)
-
-    # Añadir listas de imágenes y tallas a cada producto
-    for producto in productos_paginados:
-        producto.imagenes_list = producto.imagenes.all()  # Accede a las imágenes del producto
-        producto.tallas_list = producto.tallas.all()  # Accede a las tallas del producto
-
-    print("Productos paginados:", productos_paginados)  # Verificar si hay productos paginados
-
-    return render(request, 'producto_list.html', {'productos': productos_paginados, 'form': form})
+    form = ProductoFilterForm(request.GET)
     
+    # Obtener todos los productos
+    productos = Producto.objects.all()
+
+    # Aplicar filtros según los datos del formulario
+    slug_buscar = request.GET.get('slug', '')
+    if slug_buscar:
+        productos = productos.filter(slug__icontains=slug_buscar)
+
+    # Ordenar productos por nombre
+    productos = productos.order_by('nombre')
+
+    # Optimización: Usamos prefetch_related para obtener imágenes y tallas de una sola consulta
+    productos = productos.prefetch_related('imagenes', 'tallas')
+
+    # Paginación
+    paginator = Paginator(productos, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Pasar productos y formulario al contexto
+    return render(request, 'producto_list.html', {
+        'page_obj': page_obj,  # Usamos 'page_obj' para el template
+        'form': form,
+    })
+
 
 def about(request):
     return render(request, 'about.html')
@@ -701,6 +794,8 @@ class ProductoListView(ListView):
 
     def get_queryset(self):
         queryset = Producto.objects.filter(activo=True)  # Filtramos solo productos activos
+        queryset = queryset.order_by('nombre')  # Asegúrate de ordenar
+
 
         # Aplicar filtros según el formulario
         form = ProductoFilterForm(self.request.GET)
@@ -718,7 +813,7 @@ class ProductoListView(ListView):
                 queryset = queryset.filter(precio__lte=max_precio)
 
         # Ordenar según el parámetro "order_by" en la URL
-        order_by = self.request.GET.get('order_by')
+        order_by = self.request.GET.get('order_by', 'nombre')  # Establece un valor predeterminado
         if order_by == 'name':
             queryset = queryset.order_by('nombre')
         elif order_by == 'item':
@@ -737,10 +832,6 @@ class ProductoListView(ListView):
         context['rango_estrellas'] = range(1, 6)
         return context
 
-
-
-    
-
 def contacto(request):
     if request.method == 'POST':
         formm = ContactoForm(request.POST)
@@ -756,7 +847,7 @@ def contacto(request):
             # Crear el correo en formato texto plano y HTML para el administrador
             subject = f'Nuevo mensaje de contacto de {nombre}'
             from_email = correo
-            to_email = ['donnyjpl@gmail.com']  # Reemplaza con el correo del administrador
+            to_email = ['info@tbkdesire.cl']  # Reemplaza con el correo del administrador
 
             # Texto plano para el correo
             text_content = f'Nuevo mensaje de contacto de {nombre}\n\nCorreo: {correo}\n\nMensaje:\n{mensaje}'
@@ -931,7 +1022,6 @@ def logout_view(request):
     return redirect('index')  # Redirige a la página de inicio o a la página que desees
 
 
-
 # Vista personalizada para solicitar el restablecimiento de contraseña
 def custom_password_reset_request(request):
     if request.method == "POST":
@@ -998,106 +1088,3 @@ class CustomPasswordResetCompleteView(PasswordResetCompleteView):
 @login_required
 def profile_view(request):
     return render(request, 'usuario/profile.html')
-
-from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-@csrf_exempt  # Solo para pruebas, no usar en producción
-def test_email(request):
-    try:
-        # Email básico sin caracteres especiales
-        email_message = EmailMessage(
-            subject='Password Reset',
-            body='Test message without special characters',
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to=['correo_destino@ejemplo.com']  # Reemplaza con el correo de prueba
-        )
-        email_message.send(fail_silently=False)
-        return HttpResponse("Email enviado exitosamente!")
-    
-    except Exception as e:
-        error_message = f"Error al enviar email: {str(e)}"
-        print(error_message)  # Para ver el error en la consola
-        return HttpResponse(error_message)
-
-
-
-
-
-# Segundo test con caracteres especiales
-@csrf_exempt  # Solo para pruebas, no usar en producción
-def test_email_spanish(request):
-    try:
-        # Email con caracteres especiales
-        email_message = EmailMessage(
-            subject='Prueba de contraseña',
-            body='Este es un mensaje de prueba con caracteres especiales: áéíóú ñ',
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to=['correo_destino@ejemplo.com']  # Reemplaza con el correo de prueba
-        )
-        email_message.send(fail_silently=False)
-        return HttpResponse("Email con caracteres especiales enviado exitosamente!")
-    
-    except Exception as e:
-        error_message = f"Error al enviar email: {str(e)}"
-        print(error_message)  # Para ver el error en la consola
-        return HttpResponse(error_message)
-    
-    
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from django.core.mail import get_connection
-
-
-@csrf_exempt
-
-@csrf_exempt
-def test_email_mime(request):
-    try:
-        # Crear mensaje multipart
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = 'Prueba de Email'
-        msg['From'] = settings.EMAIL_HOST_USER  # Usa EMAIL_HOST_USER directamente
-        recipient_email = 'correo_destino@ejemplo.com'  # Reemplaza con tu correo de prueba
-        msg['To'] = recipient_email
-
-        # Crear las partes del mensaje
-        text = "Este es un mensaje de prueba con caracteres especiales: áéíóú ñ"
-        html = """
-        <html>
-          <head></head>
-          <body>
-            <p>Este es un mensaje de prueba con caracteres especiales: áéíóú ñ</p>
-          </body>
-        </html>
-        """
-
-        # Crear ambas partes con codificación UTF-8 explícita
-        part1 = MIMEText(text.encode('utf-8'), 'plain', 'utf-8')
-        part2 = MIMEText(html.encode('utf-8'), 'html', 'utf-8')
-
-        # Agregar partes al mensaje
-        msg.attach(part1)
-        msg.attach(part2)
-
-        # Crear EmailMessage con el mensaje MIME
-        email = EmailMessage(
-            subject='',
-            body='',
-            from_email=settings.EMAIL_HOST_USER,  # Usa EMAIL_HOST_USER directamente
-            to=[recipient_email],
-            connection=get_connection(),
-        )
-        
-        # Establecer el mensaje MIME
-        email.message = msg
-        
-        # Enviar el email
-        email.send()
-        
-        return HttpResponse("Email enviado exitosamente!")
-        
-    except Exception as e:
-        error_message = f"Error detallado al enviar email: {str(e)}"
-        import traceback
-        traceback.print_exc()
-        return HttpResponse(error_message)

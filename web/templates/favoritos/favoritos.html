@@ -1,0 +1,42 @@
+{% extends 'baset.html' %}
+{% load custom_filters %}
+
+{% block content %}
+    <!-- Mostrar mensajes de éxito o error -->
+    {% if messages %}
+    <div class="alert alert-success container">
+        {% for message in messages %}
+            <p>{{ message|title }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="container py-5">
+        <h2>Mis Favoritos</h2>
+        
+        <!-- Mostrar los productos favoritos -->
+        {% if favoritos %}
+        <div class="row">
+            {% for favorito in favoritos.values %}
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <!-- Mostrar imagen del producto favorito -->
+                    <img src="{{ favorito.imagen }}" alt="{{ favorito.nombre }}" class="card-img-top" style="height: 200px; object-fit: cover;">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ favorito.nombre }}</h5>
+                        <p class="card-text">Precio: ${{ favorito.precio }}</p>
+
+                        <!-- Botón Eliminar de Favoritos -->
+                        <a href="{% url 'eliminar_de_favoritos' favorito.slug %}" class="btn btn-danger btn-sm">Eliminar de Favoritos</a>
+                        <!-- Botón Ver Detalle -->
+                        <a href="{% url 'producto_detalle' slug=favorito.slug %}" class="btn btn-success btn-sm">Ver Detalle</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p>No tienes productos en favoritos.</p>
+        {% endif %}
+    </div>
+{% endblock %}

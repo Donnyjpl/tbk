@@ -65,6 +65,25 @@ from django.contrib import messages
 from django.shortcuts import render, redirect
 from .forms import ContactoForm
 import traceback
+
+@login_required
+def mis_compras(request):
+    if request.user.is_staff:
+        ventas = Venta.objects.all().order_by('-fecha')
+    else:
+        ventas = Venta.objects.filter(user=request.user).order_by('-fecha')
+        
+    #calculo de venta total
+    for venta in ventas:
+        venta.precio_total=venta.producto.precio * venta.cantidad    
+
+    # Paginación
+    paginator = Paginator(ventas, 10)  # 10 ventas por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'compras/mis_compras.html', {'page_obj': page_obj})
+
 def agregar_a_favoritos(request, slug):
     # Obtener el producto usando el slug
     producto = get_object_or_404(Producto, slug=slug)

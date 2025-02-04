@@ -12,7 +12,7 @@
     {% endif %}
 
     <div class="container py-5">
-        <h2>Mis Favoritos</h2>
+        <h2 class="text-center m-5">Mis Favoritos:</h2>
         
         <!-- Mostrar los productos favoritos -->
         {% if favoritos %}
@@ -23,7 +23,7 @@
                     <!-- Mostrar imagen del producto favorito -->
                     <img src="{{ favorito.imagen }}" alt="{{ favorito.nombre }}" class="card-img-top" style="height: 200px; object-fit: cover;">
                     <div class="card-body">
-                        <h5 class="card-title">{{ favorito.nombre }}</h5>
+                        <h5 class="card-title">{{ favorito.nombre|title }}</h5>
                         <p class="card-text">Precio: ${{ favorito.precio }}</p>
 
                         <!-- Botón Eliminar de Favoritos -->

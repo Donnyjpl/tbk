@@ -3,6 +3,16 @@
 {% block title %}Lista de Productos - TBK{% endblock %}
 
 {% block content %}
+{% if messages %}
+<div class="alert-container">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
 <!-- Filtro de búsqueda por Slug -->
 <div class="container mt-4">
     <h1 class="mb-4">Lista de Productos</h1>

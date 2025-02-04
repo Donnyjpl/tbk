@@ -128,6 +128,7 @@ def eliminar_de_favoritos(request, slug):
         messages.error(request, 'Producto no encontrado en tus favoritos.')
 
     return redirect('ver_favoritos')  # Redirige a la vista de favoritos
+
 def actualizar_favoritos(request, slug):
     # Obtener los favoritos de la sesión
     favoritos = request.session.get('favoritos', {})
@@ -208,30 +209,7 @@ class producto_detalle(DetailView):
                 return redirect('producto_detalle', slug=producto.slug)
 
         return redirect('producto_detalle', slug=producto.slug)
-
-class IndexView(ListView):
-    model = Producto
-    template_name = 'index1.html'  # Plantilla para mostrar productos
-    context_object_name = 'productos_destacados'  # Nombre con el que accederemos a los productos en la plantilla
-    paginate_by = 3  # Número de productos por página
-
-    def get_queryset(self):
-        # Filtramos los productos con una valoración promedio alta
-        return Producto.objects.annotate(promedio=Avg('opiniones__valoracion')) \
-                               .filter(promedio__gte=4.5)  # Filtrar solo productos con promedio >= 4.5 estrellas
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        rango_estrellas = range(1, 6)  # Rango de 1 a 5 estrellas
-        context['rango_estrellas'] = rango_estrellas
-
-        # Añadir listas de imágenes y tallas a cada producto
-        for producto in context['productos_destacados']:
-            producto.imagenes_list = producto.imagenes.all()  # Accede a las imágenes del producto
-            producto.tallas_list = producto.tallas.all()  # Accede a las tallas del producto
-            from django.db.models import Avg
-from django.shortcuts import render
-
+    
 class IndexView(ListView):
     model = Producto
     template_name = 'index1.html'  # Plantilla para mostrar productos
@@ -296,7 +274,6 @@ def dejar_opinion(request, slug):
         'producto': producto
     })
     
-
 
 @login_required
 def procesar_pago_success(request):
@@ -412,7 +389,6 @@ def procesar_pago_success(request):
         'ventas': ventas,
         'total': total,
     })
-
 
 def agregar_al_carrito(request, slug):
     # Obtener el producto usando el slug
@@ -799,7 +775,6 @@ def lista_productos(request):
         'page_obj': page_obj,  # Usamos 'page_obj' para el template
         'form': form,
     })
-
 
 def about(request):
     return render(request, 'about.html')

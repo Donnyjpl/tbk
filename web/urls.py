@@ -41,12 +41,7 @@ urlpatterns = [
     path('agregar_al_carrito/<slug:slug>/', agregar_al_carrito, name='agregar_al_carrito'),
     path('ver_carrito/', ver_carrito, name='ver_carrito'),
     path('eliminar_del_carrito/<slug:slug>/<int:talla_id>/', views.eliminar_del_carrito, name='eliminar_del_carrito'),
-<<<<<<< Updated upstream
     path('actualizar_carrito/<slug:slug>/<int:talla_id>/', views.actualizar_carrito, name='actualizar_carrito'),
-    
-=======
-    path('actualizar_carrito/<slug:slug>/<int:talla_id>/', views.actualizar_carrito, name='actualizar_carrito'),  
->>>>>>> Stashed changes
     
     path('favoritos/', ver_favoritos, name='ver_favoritos'),
     path('favoritos/agregar/<slug:slug>/', agregar_a_favoritos, name='agregar_a_favoritos'),

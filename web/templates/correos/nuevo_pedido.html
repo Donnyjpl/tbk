@@ -1,5 +1,6 @@
 
-{% load custom_filters %}<!DOCTYPE html>
+{% load custom_filters %}
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -72,7 +73,7 @@
                         <td>{{ venta.producto.nombre }}{% if venta.talla %} - Talla: {{ venta.talla.talla }}{% endif %}</td>
                         <td>{{ venta.cantidad }}</td>
                         <td>${{ venta.precio|formatear_precio }}</td>
-                        <td>${{ venta.precio_total|formatear_precio }}</td>
+                        <td>${{ venta.precio_total|formatear_precio}}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

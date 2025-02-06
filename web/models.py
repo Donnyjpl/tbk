@@ -69,26 +69,42 @@ class OpinionCliente(models.Model):
         def __str__(self):
             return f'Opinión de {self.nombre_cliente} sobre {self.producto.name}'  # Acceso al nombre del producto usando self.producto.name
 
-class Factura(models.Model):
-    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
-    cantidad = models.PositiveIntegerField()
-    fecha = models.DateTimeField(auto_now_add=True)
-    
-    def procesar_factura(self):
-        self.producto.actualizar_stock(self.cantidad)
-
-    def __str__(self):
-        return f"Factura {self.id} - {self.producto.nombre}"
-
 class Venta(models.Model):
-    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
-    talla = models.ForeignKey(ProductoTalla, null=True, blank=True, on_delete=models.SET_NULL)  # Agregar esta relación
-    cantidad = models.PositiveIntegerField()
-    fecha = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)  # Relacionamos la venta con un usuario
-    
+    fecha = models.DateTimeField(auto_now_add=True)  # Fecha de la venta
+    total = models.DecimalField(max_digits=10, decimal_places=0, default=0)  # Total de la venta, calculado automáticamente
+
+    def calcular_total(self):
+        """Método para calcular el total de la venta sumando los subtotales de las líneas de venta"""
+        self.total = sum(linea.subtotal() for linea in self.lineas.all())
+        self.save()
+
     def __str__(self):
-        return f"Venta {self.id} - {self.producto.nombre} - Usuario: {self.user.username}"
+        return f"Venta {self.id} - Usuario: {self.user.username}"
+    
+    def save(self, *args, **kwargs):
+        """El número de control es el ID de la venta"""
+        super().save(*args, **kwargs)  # Guardamos primero para generar el ID
+    
+    
+class LineaVenta(models.Model):
+    venta = models.ForeignKey('Venta', on_delete=models.CASCADE, related_name='lineas')  # Relaciona con la venta principal
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)  # El producto vendido
+    talla = models.ForeignKey(ProductoTalla, null=True, blank=True, on_delete=models.SET_NULL)  # La talla del producto, si aplica
+    cantidad = models.PositiveIntegerField()  # Cantidad de este producto en la venta
+    precio_unitario = models.DecimalField(max_digits=10, decimal_places=0)  # Precio por unidad al momento de la venta
+
+    def __str__(self):
+        return f"{self.producto.nombre} - {self.cantidad} unidades"
+
+    def subtotal(self):
+        """Calcula el subtotal de esta línea de venta (cantidad * precio_unitario)"""
+        return round(self.cantidad * self.precio_unitario)
+    @property
+    def total_formateado(self):
+        """Devuelve el total formateado"""
+        return f"{self.subtotal()}"  # Si deseas un formato diferente, cámbialo aquí
+
     
 class Contacto(models.Model):
     contact_form_uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)

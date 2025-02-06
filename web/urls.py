@@ -8,7 +8,7 @@ from .views import crear_producto, subir_imagenes,agregar_tallas,agregar_al_carr
 
 from .views import profile_view,register, ProfileUpdateView,custom_password_reset_request,CustomPasswordResetConfirmView,CustomPasswordResetDoneView,CustomPasswordResetCompleteView
 from . import views
-from .views import agregar_a_favoritos, ver_favoritos, eliminar_de_favoritos, actualizar_favoritos,mis_compras
+from .views import agregar_a_favoritos, ver_favoritos, eliminar_de_favoritos, actualizar_favoritos,MisComprasView
 
 from django.contrib.auth import views as auth_views
 urlpatterns = [
@@ -49,7 +49,7 @@ urlpatterns = [
     path('favoritos/eliminar/<slug:slug>/', eliminar_de_favoritos, name='eliminar_de_favoritos'),
     path('favoritos/actualizar/<slug:slug>/', actualizar_favoritos, name='actualizar_favoritos'),
 
-    path('compras/', mis_compras, name='mis_compras'),
+    path('compras/',MisComprasView.as_view() , name='mis_compras'),
     
     path('editar-perfil/', ProfileUpdateView.as_view(), name='edit_profile'),
     #path('registro_exitoso/', registro_exitoso, name='registro_exitoso'),

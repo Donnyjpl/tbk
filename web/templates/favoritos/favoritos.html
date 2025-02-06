@@ -19,12 +19,12 @@
         <div class="row row-cols-1 row-cols-md-3 g-4">
             {% for favorito in favoritos.values %}
             <div class="col">
-                <div class="card shadow-lg border-light h-100 favorite-card" style="transition: transform 0.3s ease;">
+                <div class="card shadow-lg border-light h-100" style="transition: transform 0.3s ease;">
                     <!-- Mostrar imagen del producto favorito -->
                     <img src="{{ favorito.imagen }}" alt="{{ favorito.nombre }}" class="card-img-top" style="height: 250px; object-fit: cover; border-bottom: 2px solid #ddd;">
                     <div class="card-body">
                         <h5 class="card-title text-center" style="font-size: 1.3rem; font-weight: 700; color: #333; transition: color 0.3s ease;">{{ favorito.nombre|title }}</h5>
-                        <p class="card-text text-center" style="font-size: 1.1rem; color: #007bff; font-weight: bold;">Precio: ${{ favorito.precio }}</p>
+                        <p class="card-text text-center" style="font-size: 1.1rem; color: #007bff; font-weight: bold;">Precio: ${{ favorito.precio|formatear_precio }}</p>
 
                         <!-- Botones con iconos -->
                         <div class="d-flex justify-content-between mt-4">
@@ -46,21 +46,23 @@
     </div>
 
     <style>
-        /* Estilos específicos solo para las tarjetas de favoritos */
-        .favorite-card:hover {
+        /* Efecto Hover para las tarjetas */
+        .card:hover {
             transform: translateY(-10px);
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         }
 
-        .favorite-card .card-title:hover {
+        /* Efecto Hover para el título */
+        .card-title:hover {
             color: #ff5722;
         }
 
-        .favorite-card .btn {
+        /* Transición para botones */
+        .btn {
             transition: background-color 0.3s ease, transform 0.3s ease;
         }
 
-        .favorite-card .btn:hover {
+        .btn:hover {
             transform: scale(1.05);
             background-color: #ff5722;
         }

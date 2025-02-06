@@ -3,17 +3,40 @@
 
 {% block content %}
 <div class="container py-5">
-    <h1>¡Gracias por tu compra, {{ usuario.username }}!</h1>
-    <p>Tu pago ha sido exitoso. A continuación, te presentamos un resumen de tu compra:</p>
-    <ul>
-        {% for venta in ventas %}
-            <li>{{ venta.producto.nombre|title }} (Talla: {{ venta.talla }}) x {{ venta.cantidad }} - ${{ venta.precio|formatear_precio }} x {{ venta.cantidad }} = ${{ venta.precio|multiply:venta.cantidad|floatformat:0 }}</li>
-        {% endfor %}
-    </ul>
-    <p><strong>Total: ${{ total|formatear_precio}}</strong></p>
-    <p>Nos pondremos en contacto contigo en breve para confirmar los detalles de tu pedido y el envío.</p>
-    <p>También te enviaremos un comprobante de compra a tu correo electrónico una vez que se haya procesado tu pedido.</p>
+    <div class="text-center mb-5">
+        <h1 class="display-4 text-success">¡Gracias por tu compra, {{ usuario.username }}!</h1>
+        <p class="lead">Tu pago ha sido exitoso. A continuación, te presentamos un resumen de tu compra:</p>
+    </div>
 
-    <a href="{% url 'shop' %}" class="btn btn-success">Volver a la tienda</a>
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4>Detalles del pedido</h4>
+        </div>
+        <div class="card-body">
+            <ul class="list-group">
+                {% for venta in ventas %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>{{ venta.producto.nombre|title }} (Talla: {{ venta.talla }}) x {{ venta.cantidad }}</span>
+                        <span class="font-weight-bold">${{ venta.precio|multiply:venta.cantidad|formatear_precio }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="text-center mb-4">
+        <h3 class="text-dark">Total: <strong>${{ total|formatear_precio }}</strong></h3>
+    </div>
+
+    <div class="alert alert-info text-center" role="alert">
+        <p>Nos pondremos en contacto contigo en breve para confirmar los detalles de tu pedido y el envío.</p>
+        <p>También te enviaremos un comprobante de compra a tu correo electrónico una vez que se haya procesado tu pedido.</p>
+    </div>
+
+    <div class="text-center">
+        <a href="{% url 'index' %}" class="btn btn-lg btn-outline-success m-2">Volver a la Inicio</a>
+        <a href="{% url 'shop' %}" class="btn btn-lg btn-outline-primary m-2">Volver a la tienda</a>
+        <a href="{% url 'mis_compras' %}" class="btn btn-lg btn-outline-info m-2">Ir a mis compras</a>
+    </div>
 </div>
 {% endblock %}

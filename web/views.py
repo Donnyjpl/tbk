@@ -2,7 +2,7 @@
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView,ListView,DetailView
-from .models import Producto, ProductoImagen,ProductoTalla,Categoria,Profile,Venta
+from .models import Producto, ProductoImagen,ProductoTalla,Categoria,Profile,Venta,LineaVenta
 from .forms import ProductoForm, ProductoImagenForm, ProductoFilterForm,ContactoForm,ProductoTallaForm,LoginForm,OpinionClienteForm
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
@@ -64,27 +64,8 @@ from django.core.mail import EmailMultiAlternatives
 from django.contrib import messages
 from django.shortcuts import render, redirect
 from .forms import ContactoForm
-import traceback
-
-@login_required
-def mis_compras(request):
-    if request.user.is_staff:
-        ventas = Venta.objects.all().select_related('producto', 'talla').order_by('-fecha')
-    else:
-        ventas = Venta.objects.filter(user=request.user).select_related('producto', 'talla').order_by('-fecha')
-
-    # Calcular el precio total por cada venta
-    for venta in ventas:
-        # Usar precio del producto directamente
-        venta.precio_total = venta.producto.precio * venta.cantidad
-
-    # Paginación
-    paginator = Paginator(ventas, 10)  # 10 ventas por página
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    return render(request, 'compras/mis_compras.html', {'page_obj': page_obj})
-
+from django.db.models import Prefetch
+from decimal import Decimal
 
 
 @login_required
@@ -94,83 +75,85 @@ def procesar_pago_success(request):
     if not carrito or len(carrito) == 0:
         return redirect('shop')
 
-    total = 0
+    total = Decimal('0.00')  # Usar Decimal para evitar problemas con los decimales
     ventas = []
-    productos_no_disponibles = []  # Lista para guardar los productos eliminados
+
+    # Crear la venta principal y asociarla al usuario
+    venta = Venta.objects.create(user=request.user)  # Crear una venta vacía
 
     # Procesar cada producto en el carrito
     for producto_slug, producto_data in carrito.items():
         try:
             producto = Producto.objects.get(slug=producto_slug)  # Obtener el producto de la DB
         except Producto.DoesNotExist:
-            # Si el producto no existe en la base de datos, lo eliminamos del carrito
-            productos_no_disponibles.append(producto_slug)
-            continue  # Salta al siguiente producto en el carrito
+            continue  # Si el producto no existe, lo saltamos
 
         if 'tallas' in producto_data:
             for talla_id, talla_data in producto_data['tallas'].items():
                 talla = ProductoTalla.objects.get(id=talla_id)
 
-                venta = Venta.objects.create(
+                # Asegurarse de que los precios sean de tipo Decimal
+                precio_unitario = Decimal(str(talla_data['precio']))  # Convertir a Decimal
+                precio_total = Decimal(str(talla_data['precio'])) * Decimal(talla_data['cantidad'])
+
+                # Crear la línea de venta para este producto
+                linea_venta = LineaVenta.objects.create(
+                    venta=venta,
                     producto=producto,
                     cantidad=talla_data['cantidad'],
-                    user=request.user,
-                    talla=talla
+                    talla=talla,
+                    precio_unitario=precio_unitario  # Guardar el precio unitario
                 )
 
-                total += float(talla_data['precio']) * talla_data['cantidad']
+                # Calcular total
+                total += precio_total  # Sumamos a total (asegurado que es Decimal)
 
                 ventas.append({
                     'producto': producto,
                     'cantidad': talla_data['cantidad'],
                     'talla': talla,
-                    'precio': talla_data['precio'],
-                    'precio_total': float(talla_data['precio']) * talla_data['cantidad']
+                    'precio': precio_unitario,
+                    'precio_total': precio_total
                 })
-               
         else:
-            venta = Venta.objects.create(
+            # Asegurarse de que los precios sean de tipo Decimal
+            precio_unitario = Decimal(str(producto_data['precio']))  # Convertir a Decimal
+            precio_total = Decimal(str(producto_data['precio'])) * Decimal(producto_data['cantidad'])
+
+            # Crear la línea de venta para productos sin talla
+            linea_venta = LineaVenta.objects.create(
+                venta=venta,
                 producto=producto,
                 cantidad=producto_data['cantidad'],
-                user=request.user
+                precio_unitario=precio_unitario  # Guardar el precio unitario
             )
-            total += float(producto_data['precio']) * producto_data['cantidad']
+
+            total += precio_total  # Sumamos a total (asegurado que es Decimal)
 
             ventas.append({
                 'producto': producto,
                 'cantidad': producto_data['cantidad'],
-                'precio': producto_data['precio'],
-                'precio_total': float(producto_data['precio']) * producto_data['cantidad']
+                'precio': precio_unitario,
+                'precio_total': precio_total
             })
-            
-    # Eliminar los productos no disponibles del carrito
-    for producto_slug in productos_no_disponibles:
-        if producto_slug in carrito:
-            del carrito[producto_slug]
 
-    # Actualizar el carrito en la sesión
-    request.session['carrito'] = carrito
+    # Actualizar el total en la venta principal
+    venta.total = total
+    venta.calcular_total()  # Llamamos al método para recalcular el total de la venta
+    # Vaciar el carrito
+    request.session['carrito'] = {}
 
     # Mostrar un mensaje de éxito
-    messages.success(request, f'Pago exitoso por un total de ${total}. ¡Gracias por tu compra!')
+    messages.success(request, f'Pago exitoso por un total de ${total:.0f}. ¡Gracias por tu compra!')
 
-    if productos_no_disponibles:
-        # Informar al usuario si algunos productos ya no están disponibles
-        messages.warning(request, f'Algunos productos no están disponibles y han sido eliminados del carrito.')
-
-    try:
-        # Intentar obtener el perfil del usuario
-        profile = request.user.profile
-    except Profile.DoesNotExist:
-        # Si no existe el perfil, redirigir al usuario a una página para completarlo
-        return redirect('register')  # Reemplaza 'completar_perfil' con la URL correspondiente
-
+    # Obtener los datos del perfil
+    profile = request.user.profile
     rut = profile.rut
     telefono = profile.telefono
     direccion = profile.direccion
 
     # Correo al usuario
-    email_cliente = request.user.email  # Correo de prueba
+    email_cliente = request.user.email  # Usamos el correo del cliente
     subject = 'Confirmación de tu compra en Nuestro Sitio'
     message = render_to_string('correos/compra_confirmacion.html', {
         'ventas': ventas,
@@ -180,18 +163,18 @@ def procesar_pago_success(request):
 
     send_mail(
         subject,
-        message,  # Correo en texto plano (opcional)
+        message,
         settings.DEFAULT_FROM_EMAIL,
         [email_cliente],
         html_message=message  # Correo en formato HTML
     )
 
     # Correo al administrador
-    admin_email = 'info@tbkdesire.cl'
+    admin_email = 'info@tbkdesire.cl'  # Correo del administrador
     admin_subject = 'Nuevo Pedido Realizado'
 
     try:
-        # Intentar renderizar el mensaje HTML
+        # Intentar renderizar el mensaje HTML para el administrador
         admin_message = render_to_string('correos/nuevo_pedido.html', {
             'ventas': ventas,
             'total': total,
@@ -201,28 +184,55 @@ def procesar_pago_success(request):
             'direccion': direccion,
         })
     except Exception as e:
-        # En caso de error en el renderizado, asignar un valor predeterminado
         admin_message = f"Error al generar el mensaje del pedido: {str(e)}"
 
-    # Asegurarse de que admin_message tiene un valor válido
     if admin_message:
         send_mail(
             admin_subject,
-            'Detalles del pedido',  # El cuerpo en texto plano (opcional)
+            admin_message,
             settings.DEFAULT_FROM_EMAIL,
             [admin_email],
             html_message=admin_message  # Correo en formato HTML
         )
     else:
-        # Manejar caso donde admin_message no se genera correctamente
         print("No se generó el mensaje HTML para el administrador.")
 
+    # Renderizar la página de confirmación después del pago
+>>>>>>> b6efa7e491d53913b494567bd20bba6db0550eb1
     return render(request, 'carrito/compra_confirmacion.html', {
         'ventas': ventas,
         'total': total,
     })
 
 
+class MisComprasView(LoginRequiredMixin, ListView):
+    model = Venta
+    template_name = 'compras/mis_compras.html'
+    context_object_name = 'ventas'
+    paginate_by = 5
+
+    def get_queryset(self):
+        lineas_venta = LineaVenta.objects.prefetch_related('producto', 'talla')
+        if self.request.user.is_staff:
+            ventas = Venta.objects.prefetch_related(Prefetch('lineas', queryset=lineas_venta)).order_by('-fecha')
+        else:
+            ventas = Venta.objects.filter(user=self.request.user).prefetch_related(Prefetch('lineas', queryset=lineas_venta)).order_by('-fecha')
+        return ventas
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Aquí recuperamos el perfil del usuario (si lo tiene)
+        for venta in context['ventas']:
+            venta.usuario_direccion = venta.user.profile.direccion if hasattr(venta.user, 'profile') else "No disponible"
+            venta.usuario_rut = venta.user.profile.rut if hasattr(venta.user, 'profile') else "No disponible"
+            venta.usuario_telefono = venta.user.profile.telefono if hasattr(venta.user, 'profile') else "No disponible"
+            venta.numero_control = venta.id  # Usamos el ID como número de control
+        
+            venta.total_venta = sum(linea.precio_unitario * linea.cantidad for linea in venta.lineas.all())
+            venta.total_venta_formateado = venta.total_venta
+        return context
+    
 def agregar_a_favoritos(request, slug):
     # Obtener el producto usando el slug
     producto = get_object_or_404(Producto, slug=slug)
@@ -284,7 +294,6 @@ def actualizar_favoritos(request, slug):
 
     return redirect('ver_favoritos')  # Redirige a la vista de favoritos
 
-    
 class producto_detalle(DetailView):
     model = Producto
     template_name = 'producto_detalle.html'
@@ -389,7 +398,6 @@ class IndexView(ListView):
 def es_superusuario(user):
     return user.is_superuser
 
-
 @login_required
 def dejar_opinion(request, slug):
     producto = get_object_or_404(Producto, slug=slug)  # Obtener el producto por su slug
@@ -412,7 +420,7 @@ def dejar_opinion(request, slug):
         'form': form,
         'producto': producto
     })
-    
+
 
 def agregar_al_carrito(request, slug):
     # Obtener el producto usando el slug
@@ -772,9 +780,11 @@ def agregar_tallas(request, slug):
     return render(request, 'productos/agregar_tallas.html', {'form': form, 'producto': producto, 'tallas_existentes': tallas_existentes})
 
 
-
+@user_passes_test(es_superusuario)
 def lista_productos(request):
-    form = ProductoFilterForm(request.GET)    
+    form = ProductoFilterForm(request.GET)
+
+
     # Obtener todos los productos
     productos = Producto.objects.all()
 
@@ -802,35 +812,6 @@ def lista_productos(request):
 
 def about(request):
     return render(request, 'about.html')
-
-
-def lista_productos(request):
-    form = ProductoFilterForm(request.GET)
-    
-    # Obtener todos los productos
-    productos = Producto.objects.all()
-
-    # Aplicar filtros según los datos del formulario
-    slug_buscar = request.GET.get('slug', '')
-    if slug_buscar:
-        productos = productos.filter(slug__icontains=slug_buscar)
-
-    # Ordenar productos por nombre
-    productos = productos.order_by('nombre')
-
-    # Optimización: Usamos prefetch_related para obtener imágenes y tallas de una sola consulta
-    productos = productos.prefetch_related('imagenes', 'tallas')
-
-    # Paginación
-    paginator = Paginator(productos, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    # Pasar productos y formulario al contexto
-    return render(request, 'producto_list.html', {
-        'page_obj': page_obj,  # Usamos 'page_obj' para el template
-        'form': form,
-    })
 
 
 class ProductoListView(ListView):
@@ -940,7 +921,7 @@ def contacto(request):
             user_email = EmailMultiAlternatives(
                 user_subject,
                 user_message, 
-                'no-reply@tusitio.com',  # Dirección del remitente (puedes cambiarla)
+                'info@tbkdesire.cl',  # Dirección del remitente (puedes cambiarla)
                 [correo]
             )
 
@@ -1127,12 +1108,9 @@ class CustomPasswordResetDoneView(PasswordResetDoneView):
 
 class CustomPasswordResetCompleteView(PasswordResetCompleteView):
     template_name = 'registration/password_reset_complete.html'
+
     
 @login_required
 def profile_view(request):
     return render(request, 'usuario/profile.html')
-
-
-
-
 

@@ -60,10 +60,13 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'mis_compras' %}">Ventas</a>
                     </li>
-                    {% else %}
-                    <li class="nav-item">
+                    {% endif %}
+		    {% if user.is_authenticated %}
+                    	{% if not user.is_superuser %}
+		    <li class="nav-item">
                         <a class="nav-link" href="{% url 'mis_compras' %}">Mis Compras</a>
                     </li>
+			{% endif %}
                     {% endif %}
                     <!-- Opciones solo visibles para el superusuario -->
                     {% if user.is_superuser %}

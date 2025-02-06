@@ -4,39 +4,66 @@
 {% block content %}
     <!-- Mostrar mensajes de éxito o error -->
     {% if messages %}
-    <div class="alert alert-success container">
+    <div class="alert alert-success container my-4">
         {% for message in messages %}
             <p>{{ message|title }}</p>
         {% endfor %}
     </div>
     {% endif %}
 
-    <div class="container py-5">
-        <h2 class="text-center m-5">Mis Favoritos:</h2>
+    <div class="container py-5" style="background: linear-gradient(to bottom, #f7f7f7, #e0e0e0);">
+        <h2 class="text-center my-5" style="font-family: 'Arial', sans-serif; color: #333; font-weight: bold;">Mis Favoritos</h2>
         
         <!-- Mostrar los productos favoritos -->
         {% if favoritos %}
-        <div class="row">
+        <div class="row row-cols-1 row-cols-md-3 g-4">
             {% for favorito in favoritos.values %}
-            <div class="col-md-4 mb-4">
-                <div class="card">
+            <div class="col">
+                <div class="card shadow-lg border-light h-100 favorite-card" style="transition: transform 0.3s ease;">
                     <!-- Mostrar imagen del producto favorito -->
-                    <img src="{{ favorito.imagen }}" alt="{{ favorito.nombre }}" class="card-img-top" style="height: 200px; object-fit: cover;">
+                    <img src="{{ favorito.imagen }}" alt="{{ favorito.nombre }}" class="card-img-top" style="height: 250px; object-fit: cover; border-bottom: 2px solid #ddd;">
                     <div class="card-body">
-                        <h5 class="card-title">{{ favorito.nombre|title }}</h5>
-                        <p class="card-text">Precio: ${{ favorito.precio }}</p>
+                        <h5 class="card-title text-center" style="font-size: 1.3rem; font-weight: 700; color: #333; transition: color 0.3s ease;">{{ favorito.nombre|title }}</h5>
+                        <p class="card-text text-center" style="font-size: 1.1rem; color: #007bff; font-weight: bold;">Precio: ${{ favorito.precio }}</p>
 
-                        <!-- Botón Eliminar de Favoritos -->
-                        <a href="{% url 'eliminar_de_favoritos' favorito.slug %}" class="btn btn-danger btn-sm">Eliminar de Favoritos</a>
-                        <!-- Botón Ver Detalle -->
-                        <a href="{% url 'producto_detalle' slug=favorito.slug %}" class="btn btn-success btn-sm">Ver Detalle</a>
+                        <!-- Botones con iconos -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'eliminar_de_favoritos' favorito.slug %}" class="btn btn-danger btn-sm w-45">
+                                <i class="fas fa-trash-alt"></i> Eliminar
+                            </a>
+                            <a href="{% url 'producto_detalle' slug=favorito.slug %}" class="btn btn-success btn-sm w-45">
+                                <i class="fas fa-eye"></i> Ver Detalle
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <p>No tienes productos en favoritos.</p>
+        <p class="text-center" style="font-size: 1.2rem; color: #888;">No tienes productos en favoritos.</p>
         {% endif %}
     </div>
+
+    <style>
+        /* Estilos específicos solo para las tarjetas de favoritos */
+        .favorite-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .favorite-card .card-title:hover {
+            color: #ff5722;
+        }
+
+        .favorite-card .btn {
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        .favorite-card .btn:hover {
+            transform: scale(1.05);
+            background-color: #ff5722;
+        }
+    </style>
+
 {% endblock %}

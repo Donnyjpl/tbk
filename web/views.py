@@ -69,13 +69,14 @@ import traceback
 @login_required
 def mis_compras(request):
     if request.user.is_staff:
-        ventas = Venta.objects.all().order_by('-fecha')
+        ventas = Venta.objects.all().select_related('producto', 'talla').order_by('-fecha')
     else:
-        ventas = Venta.objects.filter(user=request.user).order_by('-fecha')
-        
-    #calculo de venta total
+        ventas = Venta.objects.filter(user=request.user).select_related('producto', 'talla').order_by('-fecha')
+
+    # Calcular el precio total por cada venta
     for venta in ventas:
-        venta.precio_total=venta.producto.precio * venta.cantidad    
+        # Usar precio del producto directamente
+        venta.precio_total = venta.producto.precio * venta.cantidad
 
     # Paginación
     paginator = Paginator(ventas, 10)  # 10 ventas por página
@@ -83,6 +84,144 @@ def mis_compras(request):
     page_obj = paginator.get_page(page_number)
 
     return render(request, 'compras/mis_compras.html', {'page_obj': page_obj})
+
+
+
+@login_required
+def procesar_pago_success(request):
+    carrito = request.session.get('carrito', {})
+
+    if not carrito or len(carrito) == 0:
+        return redirect('shop')
+
+    total = 0
+    ventas = []
+    productos_no_disponibles = []  # Lista para guardar los productos eliminados
+
+    # Procesar cada producto en el carrito
+    for producto_slug, producto_data in carrito.items():
+        try:
+            producto = Producto.objects.get(slug=producto_slug)  # Obtener el producto de la DB
+        except Producto.DoesNotExist:
+            # Si el producto no existe en la base de datos, lo eliminamos del carrito
+            productos_no_disponibles.append(producto_slug)
+            continue  # Salta al siguiente producto en el carrito
+
+        if 'tallas' in producto_data:
+            for talla_id, talla_data in producto_data['tallas'].items():
+                talla = ProductoTalla.objects.get(id=talla_id)
+
+                venta = Venta.objects.create(
+                    producto=producto,
+                    cantidad=talla_data['cantidad'],
+                    user=request.user,
+                    talla=talla
+                )
+
+                total += float(talla_data['precio']) * talla_data['cantidad']
+
+                ventas.append({
+                    'producto': producto,
+                    'cantidad': talla_data['cantidad'],
+                    'talla': talla,
+                    'precio': talla_data['precio'],
+                    'precio_total': float(talla_data['precio']) * talla_data['cantidad']
+                })
+               
+        else:
+            venta = Venta.objects.create(
+                producto=producto,
+                cantidad=producto_data['cantidad'],
+                user=request.user
+            )
+            total += float(producto_data['precio']) * producto_data['cantidad']
+
+            ventas.append({
+                'producto': producto,
+                'cantidad': producto_data['cantidad'],
+                'precio': producto_data['precio'],
+                'precio_total': float(producto_data['precio']) * producto_data['cantidad']
+            })
+            
+    # Eliminar los productos no disponibles del carrito
+    for producto_slug in productos_no_disponibles:
+        if producto_slug in carrito:
+            del carrito[producto_slug]
+
+    # Actualizar el carrito en la sesión
+    request.session['carrito'] = carrito
+
+    # Mostrar un mensaje de éxito
+    messages.success(request, f'Pago exitoso por un total de ${total}. ¡Gracias por tu compra!')
+
+    if productos_no_disponibles:
+        # Informar al usuario si algunos productos ya no están disponibles
+        messages.warning(request, f'Algunos productos no están disponibles y han sido eliminados del carrito.')
+
+    try:
+        # Intentar obtener el perfil del usuario
+        profile = request.user.profile
+    except Profile.DoesNotExist:
+        # Si no existe el perfil, redirigir al usuario a una página para completarlo
+        return redirect('register')  # Reemplaza 'completar_perfil' con la URL correspondiente
+
+    rut = profile.rut
+    telefono = profile.telefono
+    direccion = profile.direccion
+
+    # Correo al usuario
+    email_cliente = request.user.email  # Correo de prueba
+    subject = 'Confirmación de tu compra en Nuestro Sitio'
+    message = render_to_string('correos/compra_confirmacion.html', {
+        'ventas': ventas,
+        'total': total,
+        'usuario': request.user
+    })
+
+    send_mail(
+        subject,
+        message,  # Correo en texto plano (opcional)
+        settings.DEFAULT_FROM_EMAIL,
+        [email_cliente],
+        html_message=message  # Correo en formato HTML
+    )
+
+    # Correo al administrador
+    admin_email = 'info@tbkdesire.cl'
+    admin_subject = 'Nuevo Pedido Realizado'
+
+    try:
+        # Intentar renderizar el mensaje HTML
+        admin_message = render_to_string('correos/nuevo_pedido.html', {
+            'ventas': ventas,
+            'total': total,
+            'usuario': request.user,
+            'rut': rut,
+            'telefono': telefono,
+            'direccion': direccion,
+        })
+    except Exception as e:
+        # En caso de error en el renderizado, asignar un valor predeterminado
+        admin_message = f"Error al generar el mensaje del pedido: {str(e)}"
+
+    # Asegurarse de que admin_message tiene un valor válido
+    if admin_message:
+        send_mail(
+            admin_subject,
+            'Detalles del pedido',  # El cuerpo en texto plano (opcional)
+            settings.DEFAULT_FROM_EMAIL,
+            [admin_email],
+            html_message=admin_message  # Correo en formato HTML
+        )
+    else:
+        # Manejar caso donde admin_message no se genera correctamente
+        print("No se generó el mensaje HTML para el administrador.")
+
+    return render(request, 'carrito/compra_confirmacion.html', {
+        'ventas': ventas,
+        'total': total,
+    })
+
 
 def agregar_a_favoritos(request, slug):
     # Obtener el producto usando el slug
@@ -274,121 +413,6 @@ def dejar_opinion(request, slug):
         'producto': producto
     })
     
-
-@login_required
-def procesar_pago_success(request):
-    carrito = request.session.get('carrito', {})
-
-    if not carrito or len(carrito) == 0:
-        return redirect('shop')
-
-    total = 0
-    ventas = []
-
-    # Procesar cada producto en el carrito
-    for producto_slug, producto_data in carrito.items():
-        producto = Producto.objects.get(slug=producto_slug)  # Obtener el producto de la DB
-
-        if 'tallas' in producto_data:
-            for talla_id, talla_data in producto_data['tallas'].items():
-                talla = ProductoTalla.objects.get(id=talla_id)
-
-                venta = Venta.objects.create(
-                    producto=producto,
-                    cantidad=talla_data['cantidad'],
-                    user=request.user,
-                    talla=talla
-                )
-
-                total += float(talla_data['precio']) * talla_data['cantidad']
-
-                ventas.append({
-                    'producto': producto,
-                    'cantidad': talla_data['cantidad'],
-                    'talla': talla,
-                    'precio': talla_data['precio'],
-                    'precio_total': float(talla_data['precio']) * talla_data['cantidad']
-                })
-               
-        else:
-            venta = Venta.objects.create(
-                producto=producto,
-                cantidad=producto_data['cantidad'],
-                user=request.user
-            )
-            total += float(producto_data['precio']) * producto_data['cantidad']
-
-            ventas.append({
-                'producto': producto,
-                'cantidad': producto_data['cantidad'],
-                'precio': producto_data['precio'],
-                'precio_total': float(producto_data['precio']) * producto_data['cantidad']
-            })
-            
-    # Vaciar el carrito
-    request.session['carrito'] = {}
-
-    # Mostrar un mensaje de éxito
-    messages.success(request, f'Pago exitoso por un total de ${total}. ¡Gracias por tu compra!')
-
-    # Obtener los datos del perfil
-    profile = request.user.profile
-    rut = profile.rut
-    telefono = profile.telefono
-    direccion = profile.direccion
-
-    # Correo al usuario
-    email_cliente =request.user.email 
-    subject = 'Confirmación de tu compra en Nuestro Sitio'
-    message = render_to_string('correos/compra_confirmacion.html', {
-        'ventas': ventas,
-        'total': total,
-        'usuario': request.user
-    })
-
-    send_mail(
-        subject,
-        message,  # Correo en texto plano (opcional)
-        settings.DEFAULT_FROM_EMAIL,
-        [email_cliente],
-        html_message=message  # Correo en formato HTML
-    )
-
-    # Correo al administrador
-    admin_email = 'theblondiekatty@gmail.com'
-    admin_subject = 'Nuevo Pedido Realizado'
-
-    try:
-        # Intentar renderizar el mensaje HTML
-        admin_message = render_to_string('correos/nuevo_pedido.html', {
-            'ventas': ventas,
-            'total': total,
-            'usuario': request.user,
-            'rut': rut,
-            'telefono': telefono,
-            'direccion': direccion,
-        })
-    except Exception as e:
-        # En caso de error en el renderizado, asignar un valor predeterminado
-        admin_message = f"Error al generar el mensaje del pedido: {str(e)}"
-
-    # Asegurarse de que admin_message tiene un valor válido
-    if admin_message:
-        send_mail(
-            admin_subject,
-            'Detalles del pedido',  # El cuerpo en texto plano (opcional)
-            settings.DEFAULT_FROM_EMAIL,
-            [admin_email],
-            html_message=admin_message  # Correo en formato HTML
-        )
-    else:
-        # Manejar caso donde admin_message no se genera correctamente
-        print("No se generó el mensaje HTML para el administrador.")
-
-    return render(request, 'carrito/compra_confirmacion.html', {
-        'ventas': ventas,
-        'total': total,
-    })
 
 def agregar_al_carrito(request, slug):
     # Obtener el producto usando el slug

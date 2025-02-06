@@ -65,8 +65,6 @@ from django.contrib import messages
 from django.shortcuts import render, redirect
 from .forms import ContactoForm
 from django.db.models import Prefetch
-
-
 from decimal import Decimal
 
 @login_required
@@ -419,7 +417,7 @@ def dejar_opinion(request, slug):
         'form': form,
         'producto': producto
     })
-    
+ 
 def agregar_al_carrito(request, slug):
     # Obtener el producto usando el slug
     producto = get_object_or_404(Producto, slug=slug)
@@ -778,10 +776,11 @@ def agregar_tallas(request, slug):
     return render(request, 'productos/agregar_tallas.html', {'form': form, 'producto': producto, 'tallas_existentes': tallas_existentes})
 
 
+
 @user_passes_test(es_superusuario)
 def lista_productos(request):
     form = ProductoFilterForm(request.GET)
-    
+
     # Obtener todos los productos
     productos = Producto.objects.all()
 
@@ -809,6 +808,35 @@ def lista_productos(request):
 
 def about(request):
     return render(request, 'about.html')
+
+
+def lista_productos(request):
+    form = ProductoFilterForm(request.GET)
+    
+    # Obtener todos los productos
+    productos = Producto.objects.all()
+
+    # Aplicar filtros según los datos del formulario
+    slug_buscar = request.GET.get('slug', '')
+    if slug_buscar:
+        productos = productos.filter(slug__icontains=slug_buscar)
+
+    # Ordenar productos por nombre
+    productos = productos.order_by('nombre')
+
+    # Optimización: Usamos prefetch_related para obtener imágenes y tallas de una sola consulta
+    productos = productos.prefetch_related('imagenes', 'tallas')
+
+    # Paginación
+    paginator = Paginator(productos, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Pasar productos y formulario al contexto
+    return render(request, 'producto_list.html', {
+        'page_obj': page_obj,  # Usamos 'page_obj' para el template
+        'form': form,
+    })
 
 
 class ProductoListView(ListView):
@@ -872,6 +900,7 @@ def contacto(request):
             # Crear el correo en formato texto plano y HTML para el administrador
             subject = f'Nuevo mensaje de contacto de {nombre}'
             from_email = correo
+
             to_email = ['info@tbkdesire.cl']  # Reemplaza con el correo del administrador
 
             # Texto plano para el correo

@@ -24,10 +24,13 @@
                 <div class="card-body">
                     <h6><strong>Detalles del Usuario:</strong></h6>
                     <ul class="list-group mb-3">
-                        <li class="list-group-item"><strong>Fecha de Compra:</strong> {{ venta.fecha|date:"d/m/Y H:i" }}</li>
+                        <li class="list-group-item"><strong>Fecha de Compra:</strong> {{ venta.fecha|date:"d/m/Y H:i" }}
+                        </li>
                         <li class="list-group-item"><strong>Usuario:</strong> {{ venta.user.username }}</li>
                         <li class="list-group-item"><strong>Dirección:</strong> {{ venta.usuario_direccion }}</li>
                         <li class="list-group-item"><strong>RUT:</strong> {{ venta.usuario_rut }}</li>
+                        <li class="list-group-item"><strong>Nombre:</strong> {{ venta.user.first_name }}</li>
+                        <li class="list-group-item"><strong>Apellidos:</strong> {{ venta.user.last_name }}</li>
                         <li class="list-group-item"><strong>Teléfono:</strong> {{ venta.usuario_telefono }}</li>
                     </ul>
 
@@ -56,43 +59,50 @@
     <nav aria-label="Page navigation" class="mt-4">
         <ul class="pagination justify-content-center">
             {% if page_obj.has_previous %}
-                <li class="page-item">
-                    <a class="page-link" href="?page=1&{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" aria-label="Primera">
-                        <span aria-hidden="true">&laquo;&laquo;</span>
-                    </a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" aria-label="Anterior">
-                        <span aria-hidden="true">&laquo;</span>
-                    </a>
-                </li>
+            <li class="page-item">
+                <a class="page-link"
+                    href="?page=1&{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}"
+                    aria-label="Primera">
+                    <span aria-hidden="true">&laquo;&laquo;</span>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link"
+                    href="?page={{ page_obj.previous_page_number }}&{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}"
+                    aria-label="Anterior">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
             {% else %}
-                <li class="page-item disabled"><span class="page-link">&laquo;&laquo;</span></li>
-                <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+            <li class="page-item disabled"><span class="page-link">&laquo;&laquo;</span></li>
+            <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
             {% endif %}
-    
+
             {% for num in page_obj.paginator.page_range %}
-                {% if page_obj.number == num %}
-                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                {% else %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ num }}&{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}">{{ num }}</a>
-                    </li>
-                {% endif %}
-            {% endfor %}
-    
-            {% if page_obj.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" aria-label="Siguiente">
-                        <span aria-hidden="true">&raquo;</span>
-                    </a>
-                </li>
+            {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
             {% else %}
-                <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+            <li class="page-item">
+                <a class="page-link"
+                    href="?page={{ num }}&{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}">{{ num }}</a>
+            </li>
+            {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link"
+                    href="?page={{ page_obj.next_page_number }}&{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}"
+                    aria-label="Siguiente">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
             {% endif %}
         </ul>
     </nav>
-    
+
     {% else %}
     <p class="text-center">No tienes compras o ventas registradas.</p>
     {% endif %}

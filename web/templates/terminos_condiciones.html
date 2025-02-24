@@ -1,0 +1,39 @@
+{% extends 'baset.html' %}
+
+{% block title %}Términos y Condiciones{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-lg p-4">
+                <h1 class="card-title text-center mb-4">Términos y Condiciones</h1>
+
+                <p>
+                    <strong>1. Introducción</strong><br>
+                    Estos términos y condiciones rigen el uso de este sitio web. Al acceder a este sitio, usted acepta cumplir con estos términos.
+                </p>
+
+                <p>
+                    <strong>2. Uso del Sitio Web</strong><br>
+                    Usted se compromete a no utilizar el sitio web para fines ilegales o inapropiados.
+                </p>
+
+                <p>
+                    <strong>3. Modificaciones</strong><br>
+                    Nos reservamos el derecho de modificar los términos y condiciones en cualquier momento sin previo aviso.
+                </p>
+
+                <p>
+                    <strong>4. Contacto</strong><br>
+                    Si tiene alguna pregunta acerca de estos términos, puede contactarnos a través de la sección de contacto.
+                </p>
+
+                <p class="text-center">
+                    <a href="{% url 'register' %}" class="btn btn-primary">Registrar cuenta</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -2,25 +2,22 @@
 
 {% block content %}
     <div class="container py-5">
-        <h1>Agregar Tallas para el Producto: {{ producto.nombre }}</h1>
+        <h1>Agregar Colores a la Talla: {{ talla.talla }} del Producto: {{ producto.nombre }}</h1>
 
-        <h3>Tallas Existentes</h3>
+        <!-- Mostrar los colores actuales de esta talla -->
+        <h3>Colores actuales:</h3>
         <ul>
-            {% for talla in tallas_existentes %}
-                <li>
-                    {{ talla.talla }}  
-                    <a href="{% url 'agregar_colores_talla' talla.id %}" class="btn btn-link">Agregar Colores</a>
-                </li>
+            {% for color in talla.colores.all %}
+                <li>{{ color.color.nombre }}</li>
             {% empty %}
-                <li>No hay tallas agregadas aún.</li>
+                <li>No hay colores asociados a esta talla.</li>
             {% endfor %}
         </ul>
 
-        <h3>Agregar Nueva Talla</h3>
         <form method="POST" class="bg-light p-4 rounded shadow-sm">
             {% csrf_token %}
-            {{ form.as_p }}
-            {% for field in form %}
+            {{ color_form.as_p }}
+            {% for field in color_form %}
                 {% if field.errors %}
                     <div class="alert alert-danger">
                         <strong>{{ field.label }}</strong>: 
@@ -32,9 +29,9 @@
                     </div>
                 {% endif %}
             {% endfor %}
-            <button type="submit" class="btn btn-success">Agregar Talla</button>
+            <button type="submit" class="btn btn-primary">Agregar Color</button>
         </form>
 
-        <a href="{% url 'producto_detalle' slug=producto.slug %}" class="btn btn-secondary mt-3">Ir a Detalles del Producto</a>
+        <a href="{% url 'agregar_tallas' slug=producto.slug %}" class="btn btn-secondary mt-3">Volver a Agregar Tallas</a>
     </div>
 {% endblock %}

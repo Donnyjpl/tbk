@@ -21,7 +21,7 @@ Detalles de Producto
             <!-- Imagen principal del producto -->
             <div class="col-lg-5 mt-5">
                 <div class="card mb-3">
-                    {% if producto.imagenes_list.all %}
+                    {% if producto.imagenes_list %}
                     <img class="card-img img-fluid" src="{{ producto.imagenes_list.first.imagen.url }}"
                         alt="{{ producto.nombre }}" id="product-detail">
                     {% else %}
@@ -41,7 +41,7 @@ Detalles de Producto
                     <div id="multi-item-example" class="col-10 carousel slide carousel-multi-item"
                         data-bs-ride="carousel">
                         <div class="carousel-inner product-links-wap" role="listbox">
-                            {% for imagen in producto.imagenes_list.all %}
+                            {% for imagen in producto.imagenes_list %}
                             <div class="carousel-item {% if forloop.first %}active{% endif %}">
                                 <div class="row">
                                     <div class="col-4">
@@ -71,178 +71,193 @@ Detalles de Producto
                     <div class="card-body">
                         <h1 class="h2 fw-bold">{{ producto.nombre|title }}</h1>
                         <p class="h3 py-2">${{ producto.precio|formatear_precio}}</p>
-                        <p class="py-2">
 
-                            <ul class="list-unstyled d-flex  mb-1">
+                        <!-- Rating -->
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="stars me-2">
                                 {% for i in rango_estrellas %}
-                                {% if i <= producto.promedio_valoracion %}
-                                <li><i class="text-warning fa fa-star"></i></li>
-                                {% else %}
-                                <li><i class="text-muted fa fa-star"></i></li>
-                                {% endif %}
+                                <i
+                                    class="fa fa-star {% if i <= producto.promedio_valoracion %}text-warning{% else %}text-muted{% endif %}"></i>
                                 {% endfor %}
-                            </ul>
-                            <span class="list-inline-item text-dark">{{ producto.promedio_valoracion|floatformat:0  }}
-                                de 5 Estrellas |
-                                {{ producto.opiniones_list.count }} Comentarios</span>
-                        </p>
-
-                        <!-- Pestañas para mostrar detalles del producto y opiniones -->
-                        <ul class="nav nav-tabs" id="productTab" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <a class="nav-link active" id="details-tab" data-bs-toggle="tab" href="#details"
-                                    role="tab" aria-controls="details" aria-selected="true">Detalles</a>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <a class="nav-link" id="reviews-tab" data-bs-toggle="tab" href="#reviews" role="tab"
-                                    aria-controls="reviews" aria-selected="false">Opiniones</a>
-                            </li>
-                        </ul>
-                        <div class="tab-content" id="productTabContent">
-                            <!-- Detalles del producto -->
-                            <div class="tab-pane fade show active" id="details" role="tabpanel"
-                                aria-labelledby="details-tab">
-                                <h6>Descripción:</h6>
-                                <p>{{ producto.descripcion }}</p>
-                                {% include 'tallas.html' %}
                             </div>
+                            <span class="text-muted">
+                                {{ producto.promedio_valoracion|floatformat:1 }} de 5
+                                ({{ producto.opiniones_list.count }} opiniones)
+                            </span>
+                        </div>
 
-                            <!-- Opiniones -->
-                            <div class="tab-pane fade" id="reviews" role="tabpanel" aria-labelledby="reviews-tab">
-                                <h3>Opiniones</h3>
-                                <!-- Mostrar opiniones -->
-                                {% for opinion in producto.opiniones_list %}
-                                <div>
-                                    <strong>{{ opinion.user.first_name }}</strong> (Valoración:
-                                    {{ opinion.valoracion }})
-                                    <p>{{ opinion.opinion }}</p>
-                                    <small>Publicado el {{ opinion.created_at }}</small>
-                                </div>
-                                {% empty %}
-                                <p>No hay opiniones aún para este producto.</p>
-                                {% endfor %}
-
-                                <!-- Formulario para dejar una opinión -->
-                                {% if user.is_authenticated %}
-                                <h3>Deja tu opinión</h3>
-                                <form method="post">
-                                    {% csrf_token %}
-                                    {{ opinion_form.as_p }}
-                                    <button type="submit" class="btn btn-success">Enviar Opinión</button>
-                                </form>
-                                {% else %}
-                                <p>Debes estar <a href="{% url 'login' %}">logueado</a> para dejar una opinión.</p>
-                                {% endif %}
-                            </div>
-                            <!-- Mostrar las tallas -->
-                            <form method="POST" action="{% url 'agregar_al_carrito' slug=producto.slug %}">
-                                {% csrf_token %}
-                                <label for="talla">Selecciona tu talla:</label>
-                                <select name="talla" id="talla">
+                        <!-- Formulario de compra -->
+                        <form id="addToCartForm" method="POST">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="talla">Talla:</label>
+                                <select name="talla" id="talla" class="form-control" onchange="updateColors()">
+                                    <option value="">Selecciona una talla</option>
                                     {% for talla in producto.tallas_list %}
                                     <option value="{{ talla.id }}">{{ talla.talla|upper }}</option>
                                     {% endfor %}
                                 </select>
-                                <button type="submit" class="btn btn-success">Agregar al Carrito</button>
-                            </form>
+                            </div>
+                            <div class="form-group">
+                                <label for="color">Color:</label>
+                                <select name="color" id="color" class="form-control">
+                                    <option value="">Selecciona primero una talla</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Agregar al carrito</button>
+                        </form>
+
+                        <!-- Tabs -->
+                        <ul class="nav nav-tabs" id="productTab" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="description-tab" data-bs-toggle="tab" href="#description"
+                                    role="tab">Descripción</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="reviews-tab" data-bs-toggle="tab" href="#reviews"
+                                    role="tab">Opiniones</a>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content pt-3" id="productTabContent">
+                            <!-- Descripción -->
+                            <div class="tab-pane fade show active" id="description" role="tabpanel">
+                                {{ producto.descripcion|linebreaks }}
+                            </div>
+
+                            <!-- Opiniones -->
+                            <div class="tab-pane fade" id="reviews" role="tabpanel">
+                                {% if user.is_authenticated and not usuario_tiene_opinion %}
+                                <div class="mb-4">
+                                    <h4>Deja tu opinión</h4>
+                                    <form method="POST" action="{% url 'producto_opinion' slug=producto.slug %}">
+                                        {% csrf_token %}
+                                        {{ opinion_form.as_p }}
+                                        <button type="submit" class="btn btn-primary">Enviar opinión</button>
+                                    </form>
+                                </div>
+                                {% endif %}
+
+                                <div class="reviews-list">
+                                    {% for opinion in producto.opiniones_list %}
+                                    <div class="review-item mb-3 pb-3 border-bottom">
+                                        <div class="d-flex justify-content-between">
+                                            <h5 class="mb-1">
+                                                {{ opinion.user.get_full_name|default:opinion.user.username }}</h5>
+                                            <div class="stars">
+                                                {% for i in rango_estrellas %}
+                                                <i
+                                                    class="fa fa-star {% if i <= opinion.valoracion %}text-warning{% else %}text-muted{% endif %}"></i>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <p class="mb-1">{{ opinion.opinion }}</p>
+                                        <small class="text-muted">{{ opinion.created_at|date:"d/m/Y" }}</small>
+                                    </div>
+                                    {% empty %}
+                                    <p class="text-muted">No hay opiniones aún para este producto.</p>
+                                    {% endfor %}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    </div>
-
 </section>
-<!-- Productos relacionados -->
-<section class="related-products mt-5 container">
-    <h3 class="text-center mb-5">Productos Relacionados:</h3>
-    <div class="row">
-        {% for related_product in productos_relacionados %}
-        <div class="col-md-3 col-6 mb-3">
-            <div class="card">
-                {% if related_product.imagenes_list.all %}
-                <img class="card-img-top product-card-img" src="{{ related_product.imagenes_list.first.imagen.url }}"
-                    alt="{{ related_product.nombre }}">
-                {% else %}
-                <img class="card-img-top product-card-img" src="{% static 'images/no-image.png' %}" alt="Imagen no disponible">
-                {% endif %}
-                <div class="card-body">
-                    <h5 class="card-title fw-bold">{{ related_product.nombre|title }}</h5>
-                    <p class="card-text">${{ related_product.precio|formatear_precio }}</p>
-                    <!-- Valoración -->
-                    <p class="py-2">
-                        <ul class="list-unstyled d-flex mb-1">
-                            {% for i in rango_estrellas %}
-                            {% if i <= producto.promedio_valoracion %}
-                            <li><i class="text-warning fa fa-star"></i></li>
-                            {% else %}
-                            <li><i class="text-muted fa fa-star"></i></li>
-                            {% endif %}
-                            {% endfor %}
-                        </ul>
-                        <span class="list-inline-item text-dark">{{ producto.promedio_valoracion|floatformat:0 }}
-                            de 5 Estrellas |
-                            {{ producto.opiniones_list.count }} Comentarios</span>
-                    </p>
 
-                    <!-- Tallas Disponibles -->
-                    <p class="text-center">
-                        <strong>Tallas disponibles:</strong>
-                        {% if producto.tallas.all %}
-                        <span class="badge bg-info">
-                            {% for producto_talla in producto.tallas.all %}
-                            {{ producto_talla.talla|upper }}{% if not forloop.last %}, {% endif %}
-                            {% endfor %}
-                        </span>
-                        {% else %}
-                        <span>No disponible</span>
-                        {% endif %}
-                    </p>
-                    <a href="{% url 'producto_detalle' slug=related_product.slug %}" class="btn btn-success">Ver más</a>
+<!-- Productos relacionados -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <h3 class="text-center mb-4">Productos Relacionados</h3>
+        <div class="row">
+            {% for related_product in productos_relacionados %}
+            <div class="col-md-3 col-6 mb-4">
+                <div class="card h-100">
+                    {% if related_product.imagenes_list %}
+                    <img src="{{ related_product.imagenes_list.first.imagen.url }}" class="card-img-top"
+                        alt="{{ related_product.nombre }}">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ related_product.nombre|title }}</h5>
+                        <p class="card-text text-primary fw-bold">${{ related_product.precio|formatear_precio }}</p>
+                        <a href="{% url 'producto_detalle' slug=related_product.slug %}"
+                            class="btn btn-outline-primary">Ver detalles</a>
+                    </div>
                 </div>
             </div>
+            {% empty %}
+            <div class="col-12">
+                <p class="text-center text-muted">No hay productos relacionados disponibles.</p>
+            </div>
+            {% endfor %}
         </div>
-        {% empty %}
-        <p>No hay productos relacionados disponibles.</p>
-        {% endfor %}
     </div>
 </section>
-<!-- Agregar el código de Slick para la funcionalidad del carrusel -->
-<script>
-$(document).ready(function () {
-    // Iniciar el carrusel con Slick
-    $('#multi-item-example .carousel-inner').slick({
-        infinite: true,  // Desplazamiento infinito
-        slidesToShow: 3,  // Mostrar 3 imágenes a la vez
-        slidesToScroll: 1,  // Desplazar 1 imagen a la vez
-        dots: true,  // Mostrar puntos de navegación
-        arrows: false,  // Desactivar las flechas (las vamos a manejar por separado)
-        responsive: [
-            {
-                breakpoint: 1024,  // Pantallas medianas
-                settings: {
-                    slidesToShow: 2,
-                    slidesToScroll: 1
-                }
-            },
-            {
-                breakpoint: 600,  // Pantallas pequeñas
-                settings: {
-                    slidesToShow: 1,
-                    slidesToScroll: 1
-                }
-            },
-            {
-                breakpoint: 480,  // Pantallas muy pequeñas
-                settings: {
-                    slidesToShow: 1,
-                    slidesToScroll: 1
-                }
-            }
-        ]
-    });
-});
-</script>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Inicializar los colores si hay una talla seleccionada
+        const tallaSelect = document.getElementById('talla');
+        if (tallaSelect.value) {
+            updateColors();
+        }
+    });
+
+    function updateColors() {
+        const tallaId = document.getElementById('talla').value;
+        const colorSelect = document.getElementById('color');
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        // Reset color select
+        colorSelect.innerHTML = '<option value="">Cargando colores...</option>';
+
+        if (!tallaId) {
+            colorSelect.innerHTML = '<option value="">Selecciona primero una talla</option>';
+            return;
+        }
+
+        fetch('/producto/get_colores/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: `talla=${tallaId}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                colorSelect.innerHTML = '';
+
+                if (data.colores && data.colores.length > 0) {
+                    colorSelect.innerHTML = '<option value="">Selecciona un color</option>';
+                    data.colores.forEach(color => {
+                        const option = document.createElement('option');
+                        option.value = color.id;
+                        option.textContent = color.nombre;
+                        colorSelect.appendChild(option);
+                    });
+                } else {
+                    colorSelect.innerHTML = '<option value="">No hay colores disponibles</option>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                colorSelect.innerHTML = '<option value="">Error al cargar colores</option>';
+            });
+    }
+
+
+    // Validación del formulario
+    document.getElementById('addToCartForm').addEventListener('submit', function (e) {
+        const talla = document.getElementById('talla').value;
+        const color = document.getElementById('color').value;
+
+        if (!talla || !color) {
+            e.preventDefault();
+            alert('Por favor selecciona una talla y un color');
+        }
+    });
+</script>
 {% endblock %}

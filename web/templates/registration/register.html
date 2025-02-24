@@ -2,7 +2,6 @@
 {% load custom_filters %}
 
 {% block title %}Crear/Editar Usuario{% endblock %}
-
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
@@ -12,71 +11,63 @@
 
                 <form method="POST">
                     <!-- Mostrar mensajes de error -->
-                    {% if messages %}
-                        <div class="mt-3">
-                            {% for message in messages %}
-                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                                    {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
                     {% csrf_token %}
-                    
+
                     <div class="mb-3">
                         <label for="id_nombre" class="form-label">Nombre:</label>
                         {{ form.nombre|add_class:"form-control" }}
                         {% if form.nombre.errors %}
-                            <div class="text-danger">{{ form.nombre.errors }}</div>
+                        <div class="text-danger">{{ form.nombre.errors }}</div>
                         {% endif %}
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="id_apellido" class="form-label">Apellido:</label>
                         {{ form.apellido|add_class:"form-control" }}
                         {% if form.apellido.errors %}
-                            <div class="text-danger">{{ form.apellido.errors }}</div>
+                        <div class="text-danger">{{ form.apellido.errors }}</div>
                         {% endif %}
                     </div>
 
                     <div class="mb-3">
-                        <label for="id_email" class="form-label">Email address:</label>
+                        <label for="id_email" class="form-label">Correo:</label>
                         {{ form.email|add_class:"form-control" }}
                         {% if form.email.errors %}
-                            <div class="text-danger">{{ form.email.errors }}</div>
+                        <div class="text-danger">{{ form.email.errors }}</div>
                         {% endif %}
                     </div>
 
                     <div class="mb-3">
-                        <label for="id_password1" class="form-label">Password:</label>
-                        {{ form.password1|add_class:"form-control" }}
+                        <label for="id_password1" class="form-label">Contraseña:</label>
+                        <input id="password1" type="password" name="password1" class="form-control" {% if form.password1.value %} value="{{ form.password1.value }}" {% endif %}>
                         {% if form.password1.errors %}
-                            <div class="text-danger">{{ form.password1.errors }}</div>
+                        <div class="text-danger">{{ form.password1.errors }}</div>
                         {% endif %}
+                        <!-- Checkbox para mostrar/ocultar la contraseña -->
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="show-password1" onclick="togglePassword('password1', 'show-password1')">
+                            <label class="form-check-label" for="show-password1">Mostrar Contraseña</label>
+                        </div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="id_password2" class="form-label">Password confirmation:</label>
-                        {{ form.password2|add_class:"form-control" }}
+                        <label for="id_password2" class="form-label">Confirme Contraseña:</label>
+                        <input id="password2" type="password" name="password2" class="form-control" {% if form.password2.value %} value="{{ form.password2.value }}" {% endif %}>
                         {% if form.password2.errors %}
-                            <div class="text-danger">{{ form.password2.errors }}</div>
+                        <div class="text-danger">{{ form.password2.errors }}</div>
                         {% endif %}
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="id_rut" class="form-label">Rut:</label>
-                        {{ form.rut|add_class:"form-control" }}
-                        {% if form.rut.errors %}
-                            <div class="text-danger">{{ form.rut.errors }}</div>
-                        {% endif %}
+                        <!-- Checkbox para mostrar/ocultar la contraseña -->
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="show-password2" onclick="togglePassword('password2', 'show-password2')">
+                            <label class="form-check-label" for="show-password2">Mostrar Contraseña</label>
+                        </div>
                     </div>
 
                     <div class="mb-3">
                         <label for="id_telefono" class="form-label">Telefono:</label>
                         {{ form.telefono|add_class:"form-control" }}
                         {% if form.telefono.errors %}
-                            <div class="text-danger">{{ form.telefono.errors }}</div>
+                        <div class="text-danger">{{ form.telefono.errors }}</div>
                         {% endif %}
                     </div>
 
@@ -84,16 +75,61 @@
                         <label for="id_direccion" class="form-label">Direccion:</label>
                         {{ form.direccion|add_class:"form-control" }}
                         {% if form.direccion.errors %}
-                            <div class="text-danger">{{ form.direccion.errors }}</div>
+                        <div class="text-danger">{{ form.direccion.errors }}</div>
                         {% endif %}
                     </div>
 
+                    <!-- Campo de Términos y Condiciones -->
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="id_acepta_terminos" name="acepta_terminos" {% if form.acepta_terminos.value %}checked{% endif %}>
+                        <label class="form-check-label" for="id_acepta_terminos">Acepto los <a href="{% url 'terminos_condiciones' %}" target="_blank">términos y condiciones</a>.</label>
+                        {% if form.acepta_terminos.errors %}
+                            <div class="text-danger">{{ form.acepta_terminos.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3" id="rut-field" style="display: none;">
+                        <label for="id_rut" class="form-label">RUT:</label>
+                        {{ form.rut|add_class:"form-control" }}
+                        {% if form.rut.errors %}
+                        <div class="text-danger">{{ form.rut.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
                     <button type="submit" class="btn btn-success w-100 mt-3">Registrar</button>
                 </form>
+
                 <p class="text-center mt-3">¿Ya tienes una cuenta? <a href="{% url 'login' %}">Inicia sesión aquí</a></p>
             </div>
         </div>
     </div>
 </div>
 
+<!-- JavaScript para alternar la visibilidad de la contraseña -->
+<script>
+    function togglePassword(passwordId, checkboxId) {
+        var passwordField = document.getElementById(passwordId);
+        var checkbox = document.getElementById(checkboxId);
+        if (checkbox.checked) {
+            passwordField.type = 'text';
+        } else {
+            passwordField.type = 'password';
+        }
+    }
+
+    function toggleRutIdFields() {
+        var pais = document.getElementById('id_pais').value;
+        if (pais === 'CL') {
+            document.getElementById('rut-field').style.display = 'block';
+            document.getElementById('identificacion-field').style.display = 'none';
+        } else {
+            document.getElementById('rut-field').style.display = 'none';
+            document.getElementById('identificacion-field').style.display = 'block';
+        }
+    }
+
+    // Llamar a la función para mostrar el campo correcto según el país seleccionado inicialmente
+    toggleRutIdFields();
+
+</script>
 {% endblock %}

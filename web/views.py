@@ -15,7 +15,7 @@ from django.contrib.auth import logout
 # @method_decorator(login_required, name='dispatch')
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
-from django.views.generic import CreateView
+from django.views.generic import CreateView,View
 from .models import Producto, ProductoImagen, ProductoTalla,OpinionCliente
 from .forms import ProductoForm
 from django.core.exceptions import ValidationError
@@ -66,6 +66,26 @@ from django.shortcuts import render, redirect
 from .forms import ContactoForm
 from django.db.models import Prefetch
 from decimal import Decimal
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from .models import Producto, ProductoTalla, ProductoTallaColor
+from .forms import ProductoTallaForm, ProductoTallaColorForm
+from django.contrib.auth.decorators import user_passes_test
+from django.views.decorators.csrf import csrf_exempt
+
+
+from django.views.generic import DetailView
+from django.shortcuts import redirect, get_object_or_404
+from django.contrib import messages
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect
+from django.http import HttpResponseForbidden
+
+def terminos_condiciones(request):
+    return render(request, 'terminos_condiciones.html')
 
 @login_required
 def procesar_pago_success(request):
@@ -291,69 +311,144 @@ def actualizar_favoritos(request, slug):
 
     return redirect('ver_favoritos')  # Redirige a la vista de favoritos
 
-class producto_detalle(DetailView):
+
+
+
+class ProductoDetalleView(DetailView):
     model = Producto
     template_name = 'producto_detalle.html'
     context_object_name = 'producto'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
-        # Accede al producto actual
         producto = context['producto']
-        related_products = Producto.objects.filter(categoria=producto.categoria).exclude(id=producto.id)[:10]
         
-        # Agregar las imágenes a cada producto relacionado (solo para visualización en el template)
-        for related_product in related_products:
-            related_product.imagenes_list = related_product.imagenes.all()  # Agrega las imágenes al producto relacionado
-
-        # Agregar productos relacionados al contexto
-        context['productos_relacionados'] = related_products
+        # Productos relacionados
+        context['productos_relacionados'] = self._get_related_products(producto)
         
-
-        # Acceder a las imágenes y tallas asociadas al producto
+        # Información del producto actual
+        self._add_product_info(producto)
+        
+        # Opiniones y formulario
+        self._add_reviews_context(context, producto)
+        
+        # Colores por talla
+        context['colores_por_talla'] = self._get_colors_by_size(producto)
+        
+        return context
+    
+    def _get_related_products(self, producto):
+        related = Producto.objects.filter(
+            categoria=producto.categoria, 
+            activo=True
+        ).exclude(id=producto.id)[:10]
+        
+        for prod in related:
+            prod.imagenes_list = prod.imagenes.all()
+        return related
+    
+    def _add_product_info(self, producto):
         producto.imagenes_list = producto.imagenes.all()
         producto.tallas_list = producto.tallas.all()
-        
-         # Aquí ya estás calculando otros elementos, agrega el rango de 1 a 5
+    
+    def _add_reviews_context(self, context, producto):
         context['rango_estrellas'] = range(1, 6)
+        producto.opiniones_list = producto.opiniones.all().order_by('-created_at')[:3]
         
-        # Opcional: Agregar opiniones/valoraciones (si las tienes)
-         # Mostrar las opiniones del producto
-        producto.opiniones_list = OpinionCliente.objects.filter(producto=producto).order_by('-created_at')[:3]
-        
-        # Si el usuario está autenticado, permitir dejar una opinión
-        # Si el usuario está autenticado, permitir dejar una opinión
         if self.request.user.is_authenticated:
-            # Verificar si el usuario ya ha dejado una opinión sobre el producto
-            if OpinionCliente.objects.filter(producto=producto, user=self.request.user).exists():
-                context['usuario_tiene_opinion'] = True  # El usuario ya ha dejado una opinión
+            if producto.opiniones.filter(user=self.request.user).exists():
+                context['usuario_tiene_opinion'] = True
             else:
-                context['opinion_form'] = OpinionClienteForm()  # Formulario para dejar opinión
+                context['opinion_form'] = OpinionClienteForm()
+    
+    def _get_colors_by_size(self, producto):
+        return {
+            talla.id: [
+                pcolor.color for pcolor in ProductoTallaColor.objects.filter(producto_talla=talla)
+            ] for talla in producto.tallas.all()
+        }
 
-        return context
- 
-    def post(self, request, *args, **kwargs):
-        producto = self.get_object()  # Obtener el producto desde la URL
-        if request.user.is_authenticated:
-            # Verificar si el usuario ya dejó una opinión
-            if OpinionCliente.objects.filter(producto=producto, user=request.user).exists():
-                messages.error(request, '¡Ya has dejado una opinión sobre este producto!')
-                return redirect('producto_detalle', slug=producto.slug)
+class ProductoOpinionView(View):
+    def post(self, request, slug):
+        producto = get_object_or_404(Producto, slug=slug)
 
-            form = OpinionClienteForm(request.POST)
-            if form.is_valid():
-                # Crear una nueva opinión en la base de datos
-                OpinionCliente.objects.create(
-                    producto=producto,
-                    user=request.user,
-                    opinion=form.cleaned_data['opinion'],
-                    valoracion=form.cleaned_data['valoracion']
-                )
-                messages.success(request, '¡Gracias por dejar tu opinión!')
-                return redirect('producto_detalle', slug=producto.slug)
+        # Crear el formulario de opinión con los datos del POST
+        form = OpinionClienteForm(request.POST)
+        
+        if form.is_valid():
+            # Procesar los datos del formulario (guardar la opinión)
+            opinion = form.save(commit=False)
+            opinion.producto = producto
+            opinion.usuario = request.user
+            opinion.save()
 
-        return redirect('producto_detalle', slug=producto.slug)
+            # Mensaje de éxito
+            messages.success(request, 'Tu opinión ha sido guardada correctamente.')
+            return redirect('producto_detalle', slug=producto.slug)
+        
+        # Si el formulario no es válido, redirigir de nuevo al detalle del producto
+        else:
+            messages.error(request, 'Hubo un error al enviar tu opinión. Por favor, inténtalo de nuevo.')
+            return render(request, 'producto_detalle.html', {'producto': producto, 'form': form})
+    
+    def get(self, request, slug):
+        producto = get_object_or_404(Producto, slug=slug)
+        form = OpinionClienteForm # Crear un formulario vacío para el GET
+        return render(request, 'producto_detalle.html', {'producto': producto, 'form': form})
+    
+    
+
+def agregar_al_carrito(request, producto):
+        talla_id = request.POST.get('talla')
+        color_id = request.POST.get('color')
+        
+        if not (talla_id and color_id):
+            messages.error(request, 'Selecciona una talla y un color válidos.')
+            return False
+            
+        talla = get_object_or_404(ProductoTalla, id=talla_id, producto=producto)
+        color = get_object_or_404(ProductoTallaColor, id=color_id, producto_talla=talla)
+        
+        carrito = request.session.get('carrito', {})
+        
+        carrito_item = {
+            'producto_id': producto.id,
+            'nombre': producto.nombre,
+            'precio': float(producto.precio),
+            'talla': talla.talla,
+            'color': color.color.nombre,
+            'cantidad': 1,
+        }
+        
+        if str(producto.id) in carrito:
+            carrito[str(producto.id)]['cantidad'] += 1
+        else:
+            carrito[str(producto.id)] = carrito_item
+        
+        request.session['carrito'] = carrito
+        messages.success(request, 'Producto agregado al carrito exitosamente.')
+        return True
+    
+    
+@csrf_exempt
+def get_colores_por_talla(request):
+
+    if request.method == 'POST':
+        talla_id = request.POST.get('talla')
+
+        if talla_id:
+            # Filtrar los colores asociados a la talla seleccionada
+            talla_colores = ProductoTallaColor.objects.filter(producto_talla__id=talla_id)
+
+            colores = [
+                {'id': pcolor.color.id, 'nombre': pcolor.color.nombre} 
+                for pcolor in talla_colores
+            ]
+            
+            return JsonResponse({'colores': colores})
+
+        return JsonResponse({'colores': []})
+    
     
 class IndexView(ListView):
     model = Producto
@@ -362,16 +457,21 @@ class IndexView(ListView):
     paginate_by = 3  # Número de productos por página
 
     def get_queryset(self):
-        # Filtramos los productos con una valoración promedio alta
-        return Producto.objects.annotate(promedio=Avg('opiniones__valoracion')) \
-                               .filter(promedio__gte=4.5)  # Filtrar solo productos con promedio >= 4.5 estrellas
+        # Filtramos los productos con una valoración promedio alta y los ordenamos por la valoración promedio
+        productos = Producto.objects.annotate(promedio=Avg('opiniones__valoracion')) \
+                                    .filter(promedio__gte=4,activo=True)  # Filtrar solo productos con promedio >= 4 estrellas
+
+        # Ordenar los productos por la valoración promedio (puedes cambiar esto si quieres otro criterio)
+        productos = productos.order_by('-promedio')  # Ordena de mayor a menor valoración promedio
+
+        return productos
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         rango_estrellas = range(1, 6)  # Rango de 1 a 5 estrellas
         context['rango_estrellas'] = rango_estrellas
 
-        # Añadir listas de imágenes y tallas a cada producto
+        # Añadir listas de imágenes y tallas a cada producto (optimizamos con prefetch_related en la consulta)
         for producto in context['productos_destacados']:
             producto.imagenes_list = producto.imagenes.all()  # Accede a las imágenes del producto
             producto.tallas_list = producto.tallas.all()  # Accede a las tallas del producto
@@ -388,9 +488,9 @@ class IndexView(ListView):
         context['cantidad_carrito'] = cantidad_carrito
         context['cantidad_favoritos'] = cantidad_favoritos
         
-
         return context
-
+    
+    
 # Función que verifica si el usuario es un superusuario
 def es_superusuario(user):
     return user.is_superuser
@@ -417,17 +517,28 @@ def dejar_opinion(request, slug):
         'form': form,
         'producto': producto
     })
- 
+    
+    
 def agregar_al_carrito(request, slug):
     # Obtener el producto usando el slug
     producto = get_object_or_404(Producto, slug=slug)
+    
+    # Obtener los valores de talla y color desde la solicitud
     talla_id = request.POST.get('talla')  # Asegúrate de que estás obteniendo correctamente la talla
-
+    color_id = request.POST.get('color')  # Obtén el color seleccionado
+    
     # Verificar si la talla existe para el producto
     try:
         talla = producto.tallas.get(id=talla_id)
     except ProductoTalla.DoesNotExist:
         messages.error(request, 'La talla seleccionada no existe para este producto.')
+        return redirect('producto_detalle', slug=slug)  # Redirigir a la página del producto
+
+    # Verificar si el color existe para la talla seleccionada
+    try:
+        color = ProductoTallaColor.objects.get(producto_talla=talla, color_id=color_id)
+    except ProductoTallaColor.DoesNotExist:
+        messages.error(request, 'El color seleccionado no existe para esta talla.')
         return redirect('producto_detalle', slug=slug)  # Redirigir a la página del producto
 
     # Obtener el carrito de la sesión o inicializarlo si no existe
@@ -436,12 +547,26 @@ def agregar_al_carrito(request, slug):
     # Verificar si el producto ya está en el carrito
     if str(slug) in carrito:
         if str(talla_id) in carrito[str(slug)]['tallas']:
-            carrito[str(slug)]['tallas'][str(talla_id)]['cantidad'] += 1
+            if str(color_id) in carrito[str(slug)]['tallas'][str(talla_id)]['colores']:
+                carrito[str(slug)]['tallas'][str(talla_id)]['colores'][str(color_id)]['cantidad'] += 1
+            else:
+                carrito[str(slug)]['tallas'][str(talla_id)]['colores'][str(color_id)] = {
+                    'color': color.color.nombre,
+                    'cantidad': 1,
+                    'precio': str(producto.precio),
+                }
         else:
             carrito[str(slug)]['tallas'][str(talla_id)] = {
                 'talla': talla.talla,
                 'precio': str(producto.precio),
                 'cantidad': 1,
+                'colores': {
+                    str(color_id): {
+                        'color': color.color.nombre,
+                        'cantidad': 1,
+                        'precio': str(producto.precio),
+                    }
+                }
             }
     else:
         carrito[str(slug)] = {
@@ -454,6 +579,13 @@ def agregar_al_carrito(request, slug):
                     'talla': talla.talla,
                     'precio': str(producto.precio),
                     'cantidad': 1,
+                    'colores': {
+                        str(color_id): {
+                            'color': color.color.nombre,
+                            'cantidad': 1,
+                            'precio': str(producto.precio),
+                        }
+                    }
                 }
             }
         }
@@ -462,8 +594,8 @@ def agregar_al_carrito(request, slug):
     request.session['carrito'] = carrito
 
     # Agregar un mensaje de éxito
-    messages.success(request, f'{producto.nombre} con talla {talla.talla} se ha agregado al carrito con éxito.')
-    return redirect('producto_detalle', slug=slug)  # Redirige a la vista del carrito
+    messages.success(request, f'{producto.nombre} con talla {talla.talla} y color {color.color.nombre} se ha agregado al carrito con éxito.')
+    return redirect('producto_detalle', slug=slug)  # Redirige a la vista del producto
 
 def ver_carrito(request):
     carrito = request.session.get('carrito', {})
@@ -665,23 +797,68 @@ def modificar_imagenes(request, slug):
 
     return render(request, 'productos/modificar_imagenes.html', {'form': form, 'producto': producto, 'imagenes': imagenes})
 
+from django.db.models import Prefetch
+
 @user_passes_test(es_superusuario)
 def modificar_tallas(request, slug):
     producto = get_object_or_404(Producto, slug=slug)
-    tallas = producto.tallas.all()  # Obtener las tallas existentes
+    
+     # Usamos prefetch_related con 'colores' para obtener los colores asociados a las tallas
+    tallas = ProductoTalla.objects.prefetch_related('colores').filter(producto=producto)  # Obtener todas las tallas asociadas al productos
 
     if request.method == 'POST':
+        # Para modificar o agregar talla
         form = ProductoTallaForm(request.POST, producto=producto)
         if form.is_valid():
             talla = form.save(commit=False)
-            talla.producto = producto  # Asignar la talla al producto
+            talla.producto = producto  # Asociar la talla al producto
             talla.save()
-            messages.success(request, f'Talla {form.cleaned_data["talla"]} modificada correctamente.')
+            messages.success(request, f'Talla {form.cleaned_data["talla"]} agregada correctamente.')
             return redirect('modificar_tallas', slug=producto.slug)
+
+        # Para agregar color a una talla
+        if 'agregar_color' in request.POST:
+            talla_id = request.POST.get('talla_id')  # Obtener el ID de la talla seleccionada
+            talla = get_object_or_404(ProductoTalla, id=talla_id)
+
+            color_form = ProductoTallaColorForm(request.POST, producto_talla=talla)
+            if color_form.is_valid():
+                color_form.save()  # Guardar el nuevo color asociado a la talla
+                messages.success(request, f'Color agregado correctamente a la talla {talla.talla}.')
+                return redirect('modificar_tallas', slug=producto.slug)
+            else:
+                messages.error(request, f'Error al agregar el color: {color_form.errors}')
+
+        # Lógica para eliminar color
+        if 'eliminar_color' in request.POST:
+            talla_color_id = request.POST.get('talla_color_id')  # Obtener el ID del color a eliminar
+            talla_color = get_object_or_404(ProductoTallaColor, id=talla_color_id)
+            talla_color.delete()
+            messages.success(request, f'Color eliminado correctamente de la talla {talla_color.producto_talla.talla}.')
+            return redirect('modificar_tallas', slug=producto.slug)
+
+        # Lógica para eliminar talla
+        if 'eliminar_talla' in request.POST:
+            talla_id = request.POST.get('talla_id')  # Obtener el ID de la talla seleccionada para eliminar
+            talla = get_object_or_404(ProductoTalla, id=talla_id)
+            talla.delete()
+            messages.success(request, f'Talla {talla.talla} eliminada correctamente.')
+            return redirect('modificar_tallas', slug=producto.slug)
+
     else:
         form = ProductoTallaForm(producto=producto)
 
-    return render(request, 'productos/modificar_tallas.html', {'form': form, 'producto': producto, 'tallas': tallas})
+    # Crear un formulario vacío para agregar color
+    color_form = ProductoTallaColorForm()
+
+    return render(request, 'productos/modificar_tallas.html', {
+        'form': form,
+        'producto': producto,
+        'tallas': tallas,
+        'color_form': color_form,
+    })
+
+
 
 @user_passes_test(es_superusuario)
 def eliminar_imagen(request, imagen_id):
@@ -757,6 +934,79 @@ def subir_imagenes(request, slug):
 
 
 @user_passes_test(es_superusuario)
+def agregar_tallas_y_colores(request, slug):
+    producto = get_object_or_404(Producto, slug=slug)  # Recuperamos el producto por su slug
+
+    # Inicializamos los formularios antes de usar
+    talla_form = ProductoTallaForm(request.POST or None, producto=producto)  # Formulario para agregar talla
+    color_form = ProductoTallaColorForm(request.POST or None)  # Formulario vacío para agregar color
+
+    # Usamos prefetch_related para obtener las tallas con sus colores asociados
+    tallas = ProductoTalla.objects.prefetch_related('colores').filter(producto=producto)  # Obtener todas las tallas asociadas al producto
+
+    if request.method == 'POST':
+        # Si el formulario de talla se ha enviado
+        if 'agregar_talla' in request.POST and talla_form.is_valid():
+            producto_talla = talla_form.save(commit=False)
+            producto_talla.producto = producto  # Asignamos el producto manualmente
+            producto_talla.save()  # Guardamos la talla
+            messages.success(request, f'Talla {talla_form.cleaned_data["talla"]} agregada correctamente.')
+            return redirect('agregar_tallas', slug=producto.slug)  # Redirige para seguir agregando
+
+        # Si el formulario de color se ha enviado
+         # Si el formulario de color se ha enviado
+        elif 'agregar_color' in request.POST and color_form.is_valid():
+            talla_id = request.POST.get('talla_id')
+            talla = get_object_or_404(ProductoTalla, id=talla_id)
+
+            # Para depurar: Imprimir errores del formulario
+            print("Errores del formulario de color:", color_form.errors)
+
+            # Crear formulario de color con los datos
+            color_form = ProductoTallaColorForm(request.POST, producto_talla=talla)
+
+            if color_form.is_valid():
+                color_form.save()  # Guardar el color asociado a la talla
+                messages.success(request, f'Color agregado correctamente a la talla {talla.talla}.')
+                return redirect('agregar_tallas', slug=producto.slug)
+            else:
+                # Si el formulario no es válido, mostrar los errores
+                print("Errores al intentar guardar el color:", color_form.errors)
+                messages.error(request, 'Hubo un error al agregar el color. Por favor, verifica los datos.')
+        # Eliminar una talla seleccionada
+        elif 'eliminar_talla' in request.POST:
+            talla_id = request.POST.get('talla_id')  # ID de la talla a eliminar
+            talla = get_object_or_404(ProductoTalla, id=talla_id)
+
+            # Eliminar la talla (esto también eliminará los colores asociados debido a la relación de muchos a muchos)
+            talla.delete()
+            messages.success(request, f'Talla {talla.talla} eliminada correctamente.')
+
+            return redirect('agregar_tallas', slug=producto.slug)
+
+        # Eliminar un color de una talla seleccionada
+        elif 'eliminar_color' in request.POST:
+            talla_id = request.POST.get('talla_id')  # ID de la talla de la que se eliminará el color
+            color_id = request.POST.get('color_id')  # ID del color a eliminar
+            talla = get_object_or_404(ProductoTalla, id=talla_id)
+            color = get_object_or_404(ProductoTallaColor, id=color_id)
+
+            # Eliminar la relación entre la talla y el color
+            talla.colores.remove(color)  # Quitar la relación de la talla con el color
+            messages.success(request, f'Color {color.color.nombre} eliminado correctamente de la talla {talla.talla}.')
+
+            return redirect('agregar_tallas', slug=producto.slug)        
+
+    # En el caso de que sea un GET, se inicializan los formularios vacíos
+    return render(request, 'productos/agregar_tallas_y_colores.html', {
+        'producto': producto,
+        'talla_form': talla_form,
+        'color_form': color_form,
+        'tallas': tallas,  # Pasar 'tallas' en lugar de 'tallas_existentes'
+    })
+
+
+@user_passes_test(es_superusuario)
 def agregar_tallas(request, slug):
     producto = get_object_or_404(Producto, slug=slug)  # Recuperamos el producto por su slug
 
@@ -776,7 +1026,32 @@ def agregar_tallas(request, slug):
     return render(request, 'productos/agregar_tallas.html', {'form': form, 'producto': producto, 'tallas_existentes': tallas_existentes})
 
 
+@user_passes_test(es_superusuario)
+def agregar_colores_talla(request, talla_id):
+    talla = get_object_or_404(ProductoTalla, id=talla_id)
+    producto = talla.producto
 
+    if request.method == 'POST':
+        # Pasamos 'producto_talla' al formulario para que lo use al guardarlo
+        color_form = ProductoTallaColorForm(request.POST, producto_talla=talla)
+        
+        if color_form.is_valid():
+            color_form.save()  # Ahora debería funcionar correctamente
+            messages.success(request, f'Color agregado correctamente a la talla {talla.talla}.')
+            return redirect('agregar_tallas', slug=producto.slug)  # Redirigir a la página de tallas para el producto
+        else:
+            messages.error(request, f'Hubo un error al agregar el color. Errores: {color_form.errors}')
+    else:
+        color_form = ProductoTallaColorForm(producto_talla=talla)
+
+    return render(request, 'productos/agregar_colores.html', {
+        'color_form': color_form,
+        'talla': talla,
+        'producto': producto,
+    })
+    
+
+    
 @user_passes_test(es_superusuario)
 def lista_productos(request):
     form = ProductoFilterForm(request.GET)
@@ -789,7 +1064,7 @@ def lista_productos(request):
     if slug_buscar:
         productos = productos.filter(slug__icontains=slug_buscar)
 
-    # Ordenar productos por nombre
+    # Ordenar productos por nombre (es importante hacerlo antes de la paginación)
     productos = productos.order_by('nombre')
 
     # Optimización: Usamos prefetch_related para obtener imágenes y tallas de una sola consulta
@@ -1050,18 +1325,21 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
 
         return super().form_valid(form)
     
+
 def register(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
 
         if form.is_valid():
-            user = form.save()
-            messages.success(request, '¡Cuenta registrada con éxito!')
-            return redirect('login')  # Redirige a la página de éxito
-
+            # Verificamos que el usuario haya aceptado los términos
+            if form.cleaned_data['acepta_terminos']:
+                user = form.save()
+                messages.success(request, '¡Cuenta registrada con éxito!')
+                return redirect('login')  # Redirige a la página de inicio de sesión
+            else:
+                messages.error(request, 'Debes aceptar los términos y condiciones.')
         else:
             messages.error(request, 'Hubo un error en el registro. Por favor, corrige los errores.')
-
     else:
         form = CustomUserCreationForm()
 

@@ -2,11 +2,11 @@
 {% load custom_filters %}
 {% block content %}
 {% if messages %}
-    <div class="alert alert-success container">
-        {% for message in messages %}
-            <p>{{ message|title }}</p>
-        {% endfor %}
-    </div>
+<div class="alert alert-success container">
+    {% for message in messages %}
+    <p>{{ message|title }}</p>
+    {% endfor %}
+</div>
 {% endif %}
 <div class="container py-5">
     <h2>Mi Carrito de Compras</h2>
@@ -31,37 +31,46 @@
                 </thead>
                 <tbody>
                     {% for slug, producto in carrito.items %}
-                        {% if producto.tallas %}
-                            {% for talla_id, talla_data in producto.tallas.items %}
-                                <tr>
-                                    <td>{{ producto.nombre|title }}</td>
-                                    <td>{{ talla_data.talla|title }}</td>  <!-- Mostrar la talla -->
-                                    <td>
-                                        <form method="POST" action="{% url 'actualizar_carrito' producto.slug talla_id %}">
-                                            {% csrf_token %}
-                                            <input type="number" name="cantidad" value="{{ talla_data.cantidad }}" min="1" required>
-                                            <button type="submit" class="btn btn-warning">Actualizar</button>
-                                        </form>
-                                    </td>
-                                    <td>${{ talla_data.precio|formatear_precio }}</td>
-                                    <td>${{ talla_data.precio|multiply:talla_data.cantidad|formatear_precio}}</td>
-                                    <td>
-                                        <a href="{% url 'eliminar_del_carrito' slug=slug talla_id=talla_id %}" class="btn btn-danger">Eliminar</a>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        {% else %}
-                            <!-- Si no tiene tallas, mostrar algo especial -->
-                            <tr>
-                                <td>{{ producto.nombre }}</td>
-                                <td colspan="5">Producto sin tallas disponibles</td>
-                            </tr>
-                        {% endif %}
+                    {% if producto.tallas %}
+                    {% for talla_id, talla_data in producto.tallas.items %}
+                    <tr>
+                        <td>{{ producto.nombre|title }}</td>
+                        <td>{{ talla_data.talla|title }}</td> <!-- Mostrar la talla -->
+                        <td>
+                            <form method="POST" action="{% url 'actualizar_carrito' producto.slug talla_id %}">
+                                {% csrf_token %}
+                                <input type="number" name="cantidad" value="{{ talla_data.cantidad }}" min="1" required>
+                                <button type="submit" class="btn btn-warning">Actualizar</button>
+                            </form>
+                        </td>
+                        <td>${{ talla_data.precio|formatear_precio }}</td>
+                        <td>${{ talla_data.precio|multiply:talla_data.cantidad|formatear_precio}}</td>
+                        <td>
+                            <a href="{% url 'eliminar_del_carrito' slug=slug talla_id=talla_id %}"
+                                class="btn btn-danger">Eliminar</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <!-- Si no tiene tallas, mostrar algo especial -->
+                    <tr>
+                        <td>{{ producto.nombre }}</td>
+                        <td colspan="5">Producto sin tallas disponibles</td>
+                    </tr>
+                    {% endif %}
                     {% endfor %}
                 </tbody>
             </table>
             <h3>Total: ${{ total|formatear_precio}}</h3>
+            {% if user.is_authenticated %}
+            <h3>Total: ${{ total|formatear_precio }}</h3>
             <a href="{% url 'procesar_pago' %}" class="btn btn-success">Proceder al Pago</a>
+            {% else %}
+            <h3>Total: ${{ total|formatear_precio }}</h3>
+            <p class="alert alert-warning">Para proceder con el pago, por favor, inicie sesión o regístrese.</p>
+            <a href="{% url 'login' %}" class="btn btn-primary">Iniciar Sesión</a>
+            {% endif %}
+
         </div>
     </div>
     {% endif %}

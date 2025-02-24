@@ -8,12 +8,21 @@ class Profile(models.Model):
     rut = models.CharField(max_length=12, unique=True)  # RUT (Ej: 12.345.678-9)
     telefono = models.CharField(max_length=15,unique=True)  # Teléfono
     direccion = models.CharField(max_length=255)  # Dirección
+    acepta_terminos = models.BooleanField(default=False)  # Campo para aceptar términos y condiciones
+
 
     def __str__(self):
         return f"Perfil de {self.user.username}"
     
 class Categoria(models.Model):
     nombre = models.CharField(max_length=100)
+    def __str__(self):
+        return self.nombre
+    
+class Color(models.Model):
+    nombre = models.CharField(max_length=50)
+    imagen = models.ImageField(upload_to='colores/', null=True, blank=True)  # Imagen del color (opcional)
+
     def __str__(self):
         return self.nombre
 
@@ -47,10 +56,17 @@ class Producto(models.Model):
 class ProductoTalla(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='tallas')
     talla = models.CharField(max_length=10)  # Las tallas pueden ser S, M, L, XL o 40-44 para pantalones
-    cantidad = models.PositiveIntegerField(default=0)
-
     def __str__(self):
         return f"{self.producto.nombre} - Talla {self.talla}"
+    
+    
+class ProductoTallaColor(models.Model):
+    producto_talla = models.ForeignKey(ProductoTalla, on_delete=models.CASCADE, related_name='colores')
+    color = models.ForeignKey(Color, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.producto_talla.producto.nombre} - {self.producto_talla.talla} - {self.color.nombre}"
+
 
 class ProductoImagen(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='imagenes')
@@ -91,6 +107,7 @@ class LineaVenta(models.Model):
     venta = models.ForeignKey('Venta', on_delete=models.CASCADE, related_name='lineas')  # Relaciona con la venta principal
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)  # El producto vendido
     talla = models.ForeignKey(ProductoTalla, null=True, blank=True, on_delete=models.SET_NULL)  # La talla del producto, si aplica
+    color = models.ForeignKey(Color, null=True, blank=True, on_delete=models.SET_NULL)  # El color del producto en esta venta
     cantidad = models.PositiveIntegerField()  # Cantidad de este producto en la venta
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=0)  # Precio por unidad al momento de la venta
 

@@ -5,6 +5,7 @@ from django.db.models import Min, Max
 from django.contrib.auth.forms import SetPasswordForm,UserCreationForm
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from .models import  ProductoTalla, Color,ProductoTallaColor
 
 class ProductoForm(forms.ModelForm):
     class Meta:
@@ -13,11 +14,10 @@ class ProductoForm(forms.ModelForm):
 
     categoria = forms.ModelChoiceField(queryset=Categoria.objects.all(), required=False)  # Si quieres que sea un campo de selección
     
-   
 class ProductoTallaForm(forms.ModelForm):
     class Meta:
         model = ProductoTalla
-        fields = ['talla', 'cantidad']
+        fields = ['talla']
 
     def __init__(self, *args, **kwargs):
         self.producto = kwargs.pop('producto', None)  # Recuperamos el producto del kwargs
@@ -37,6 +37,30 @@ class ProductoTallaForm(forms.ModelForm):
         if ProductoTalla.objects.filter(producto=self.producto, talla=talla).exists():
             raise forms.ValidationError(f'La talla {talla} ya ha sido agregada para este producto.')
         return talla
+ 
+class ProductoTallaColorForm(forms.ModelForm):
+    class Meta:
+        model = ProductoTallaColor
+        fields = ['color']  # Incluye solo el campo que se puede modificar (el color)
+        
+    
+    def __init__(self, *args, **kwargs):
+        self.producto_talla = kwargs.pop('producto_talla', None)  # Recibe la talla como parámetro
+        super().__init__(*args, **kwargs)
+        
+        if self.producto_talla:
+            # Asignamos automáticamente 'producto_talla' al campo correspondiente
+            self.instance.producto_talla = self.producto_talla  
+             
+    def clean_color(self):
+        color = self.cleaned_data['color']
+        
+        # Verificar si el color ya está asociado a esta talla
+        if ProductoTallaColor.objects.filter(producto_talla=self.producto_talla, color=color).exists():
+            raise forms.ValidationError(f'El color {color} ya está asociado con esta talla.')
+
+        return color
+
     
     
 class ProductoImagenForm(forms.ModelForm):
@@ -154,6 +178,10 @@ class CustomUserCreationForm(UserCreationForm):
     rut = forms.CharField(max_length=12, required=True)
     telefono = forms.CharField(max_length=15, required=True)
     direccion = forms.CharField(widget=forms.Textarea(attrs={'rows': 4, 'cols': 40}), required=True)
+    acepta_terminos = forms.BooleanField(
+        required=True, 
+        label="Acepto los términos y condiciones",
+        error_messages={'required': 'Debes aceptar los términos y condiciones para registrarte.'})
 
     class Meta:
         model = User
@@ -199,7 +227,9 @@ class CustomUserCreationForm(UserCreationForm):
     def save(self, commit=True):
         # Guardar el usuario
         user = super().save(commit=False)
-
+# Asignar el nombre y apellido al usuario
+        user.first_name = self.cleaned_data['nombre']
+        user.last_name = self.cleaned_data['apellido']
         # Asignar el correo como el username
         user.username = self.cleaned_data['email']
         
@@ -230,4 +260,3 @@ class OpinionClienteForm(forms.ModelForm):
             'opinion': forms.Textarea(attrs={'rows': 3, 'cols': 50}),
         }
         
-   

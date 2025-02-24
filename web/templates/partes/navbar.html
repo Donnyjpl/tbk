@@ -5,77 +5,74 @@
         <div class="w-100 d-flex justify-content-between">
             <div>
                 <i class="fa fa-envelope mx-2"></i>
-                <a class="navbar-sm-brand text-light text-decoration-none"
-                    href="mailto:info@tbkdesire.cl">info@tbkdesire.cl</a>
+                <a class="navbar-sm-brand text-light text-decoration-none" href="mailto:info@tbkdesire.cl">info@tbkdesire.cl</a>
                 <i class="fa fa-phone mx-2"></i>
                 <a class="navbar-sm-brand text-light text-decoration-none" href="tel:+56968961483">+56 968-961-483</a>
             </div>
             <div>
-                <a class="text-light"
-                    href="https://www.facebook.com/people/theblondiekatty/100036392116838/?mibextid=wwXIfr"
-                    target="_blank" rel="sponsored"><i class="fab fa-facebook-f fa-sm fa-fw me-2"></i></a>
-                <a class="text-light" href="https://www.instagram.com/tbk_desire/?igsh=dmVuOWljbmlpbmZn&utm_source=qr#"
-                    target="_blank"><i class="fab fa-instagram fa-sm fa-fw me-2"></i></a>
-                <a class="text-light" href="https://www.tiktok.com/@tbkdesire?_t=ZM-8tRskdLfQ85&_r=1" target="_blank"><i
-                        class="fab fa-tiktok fa-sm fa-fw"></i></a>
+                <a class="text-light" href="https://www.facebook.com/people/theblondiekatty/100036392116838/?mibextid=wwXIfr" target="_blank" rel="sponsored">
+                    <i class="fab fa-facebook-f fa-sm fa-fw me-2"></i>
+                </a>
+                <a class="text-light" href="https://www.instagram.com/tbk_desire/?igsh=dmVuOWljbmlpbmZn&utm_source=qr#" target="_blank">
+                    <i class="fab fa-instagram fa-sm fa-fw me-2"></i>
+                </a>
+                <a class="text-light" href="https://www.tiktok.com/@tbkdesire?_t=ZM-8tRskdLfQ85&_r=1" target="_blank">
+                    <i class="fab fa-tiktok fa-sm fa-fw"></i>
+                </a>
             </div>
         </div>
     </div>
 </nav>
 <!-- Close Top Nav -->
 
-
 <!-- Header -->
 <nav class="navbar navbar-expand-lg navbar-light shadow">
     <div class="container d-flex justify-content-between align-items-center">
         <!-- Imagen del logo -->
         <a href="{% url 'index' %}">
-            <img src="{% static 'img/logonegro.png' %}" alt="Logo" style="height: 100px; width: auto;" class="ms-3">
+            <img src="{% static 'img/logonegro.png' %}" alt="Logo de TBK Desire" style="height: 100px; width: auto;" class="ms-3">
         </a>
 
-        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse"
-            data-bs-target="#templatemo_main_nav" aria-controls="navbarSupportedContent" aria-expanded="false"
-            aria-label="Toggle navigation">
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#templatemo_main_nav" 
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
 
-        <div class="align-self-center collapse navbar-collapse flex-fill  d-lg-flex justify-content-lg-between"
-            id="templatemo_main_nav">
+        <div class="align-self-center collapse navbar-collapse flex-fill  d-lg-flex justify-content-lg-between" id="templatemo_main_nav">
             <div class="flex-fill">
                 <ul class="nav navbar-nav d-flex justify-content-between mx-lg-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'index' %}">Home</a>
-
+                        <a class="nav-link" href="{% url 'index' %}">Inicio</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'about' %}">Acerca de Nosotros</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'shop' %}">Shop</a>
+                        <a class="nav-link" href="{% url 'shop' %}">Tienda</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'contacto' %}">Contacto</a>
                     </li>
                     {% if user.is_superuser %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'mis_compras' %}">Ventas</a>
-                    </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'mis_compras' %}">Ventas</a>
+                        </li>
                     {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'mis_compras' %}">Mis Compras</a>
-                    </li>
+                        {% if user.is_authenticated %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'mis_compras' %}">Mis Compras</a>
+                            </li>
+                        {% endif %}
                     {% endif %}
                     <!-- Opciones solo visibles para el superusuario -->
                     {% if user.is_superuser %}
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'crear' %}">Crear Producto</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'listar' %}">Lista de Productos</a>
-                    </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'crear' %}">Crear Producto</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'listar' %}">Lista de Productos</a>
+                        </li>
                     {% endif %}
-
                 </ul>
             </div>
 
@@ -83,46 +80,49 @@
                 <!-- Ícono de Favoritos -->
                 <a class="nav-icon position-relative text-decoration-none" href="{% url 'ver_favoritos' %}">
                     <i class="fa fa-fw fa-heart text-dark mr-1"></i>
-                    <span
-                        class="position-absolute top-0 left-100 translate-middle badge rounded-pill bg-light text-dark">
+                    <span class="position-absolute top-0 left-100 translate-middle badge rounded-pill bg-light text-dark">
                         {{ cantidad_favoritos }}
-                        <!-- Aquí puedes mostrar el número de productos en favoritos -->
                     </span>
                 </a>
                 <a class="nav-icon position-relative text-decoration-none" href="{% url 'ver_carrito' %}">
                     <i class="fa fa-fw fa-cart-arrow-down text-dark mr-1"></i>
-                    <span
-                        class="position-absolute top-0 left-100 translate-middle badge rounded-pill bg-light text-dark">
+                    <span class="position-absolute top-0 left-100 translate-middle badge rounded-pill bg-light text-dark">
                         {{ cantidad_carrito }}
-                        <!-- Mostrar la cantidad total de productos -->
                     </span>
                 </a>
                 <!-- Menú de Usuario -->
                 <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
-                        data-bs-toggle="dropdown" aria-expanded="false">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" 
+                       aria-expanded="false">
                         <i class="fa fa-fw fa-user text-dark mr-3"></i>
                         {% if user.is_authenticated %}
-                        <span>Bienvenido, {{ user.username }}</span>
+                            <span>Bienvenido, {{ user.username }}</span>
                         {% else %}
-                        <span>Iniciar sesión</span>
+                            <span>Iniciar sesión</span>
                         {% endif %}
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                         {% if user.is_authenticated %}
-                        <li><a class="dropdown-item" href="{% url 'edit_profile' %}">Editar perfil</a></li>
-                        <form action="{% url 'logout' %}" method="post">
-                            {% csrf_token %}
-                            <button type="submit" class="dropdown-item">Cerrar sesión</button>
-                        </form>
+                            <li><a class="dropdown-item" href="{% url 'edit_profile' %}">Editar perfil</a></li>
+                            <form action="{% url 'logout' %}" method="post">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item">Cerrar sesión</button>
+                            </form>
                         {% else %}
-                        <li><a class="dropdown-item" href="{% url 'login' %}">Iniciar sesión</a></li>
-                        <li><a class="dropdown-item" href="{% url 'register' %}">Registrarse</a></li>
+                            <li><a class="dropdown-item" href="{% url 'login' %}">Iniciar sesión</a></li>
+                            <li><a class="dropdown-item" href="{% url 'register' %}">Registrarse</a></li>
                         {% endif %}
                     </ul>
                 </div>
             </div>
         </div>
-
     </div>
 </nav>
+
+<script>
+    // Cambio dinámico de aria-expanded en el botón de menú para mejorar la accesibilidad
+    document.querySelector('.navbar-toggler').addEventListener('click', function () {
+        let expanded = this.getAttribute('aria-expanded') === 'true' || false;
+        this.setAttribute('aria-expanded', !expanded);
+    });
+</script>

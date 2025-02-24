@@ -14,14 +14,8 @@ from pathlib import Path
 import os
 import environ
 
-# Leer el archivo .env
-environ.Env.read_env()
-
-
 # Inicializar el objeto de entorno
 env = environ.Env()
-
-
 # Especificar explícitamente la ruta al archivo .env
 env_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
 
@@ -30,24 +24,6 @@ env.read_env(env_file)
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': '/var/log/django/debug.log',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['file'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-    },
-}
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
@@ -110,7 +86,7 @@ WSGI_APPLICATION = "tbk.wsgi.application"
 SECRET_KEY = env('SECRET_KEY')  # Cargar desde el archivo .env
 
 # Modo debug (es mejor no dejar DEBUG=True en producción)
-DEBUG = False
+DEBUG = True
 
 # Configuración de la base de datos
 DATABASES = {
@@ -155,8 +131,6 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 
 USE_TZ = True
-
-
 
 
 # Default primary key field type

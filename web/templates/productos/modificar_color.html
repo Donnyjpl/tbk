@@ -1,0 +1,27 @@
+{% extends "baset.html" %}
+{% load custom_filters %}
+
+{% block content %}
+  <div class="container mt-4 mb-5">
+    <h2 class="text-center">Modificar o Eliminar Color de la Talla</h2>
+
+    <h3 class="mt-4">Talla: {{ talla.talla }} - Producto: {{ producto.nombre }}</h3>
+
+    <form method="POST">
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="color">Color</label>
+        {{ color_form.color|add_class:"form-control" }}
+      </div>
+
+      <div class="d-flex justify-content-between">
+        <button type="submit" name="modificar" class="btn btn-warning">Modificar Color</button>
+        <button type="submit" name="eliminar" class="btn btn-danger" onclick="return confirm('¿Estás seguro de que deseas eliminar este color?');">Eliminar Color</button>
+      </div>
+    </form>
+
+    <p class="mt-4 text-center">
+      <a href="{% url 'agregar_tallas' slug=producto.slug %}" class="btn btn-secondary">Volver a las Tallras del Producto</a>
+    </p>
+  </div>
+{% endblock %}

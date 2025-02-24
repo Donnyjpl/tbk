@@ -217,10 +217,12 @@ def procesar_pago_success(request):
         print("No se generó el mensaje HTML para el administrador.")
 
     # Renderizar la página de confirmación después del pago
+
     return render(request, 'carrito/compra_confirmacion.html', {
         'ventas': ventas,
         'total': total,
     })
+
 
 class MisComprasView(LoginRequiredMixin, ListView):
     model = Venta
@@ -517,7 +519,6 @@ def dejar_opinion(request, slug):
         'form': form,
         'producto': producto
     })
-    
     
 def agregar_al_carrito(request, slug):
     # Obtener el producto usando el slug
@@ -1051,10 +1052,10 @@ def agregar_colores_talla(request, talla_id):
     })
     
 
-    
 @user_passes_test(es_superusuario)
 def lista_productos(request):
     form = ProductoFilterForm(request.GET)
+
 
     # Obtener todos los productos
     productos = Producto.objects.all()
@@ -1083,35 +1084,6 @@ def lista_productos(request):
 
 def about(request):
     return render(request, 'about.html')
-
-
-def lista_productos(request):
-    form = ProductoFilterForm(request.GET)
-    
-    # Obtener todos los productos
-    productos = Producto.objects.all()
-
-    # Aplicar filtros según los datos del formulario
-    slug_buscar = request.GET.get('slug', '')
-    if slug_buscar:
-        productos = productos.filter(slug__icontains=slug_buscar)
-
-    # Ordenar productos por nombre
-    productos = productos.order_by('nombre')
-
-    # Optimización: Usamos prefetch_related para obtener imágenes y tallas de una sola consulta
-    productos = productos.prefetch_related('imagenes', 'tallas')
-
-    # Paginación
-    paginator = Paginator(productos, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    # Pasar productos y formulario al contexto
-    return render(request, 'producto_list.html', {
-        'page_obj': page_obj,  # Usamos 'page_obj' para el template
-        'form': form,
-    })
 
 
 class ProductoListView(ListView):
@@ -1175,7 +1147,6 @@ def contacto(request):
             # Crear el correo en formato texto plano y HTML para el administrador
             subject = f'Nuevo mensaje de contacto de {nombre}'
             from_email = correo
-
             to_email = ['info@tbkdesire.cl']  # Reemplaza con el correo del administrador
 
             # Texto plano para el correo
@@ -1413,8 +1384,8 @@ class CustomPasswordResetDoneView(PasswordResetDoneView):
 class CustomPasswordResetCompleteView(PasswordResetCompleteView):
     template_name = 'registration/password_reset_complete.html'
 
-
-# Vista de inicio que muestra los flanes públicos
+    
 @login_required
 def profile_view(request):
     return render(request, 'usuario/profile.html')
+

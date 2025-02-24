@@ -2,7 +2,7 @@
 {% block title %}Subir Imágenes para {{ producto.nombre }}{% endblock %}
 {% block content %}
 {% if messages %}
-<div class="alert-container">
+<div class=" alert alert-success container">
     {% for message in messages %}
         <div class="alert alert-{{ message.tags }}">
             {{ message }}

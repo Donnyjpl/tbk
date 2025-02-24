@@ -54,15 +54,16 @@
                         <a class="nav-link" href="{% url 'contacto' %}">Contacto</a>
                     </li>
                     {% if user.is_superuser %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'mis_compras' %}">Ventas</a>
-                        </li>
-                    {% else %}
-                        {% if user.is_authenticated %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'mis_compras' %}">Mis Compras</a>
-                            </li>
-                        {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'mis_compras' %}">Ventas</a>
+                    </li>
+                    {% endif %}
+		    {% if user.is_authenticated %}
+                    	{% if not user.is_superuser %}
+		    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'mis_compras' %}">Mis Compras</a>
+                    </li>
+			{% endif %}
                     {% endif %}
                     <!-- Opciones solo visibles para el superusuario -->
                     {% if user.is_superuser %}

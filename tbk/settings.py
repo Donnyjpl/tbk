@@ -47,9 +47,9 @@ INSTALLED_APPS = [
 
 # Para el manejo de archivos de medios
 STATIC_URL = '/static/'
-STATIC_ROOT=os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT='/var/www/tbk/staticfiles'
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = '/var/www/tbk/media'
 
 
 MIDDLEWARE = [
@@ -124,13 +124,14 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "es-cl"  # Español de Chile
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "Chile/Continental"  # Zona horaria de Chile
 
 USE_I18N = True
 
 USE_TZ = True
+
 
 
 # Default primary key field type

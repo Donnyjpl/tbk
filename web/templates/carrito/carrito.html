@@ -23,6 +23,7 @@
                     <tr>
                         <th>Producto</th>
                         <th>Talla</th>
+                        <th>Color</th>
                         <th>Cantidad</th>
                         <th>Precio</th>
                         <th>Total</th>
@@ -36,6 +37,7 @@
                     <tr>
                         <td>{{ producto.nombre|title }}</td>
                         <td>{{ talla_data.talla|title }}</td> <!-- Mostrar la talla -->
+                        <td>{{ colores.slug }}</td> <!-- Mostrar el color -->
                         <td>
                             <form method="POST" action="{% url 'actualizar_carrito' producto.slug talla_id %}">
                                 {% csrf_token %}
@@ -61,9 +63,34 @@
                     {% endfor %}
                 </tbody>
             </table>
-            <h3>Total: ${{ total|formatear_precio}}</h3>
-            {% if user.is_authenticated %}
+
+            <!-- Opción de Envío o Retiro -->
+            <form method="POST" action="{% url 'actualizar_envio' %}" class="form-inline">
+                {% csrf_token %}
+                <div class="form-group mb-3">
+                    <label for="envio" class="mr-2">Selecciona una opción de envío:</label>
+                    <select name="envio" id="envio" class="form-control form-control-sm" onchange="this.form.submit()">
+                        <option value="retiro" {% if envio == 'retiro' %}selected{% endif %}>Retiro en tienda</option>
+                        <option value="envio" {% if envio == 'envio' %}selected{% endif %}>Envío a domicilio</option>
+                    </select>
+                </div>
+            </form>
+
+            <!-- Monto adicional por el envío -->
+            {% if envio == 'envio' %}
+            <h4>Costo de Envío: 6000 CLP</h4>
+            {% else %}
+            <h4>Sin costo de envío (Retiro en tienda)</h4>
+            {% endif %}
+
+            <!-- Total con o sin envío -->
+            {% if envio == 'envio' %}
+            <h3>Total con envío: ${{ total|formatear_precio }}</h3>
+            {% else %}
             <h3>Total: ${{ total|formatear_precio }}</h3>
+            {% endif %}
+
+            {% if user.is_authenticated %}
             <a href="{% url 'procesar_pago' %}" class="btn btn-success">Proceder al Pago</a>
             {% else %}
             <h3>Total: ${{ total|formatear_precio }}</h3>

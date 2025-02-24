@@ -4,7 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from .views import ProductoListView,about,contacto,successs,lista_productos,logout_view,custom_login,procesar_pago_success,ProductoDetalleView
 
-from .views import crear_producto, subir_imagenes,agregar_al_carrito,ver_carrito,eliminar_del_carrito,actualizar_carrito
+from .views import crear_producto, subir_imagenes,ver_carrito,eliminar_del_carrito,actualizar_carrito
 
 from .views import profile_view,register, ProfileUpdateView,custom_password_reset_request,CustomPasswordResetConfirmView,CustomPasswordResetDoneView,CustomPasswordResetCompleteView
 from . import views
@@ -37,16 +37,19 @@ urlpatterns = [
     
     # Asegúrate de que esta URL esté antes de las URL con patrones de captura
     path('producto/get_colores/', views.get_colores_por_talla, name='get_colores_por_talla'),
-    
-    
     path('shop/', ProductoListView.as_view(), name='shop'),  # URL para ver la lista de productos
     path('producto/<slug:slug>/', ProductoDetalleView.as_view(), name='producto_detalle'),
     
     
-    path('agregar_al_carrito/<slug:slug>/', agregar_al_carrito, name='agregar_al_carrito'),
+    # URL para agregar al carrito
+    path('producto/<slug:slug>/agregar-al-carrito/', views.agregar_al_carrito, name='agregar_al_carrito'),
     path('ver_carrito/', ver_carrito, name='ver_carrito'),
+    path('actualizar_envio/', views.actualizar_envio, name='actualizar_envio'),
+    
+    
     path('eliminar_del_carrito/<slug:slug>/<int:talla_id>/', views.eliminar_del_carrito, name='eliminar_del_carrito'),
     path('actualizar_carrito/<slug:slug>/<int:talla_id>/', views.actualizar_carrito, name='actualizar_carrito'),
+    
     path('producto/<slug:slug>/opinion/', views.dejar_opinion, name='producto_opinion'),
     
 

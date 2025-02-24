@@ -84,6 +84,95 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from django.http import HttpResponseForbidden
 
+def agregar_al_carrito(request, slug):
+    # Obtener el producto usando el slug
+    producto = get_object_or_404(Producto, slug=slug)
+    
+    # Obtener los valores de talla y color desde la solicitud POST
+    talla_id = request.POST.get('talla')
+    color_id = request.POST.get('color')
+    
+    print(f"talla_id: {talla_id}, color_id: {color_id}", )  # Agrega esto para depuración
+
+    # Obtener el carrito de la sesión o inicializarlo si no existe
+    carrito = request.session.get('carrito', {})
+    
+    # Obtener la talla seleccionada
+    try:
+        talla = producto.tallas.get(id=talla_id)  # Verifica que la talla exista para este producto
+        print(f"Talla encontrada: {talla.talla}")
+    except ProductoTalla.DoesNotExist:
+        messages.error(request, 'La talla seleccionada no existe para este producto.')
+        return redirect('producto_detalle', slug=slug)
+    # Obtener el color seleccionado para la talla
+    try:
+        color = ProductoTallaColor.objects.get(producto_talla=talla, color_id=color_id)
+        print(f"Color encontrado: {color.color.nombre}")
+    except ProductoTallaColor.DoesNotExist:
+        messages.error(request, 'El color seleccionado no existe para esta talla.')
+        return redirect('producto_detalle', slug=slug)
+
+    # Verificar si el producto ya está en el carrito
+    if str(slug) in carrito:
+        if str(talla_id) in carrito[str(slug)]['tallas']:
+            if str(color_id) in carrito[str(slug)]['tallas'][str(talla_id)]['colores']:
+                # Si el producto ya está en el carrito, solo incrementamos la cantidad
+                carrito[str(slug)]['tallas'][str(talla_id)]['colores'][str(color_id)]['cantidad'] += 1
+            else:
+                # Si el color no está, lo agregamos
+                carrito[str(slug)]['tallas'][str(talla_id)]['colores'][str(color_id)] = {
+                    'color': color.color.nombre,
+                    'cantidad': 1,
+                    'precio': float(producto.precio),
+                }
+        else:
+            # Si la talla no está, la agregamos junto con el color
+            carrito[str(slug)]['tallas'][str(talla_id)] = {
+                'talla': talla.talla,
+                'precio': float(producto.precio),
+                'cantidad': 1,
+                'colores': {
+                    str(color_id): {
+                        'color': color.color.nombre,
+                        'cantidad': 1,
+                        'precio': float(producto.precio),
+                    }
+                }
+            }
+    else:
+        # Si el producto no está en el carrito, lo agregamos
+        carrito[str(slug)] = {
+            'nombre': producto.nombre,
+            'precio': float(producto.precio),
+            'cantidad': 1,
+            'slug': producto.slug,
+            'tallas': {
+                str(talla_id): {
+                    'talla': talla.talla,
+                    'precio': float(producto.precio),
+                    'cantidad': 1,
+                    'colores': {
+                        str(color_id): {
+                            'color': color.color.nombre,
+                            'cantidad': 1,
+                            'precio': float(producto.precio),
+                        }
+                    }
+                }
+            }
+        }
+
+    # Guardar el carrito en la sesión
+    request.session['carrito'] = carrito
+
+    # Mensaje de éxito
+    messages.success(request, f'{producto.nombre} con talla {talla.talla} y color {color.color.nombre} se ha agregado al carrito con éxito.')
+
+    # Redirigir a la vista del producto
+    return redirect('producto_detalle', slug=slug)
+
+
+    
 
 class ProductoDetalleView(DetailView):
     model = Producto
@@ -139,39 +228,7 @@ class ProductoDetalleView(DetailView):
             ] for talla in producto.tallas.all()
         }
     
-def agregar_al_carrito(request, producto):
-        talla_id = request.POST.get('talla')
-        color_id = request.POST.get('color')
-        
-        if not (talla_id and color_id):
-            messages.error(request, 'Selecciona una talla y un color válidos.')
-            return False
-            
-        talla = get_object_or_404(ProductoTalla, id=talla_id, producto=producto)
-        color = get_object_or_404(ProductoTallaColor, id=color_id, producto_talla=talla)
-        
-        carrito = request.session.get('carrito', {})
-        
-        carrito_item = {
-            'producto_id': producto.id,
-            'nombre': producto.nombre,
-            'precio': float(producto.precio),
-            'talla': talla.talla,
-            'color': color.color.nombre,
-            'cantidad': 1,
-        }
-        
-        if str(producto.id) in carrito:
-            carrito[str(producto.id)]['cantidad'] += 1
-        else:
-            carrito[str(producto.id)] = carrito_item
-        
-        request.session['carrito'] = carrito
-        messages.success(request, 'Producto agregado al carrito exitosamente.')
-        return True
     
-    
-
 # 2. Actu@csrf_exempt
 
 @csrf_exempt  # Mantén esto para pruebas, pero considera una solución más segura después
@@ -436,8 +493,6 @@ def actualizar_favoritos(request, slug):
     return redirect('ver_favoritos')  # Redirige a la vista de favoritos
 
 
-
-    
 class IndexView(ListView):
     model = Producto
     template_name = 'index1.html'  # Plantilla para mostrar productos
@@ -507,94 +562,54 @@ def dejar_opinion(request, slug):
         'producto': producto
     })
     
-def agregar_al_carrito(request, slug):
-    # Obtener el producto usando el slug
-    producto = get_object_or_404(Producto, slug=slug)
     
-    # Obtener los valores de talla y color desde la solicitud
-    talla_id = request.POST.get('talla')  # Asegúrate de que estás obteniendo correctamente la talla
-    color_id = request.POST.get('color')  # Obtén el color seleccionado
     
-    # Verificar si la talla existe para el producto
-    try:
-        talla = producto.tallas.get(id=talla_id)
-    except ProductoTalla.DoesNotExist:
-        messages.error(request, 'La talla seleccionada no existe para este producto.')
-        return redirect('producto_detalle', slug=slug)  # Redirigir a la página del producto
-
-    # Verificar si el color existe para la talla seleccionada
-    try:
-        color = ProductoTallaColor.objects.get(producto_talla=talla, color_id=color_id)
-    except ProductoTallaColor.DoesNotExist:
-        messages.error(request, 'El color seleccionado no existe para esta talla.')
-        return redirect('producto_detalle', slug=slug)  # Redirigir a la página del producto
-
-    # Obtener el carrito de la sesión o inicializarlo si no existe
-    carrito = request.session.get('carrito', {})
-
-    # Verificar si el producto ya está en el carrito
-    if str(slug) in carrito:
-        if str(talla_id) in carrito[str(slug)]['tallas']:
-            if str(color_id) in carrito[str(slug)]['tallas'][str(talla_id)]['colores']:
-                carrito[str(slug)]['tallas'][str(talla_id)]['colores'][str(color_id)]['cantidad'] += 1
-            else:
-                carrito[str(slug)]['tallas'][str(talla_id)]['colores'][str(color_id)] = {
-                    'color': color.color.nombre,
-                    'cantidad': 1,
-                    'precio': str(producto.precio),
-                }
-        else:
-            carrito[str(slug)]['tallas'][str(talla_id)] = {
-                'talla': talla.talla,
-                'precio': str(producto.precio),
-                'cantidad': 1,
-                'colores': {
-                    str(color_id): {
-                        'color': color.color.nombre,
-                        'cantidad': 1,
-                        'precio': str(producto.precio),
-                    }
-                }
-            }
-    else:
-        carrito[str(slug)] = {
-            'nombre': producto.nombre,
-            'precio': str(producto.precio),
-            'cantidad': 1,
-            'slug': producto.slug,
-            'tallas': {
-                str(talla_id): {
-                    'talla': talla.talla,
-                    'precio': str(producto.precio),
-                    'cantidad': 1,
-                    'colores': {
-                        str(color_id): {
-                            'color': color.color.nombre,
-                            'cantidad': 1,
-                            'precio': str(producto.precio),
-                        }
-                    }
-                }
-            }
-        }
-
-    # Guardar el carrito en la sesión
-    request.session['carrito'] = carrito
-
-    # Agregar un mensaje de éxito
-    messages.success(request, f'{producto.nombre} con talla {talla.talla} y color {color.color.nombre} se ha agregado al carrito con éxito.')
-    return redirect('producto_detalle', slug=slug)  # Redirige a la vista del producto
+@login_required
+def actualizar_envio(request):
+    if request.method == 'POST':
+        envio = request.POST.get('envio')
+        # Guarda la opción de envío en la sesión
+        request.session['envio'] = envio
+    # Redirige de vuelta al carrito o la página que corresponda
+    return redirect('ver_carrito')
 
 def ver_carrito(request):
+    # Recuperar el carrito de la sesión
     carrito = request.session.get('carrito', {})
+    
+    # Inicializar el total
     total = 0
     for producto_slug, producto_data in carrito.items():
         # Asegúrate de que 'tallas' está en el diccionario
         if 'tallas' in producto_data:
             for talla_id, talla_data in producto_data['tallas'].items():
                 total += float(talla_data['precio']) * talla_data['cantidad']
-    
-    return render(request, 'carrito/carrito.html', {'carrito': carrito, 'total': total})
+
+    # Obtener la opción de envío de la sesión (por defecto es "retiro")
+    envio = request.session.get('envio', 'retiro')
+
+    # Si el usuario seleccionó envío, agregar un costo fijo
+    if envio == 'envio':
+        total += 6000  # Supón que el costo de envío es 6000
+        
+        # Recopilando los colores de los productos en el carrito (con manejo de ausencia de color)
+    colores = {}
+    for slug, producto in carrito.items():
+        # Asegurarse de que el producto tiene el atributo 'color'
+        if 'color' in producto:
+            colores[slug] = producto['color']
+        else:
+            colores[slug] = 'Sin color'  # O asignar un color predeterminado
+
+    # Pasar los datos al contexto de la plantilla
+    return render(request, 'carrito/carrito.html', {
+        'carrito': carrito,
+        'total': total,
+        'envio': envio,  # Pasar la opción de envío para mostrarla en la vista
+        'colores':colores,# Recopilando los colores
+    })
+
+
    
 def eliminar_del_carrito(request, slug, talla_id):
     producto = get_object_or_404(Producto, slug=slug)

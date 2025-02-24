@@ -200,61 +200,76 @@ Detalles de Producto
 </section>
 
 
+
 <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    // Inicializar los colores si hay una talla seleccionada
-    const tallaSelect = document.getElementById('talla');
-    if (tallaSelect && tallaSelect.value) {
-        updateColors();
-    }
-});
+    document.addEventListener('DOMContentLoaded', function () {
+      // Inicializar los colores si hay una talla seleccionada
+      const tallaSelect = document.getElementById('talla');
+      if (tallaSelect && tallaSelect.value) {
+          updateColors();
+      }
+  });
+  
+  function updateColors() {
+      const tallaId = document.getElementById('talla').value;
+      const colorSelect = document.getElementById('color');
+      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  
+      // Reset color select
+      colorSelect.innerHTML = '<option value="">Cargando colores...</option>';
+  
+      if (!tallaId) {
+          colorSelect.innerHTML = '<option value="">Selecciona primero una talla</option>';
+          return;
+      }
+  
+      // Usar la URL absoluta para evitar problemas de ruta
+      fetch('/producto/get_colores/', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'X-CSRFToken': csrfToken
+          },
+          body: `talla=${tallaId}`
+      })
+      .then(response => {
+          if (!response.ok) {
+              throw new Error(`Error en la respuesta: ${response.status}`);
+          }
+          return response.json();
+      })
+      .then(data => {
+          console.log(data);  // Ver qué llega en el backend
+          colorSelect.innerHTML = '';
+  
+          if (data.colores && data.colores.length > 0) {
+              colorSelect.innerHTML = '<option value="">Selecciona un color</option>';
+              data.colores.forEach(color => {
+                  const option = document.createElement('option');
+                  option.value = color.id;
+                  option.textContent = color.nombre;
+                  colorSelect.appendChild(option);
+              });
+          } else {
+              colorSelect.innerHTML = '<option value="">No hay colores disponibles</option>';
+          }
+      })
+      .catch(error => {
+          console.error('Error:', error);
+          colorSelect.innerHTML = '<option value="">Error al cargar colores</option>';
+      });
 
-function updateColors() {
-    const tallaId = document.getElementById('talla').value;
-    const colorSelect = document.getElementById('color');
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  } 
+    // Validación del formulario
+    document.getElementById('addToCartForm').addEventListener('submit', function (e) {
+        const talla = document.getElementById('talla').value;
+        const color = document.getElementById('color').value;
 
-    // Reset color select
-    colorSelect.innerHTML = '<option value="">Cargando colores...</option>';
-
-    if (!tallaId) {
-        colorSelect.innerHTML = '<option value="">Selecciona primero una talla</option>';
-        return;
-    }
-
-    // Usar la URL absoluta para evitar problemas de ruta
-    fetch('/producto/get_colores/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-CSRFToken': csrfToken
-        },
-        body: `talla=${tallaId}`
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`Error en la respuesta: ${response.status}`);
+        if (!talla || !color) {
+            e.preventDefault();
+            alert('Por favor selecciona una talla y un color');
         }
-        return response.json();
-    })
-    .then(data => {
-        colorSelect.innerHTML = '';
-
-        if (data.colores && data.colores.length > 0) {
-            colorSelect.innerHTML = '<option value="">Selecciona un color</option>';
-            data.colores.forEach(color => {
-                const option = document.createElement('option');
-                option.value = color.id;
-                option.textContent = color.nombre;
-                colorSelect.appendChild(option);
-            });
-        } else {
-            colorSelect.innerHTML = '<option value="">No hay colores disponibles</option>';
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        colorSelect.innerHTML = '<option value="">Error al cargar colores</option>';
     });
-} </script>
+  </script>
+
 {% endblock %}

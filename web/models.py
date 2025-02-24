@@ -33,7 +33,7 @@ class Producto(models.Model):
     activo = models.BooleanField(default=True)  # Nuevo campo activo para indicar si la talla está disponible
     slug = models.SlugField(unique=True, blank=True)  # Slug único y automáticamente generado
     categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE, null=True, blank=True)  # Permite nulos
-    descripcion = models.TextField(max_length=255, null=True)
+    descripcion = models.TextField(max_length=1000, null=True)
     
     def save(self, *args, **kwargs):
         # Generar el slug automáticamente si no se ha proporcionado
@@ -83,7 +83,7 @@ class OpinionCliente(models.Model):
         created_at = models.DateTimeField(auto_now_add=True)  # Campo para la fecha de creación
 
         def __str__(self):
-            return f'Opinión de {self.nombre_cliente} sobre {self.producto.name}'  # Acceso al nombre del producto usando self.producto.name
+            return f'Opinión de {self.user.username} sobre {self.producto.nombre}'  # Acceso al nombre del producto usando self.producto.name
 
 class Venta(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)  # Relacionamos la venta con un usuario

@@ -1,14 +1,30 @@
 {% extends "baset.html" %}
 
 {% block content %}
+<style>
+.imagen-pequena-talla {
+    max-width: 100px;
+    height: auto; /* Mantiene la proporción de la imagen */
+}
+</style>
 <div class="container mt-4 mb-5">
     <h2 class="text-center">Agregar Tallas y Colores al Producto: {{ producto.nombre|upper }}</h2>
     <!-- Mostrar la categoría del producto -->
-<p class="text-center">Categoría: {{ producto.categoria.nombre }}</p>
-<!-- Enlace al detalle del producto -->
-<p class="text-center">
-    <a href="{% url 'producto_detalle' slug=producto.slug %}" class="btn btn-info">Ver Detalles del Producto</a>
-</p>
+    <p class="text-center">Categoría: {{ producto.categoria.nombre }}</p>
+    <!-- Mostrar la primera imagen del producto -->
+    <!-- Mostrar la primera imagen del producto -->
+    {% if producto.imagenes.all %}
+    <div class="text-center mb-4">
+        <img src="{{ producto.imagenes.first.imagen.url }}" alt="Imagen del producto" class="img-fluid imagen-pequena-talla" />
+    </div>
+{% else %}
+    <p class="text-center text-muted">No hay imágenes disponibles para este producto.</p>
+{% endif %}
+
+    <!-- Enlace al detalle del producto -->
+    <p class="text-center">
+        <a href="{% url 'producto_detalle' slug=producto.slug %}" class="btn btn-info">Ver Detalles del Producto</a>
+    </p>
 
     {% if messages %}
     <div class="mt-3">
@@ -43,30 +59,34 @@
                     <p><strong>Colores asociados:</strong></p>
                     <ul class="list-group">
                         {% for talla_color in talla.colores.all %}
-                            <li class="list-group-item d-flex justify-content-between">
-                                {{ talla_color.color.nombre }}
-                                <!-- Formulario para eliminar un color de esta talla -->
-                                <form method="POST" style="display:inline;">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="talla_id" value="{{ talla.id }}">
-                                    <input type="hidden" name="color_id" value="{{ talla_color.id }}">
-                                    <button type="submit" name="eliminar_color" class="btn btn-danger btn-sm"  onclick="return confirm('¿Estás seguro de que deseas eliminar color  de esta talla?');">Eliminar Color</button>
-                                </form>
-                            </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            {{ talla_color.color.nombre }}
+                            <!-- Formulario para eliminar un color de esta talla -->
+                            <form method="POST" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="talla_id" value="{{ talla.id }}">
+                                <input type="hidden" name="color_id" value="{{ talla_color.id }}">
+                                <button type="submit" name="eliminar_color" class="btn btn-danger btn-sm"
+                                    onclick="return confirm('¿Estás seguro de que deseas eliminar color  de esta talla?');">Eliminar
+                                    Color</button>
+                            </form>
+                        </li>
                         {% empty %}
-                            <li class="list-group-item">No hay colores asociados a esta talla.</li>
+                        <li class="list-group-item">No hay colores asociados a esta talla.</li>
                         {% endfor %}
                     </ul>
                     <!-- Formulario para eliminar esta talla -->
                     <form method="POST" style="display:inline;">
                         {% csrf_token %}
                         <input type="hidden" name="talla_id" value="{{ talla.id }}">
-                        <button type="submit" name="eliminar_talla" class="btn btn-danger btn-sm mt-2"  onclick="return confirm('¿Estás seguro de que deseas eliminar esta talla?');">Eliminar Talla</button>
+                        <button type="submit" name="eliminar_talla" class="btn btn-danger btn-sm mt-2"
+                            onclick="return confirm('¿Estás seguro de que deseas eliminar esta talla?');">Eliminar
+                            Talla</button>
                     </form>
                 </div>
             </div>
             {% empty %}
-                <p>No hay tallas asociadas a este producto.</p>
+            <p>No hay tallas asociadas a este producto.</p>
             {% endfor %}
         </div>
     </div>

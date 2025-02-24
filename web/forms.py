@@ -61,8 +61,6 @@ class ProductoTallaColorForm(forms.ModelForm):
 
         return color
 
-    
-    
 class ProductoImagenForm(forms.ModelForm):
     class Meta:
         model = ProductoImagen

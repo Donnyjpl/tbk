@@ -8,7 +8,7 @@ from .views import crear_producto, subir_imagenes,agregar_al_carrito,ver_carrito
 
 from .views import profile_view,register, ProfileUpdateView,custom_password_reset_request,CustomPasswordResetConfirmView,CustomPasswordResetDoneView,CustomPasswordResetCompleteView
 from . import views
-from .views import agregar_a_favoritos, ver_favoritos, eliminar_de_favoritos, actualizar_favoritos,MisComprasView,ProductoOpinionView,get_colores_por_talla
+from .views import agregar_a_favoritos, ver_favoritos, eliminar_de_favoritos, actualizar_favoritos,MisComprasView,get_colores_por_talla
 
 from django.contrib.auth import views as auth_views
 urlpatterns = [
@@ -35,18 +35,21 @@ urlpatterns = [
     path('procesar_pago/failure/', views.failure, name='failure'),
     path('procesar_pago/pending/', views.pending, name='pending'),
     
+    # Asegúrate de que esta URL esté antes de las URL con patrones de captura
+    path('producto/get_colores/', views.get_colores_por_talla, name='get_colores_por_talla'),
+    
+    
     path('shop/', ProductoListView.as_view(), name='shop'),  # URL para ver la lista de productos
     path('producto/<slug:slug>/', ProductoDetalleView.as_view(), name='producto_detalle'),
-    path('dejar_opinion/', views.dejar_opinion, name='dejar_opinion'),
+    
     
     path('agregar_al_carrito/<slug:slug>/', agregar_al_carrito, name='agregar_al_carrito'),
     path('ver_carrito/', ver_carrito, name='ver_carrito'),
     path('eliminar_del_carrito/<slug:slug>/<int:talla_id>/', views.eliminar_del_carrito, name='eliminar_del_carrito'),
     path('actualizar_carrito/<slug:slug>/<int:talla_id>/', views.actualizar_carrito, name='actualizar_carrito'),
-    path('producto/<slug:slug>/opinion/', ProductoOpinionView.as_view(), name='producto_opinion'),
-    path('producto/get_colores/', views.get_colores_por_talla, name='get_colores'),
-
+    path('producto/<slug:slug>/opinion/', views.dejar_opinion, name='producto_opinion'),
     
+
     path('favoritos/', ver_favoritos, name='ver_favoritos'),
     path('favoritos/agregar/<slug:slug>/', agregar_a_favoritos, name='agregar_a_favoritos'),
     path('favoritos/eliminar/<slug:slug>/', eliminar_de_favoritos, name='eliminar_de_favoritos'),

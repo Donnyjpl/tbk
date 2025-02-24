@@ -87,9 +87,9 @@ Detalles de Producto
                         </div>
 
                         <!-- Formulario de compra -->
-                        <form id="addToCartForm" method="POST">
+                        <form id="addToCartForm" method="POST" action="{% url 'agregar_al_carrito' slug=producto.slug %}">
                             {% csrf_token %}
-                            <div class="form-group">
+                            <div class="form-group mb-3">
                                 <label for="talla">Talla:</label>
                                 <select name="talla" id="talla" class="form-control" onchange="updateColors()">
                                     <option value="">Selecciona una talla</option>
@@ -98,14 +98,15 @@ Detalles de Producto
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group mb-3">
                                 <label for="color">Color:</label>
                                 <select name="color" id="color" class="form-control">
                                     <option value="">Selecciona primero una talla</option>
                                 </select>
                             </div>
-                            <button type="submit" class="btn btn-primary">Agregar al carrito</button>
+                            <button type="submit" class="btn btn-success mb-3">Agregar al carrito</button>
                         </form>
+
 
                         <!-- Tabs -->
                         <ul class="nav nav-tabs" id="productTab" role="tablist">
@@ -123,7 +124,9 @@ Detalles de Producto
                             <!-- Descripción -->
                             <div class="tab-pane fade show active" id="description" role="tabpanel">
                                 {{ producto.descripcion|linebreaks }}
+                                {% include 'tallas.html' %}
                             </div>
+
 
                             <!-- Opiniones -->
                             <div class="tab-pane fade" id="reviews" role="tabpanel">
@@ -196,68 +199,62 @@ Detalles de Producto
     </div>
 </section>
 
+
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Inicializar los colores si hay una talla seleccionada
-        const tallaSelect = document.getElementById('talla');
-        if (tallaSelect.value) {
-            updateColors();
-        }
-    });
+  document.addEventListener('DOMContentLoaded', function () {
+    // Inicializar los colores si hay una talla seleccionada
+    const tallaSelect = document.getElementById('talla');
+    if (tallaSelect && tallaSelect.value) {
+        updateColors();
+    }
+});
 
-    function updateColors() {
-        const tallaId = document.getElementById('talla').value;
-        const colorSelect = document.getElementById('color');
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+function updateColors() {
+    const tallaId = document.getElementById('talla').value;
+    const colorSelect = document.getElementById('color');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-        // Reset color select
-        colorSelect.innerHTML = '<option value="">Cargando colores...</option>';
+    // Reset color select
+    colorSelect.innerHTML = '<option value="">Cargando colores...</option>';
 
-        if (!tallaId) {
-            colorSelect.innerHTML = '<option value="">Selecciona primero una talla</option>';
-            return;
-        }
-
-        fetch('/producto/get_colores/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': csrfToken
-                },
-                body: `talla=${tallaId}`
-            })
-            .then(response => response.json())
-            .then(data => {
-                colorSelect.innerHTML = '';
-
-                if (data.colores && data.colores.length > 0) {
-                    colorSelect.innerHTML = '<option value="">Selecciona un color</option>';
-                    data.colores.forEach(color => {
-                        const option = document.createElement('option');
-                        option.value = color.id;
-                        option.textContent = color.nombre;
-                        colorSelect.appendChild(option);
-                    });
-                } else {
-                    colorSelect.innerHTML = '<option value="">No hay colores disponibles</option>';
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                colorSelect.innerHTML = '<option value="">Error al cargar colores</option>';
-            });
+    if (!tallaId) {
+        colorSelect.innerHTML = '<option value="">Selecciona primero una talla</option>';
+        return;
     }
 
-
-    // Validación del formulario
-    document.getElementById('addToCartForm').addEventListener('submit', function (e) {
-        const talla = document.getElementById('talla').value;
-        const color = document.getElementById('color').value;
-
-        if (!talla || !color) {
-            e.preventDefault();
-            alert('Por favor selecciona una talla y un color');
+    // Usar la URL absoluta para evitar problemas de ruta
+    fetch('/producto/get_colores/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken
+        },
+        body: `talla=${tallaId}`
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Error en la respuesta: ${response.status}`);
         }
+        return response.json();
+    })
+    .then(data => {
+        colorSelect.innerHTML = '';
+
+        if (data.colores && data.colores.length > 0) {
+            colorSelect.innerHTML = '<option value="">Selecciona un color</option>';
+            data.colores.forEach(color => {
+                const option = document.createElement('option');
+                option.value = color.id;
+                option.textContent = color.nombre;
+                colorSelect.appendChild(option);
+            });
+        } else {
+            colorSelect.innerHTML = '<option value="">No hay colores disponibles</option>';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        colorSelect.innerHTML = '<option value="">Error al cargar colores</option>';
     });
-</script>
+} </script>
 {% endblock %}

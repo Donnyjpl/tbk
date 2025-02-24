@@ -84,6 +84,128 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from django.http import HttpResponseForbidden
 
+
+class ProductoDetalleView(DetailView):
+    model = Producto
+    template_name = 'producto_detalle.html'
+    context_object_name = 'producto'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        producto = context['producto']
+        
+        # Productos relacionados
+        context['productos_relacionados'] = self._get_related_products(producto)
+        
+        # Información del producto actual
+        self._add_product_info(producto)
+        
+        # Opiniones y formulario
+        self._add_reviews_context(context, producto)
+        
+        # Colores por talla
+        context['colores_por_talla'] = self._get_colors_by_size(producto)
+        
+        return context
+    
+    def _get_related_products(self, producto):
+        related = Producto.objects.filter(
+            categoria=producto.categoria, 
+            activo=True
+        ).exclude(id=producto.id)[:10]
+        
+        for prod in related:
+            prod.imagenes_list = prod.imagenes.all()
+        return related
+    
+    def _add_product_info(self, producto):
+        producto.imagenes_list = producto.imagenes.all()
+        producto.tallas_list = producto.tallas.all()
+    
+    def _add_reviews_context(self, context, producto):
+        context['rango_estrellas'] = range(1, 6)
+        producto.opiniones_list = producto.opiniones.all().order_by('-created_at')[:3]
+        
+        if self.request.user.is_authenticated:
+            if producto.opiniones.filter(user=self.request.user).exists():
+                context['usuario_tiene_opinion'] = True
+            else:
+                context['opinion_form'] = OpinionClienteForm()
+    
+    def _get_colors_by_size(self, producto):
+        return {
+            talla.id: [
+                pcolor.color for pcolor in ProductoTallaColor.objects.filter(producto_talla=talla)
+            ] for talla in producto.tallas.all()
+        }
+    
+def agregar_al_carrito(request, producto):
+        talla_id = request.POST.get('talla')
+        color_id = request.POST.get('color')
+        
+        if not (talla_id and color_id):
+            messages.error(request, 'Selecciona una talla y un color válidos.')
+            return False
+            
+        talla = get_object_or_404(ProductoTalla, id=talla_id, producto=producto)
+        color = get_object_or_404(ProductoTallaColor, id=color_id, producto_talla=talla)
+        
+        carrito = request.session.get('carrito', {})
+        
+        carrito_item = {
+            'producto_id': producto.id,
+            'nombre': producto.nombre,
+            'precio': float(producto.precio),
+            'talla': talla.talla,
+            'color': color.color.nombre,
+            'cantidad': 1,
+        }
+        
+        if str(producto.id) in carrito:
+            carrito[str(producto.id)]['cantidad'] += 1
+        else:
+            carrito[str(producto.id)] = carrito_item
+        
+        request.session['carrito'] = carrito
+        messages.success(request, 'Producto agregado al carrito exitosamente.')
+        return True
+    
+    
+
+# 2. Actu@csrf_exempt
+
+@csrf_exempt  # Mantén esto para pruebas, pero considera una solución más segura después
+@require_POST  # Asegura que solo se acepten solicitudes POST
+def get_colores_por_talla(request):
+    """Obtiene los colores disponibles para una talla específica."""
+    talla_id = request.POST.get('talla')
+    
+    if not talla_id:
+        return JsonResponse({'colores': []})
+    
+    try:
+        # Intenta convertir a entero para validar
+        talla_id = int(talla_id)
+        
+        # Consulta los colores asociados a la talla
+        talla_colores = ProductoTallaColor.objects.filter(producto_talla_id=talla_id)
+        
+        colores = [
+            {'id': pcolor.id, 'nombre': pcolor.color.nombre} 
+            for pcolor in talla_colores
+        ]
+        
+        return JsonResponse({'colores': colores})
+    
+    except (ValueError, TypeError):
+        # Si el ID no es un número válido
+        return JsonResponse({'error': 'ID de talla no válido'}, status=400)
+    
+    except Exception as e:
+        # Log el error pero no expongas detalles técnicos al usuario
+        print(f"Error al obtener colores: {str(e)}")
+        return JsonResponse({'error': 'Error al procesar la solicitud'}, status=500)
+
 def terminos_condiciones(request):
     return render(request, 'terminos_condiciones.html')
 
@@ -315,142 +437,6 @@ def actualizar_favoritos(request, slug):
 
 
 
-
-class ProductoDetalleView(DetailView):
-    model = Producto
-    template_name = 'producto_detalle.html'
-    context_object_name = 'producto'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        producto = context['producto']
-        
-        # Productos relacionados
-        context['productos_relacionados'] = self._get_related_products(producto)
-        
-        # Información del producto actual
-        self._add_product_info(producto)
-        
-        # Opiniones y formulario
-        self._add_reviews_context(context, producto)
-        
-        # Colores por talla
-        context['colores_por_talla'] = self._get_colors_by_size(producto)
-        
-        return context
-    
-    def _get_related_products(self, producto):
-        related = Producto.objects.filter(
-            categoria=producto.categoria, 
-            activo=True
-        ).exclude(id=producto.id)[:10]
-        
-        for prod in related:
-            prod.imagenes_list = prod.imagenes.all()
-        return related
-    
-    def _add_product_info(self, producto):
-        producto.imagenes_list = producto.imagenes.all()
-        producto.tallas_list = producto.tallas.all()
-    
-    def _add_reviews_context(self, context, producto):
-        context['rango_estrellas'] = range(1, 6)
-        producto.opiniones_list = producto.opiniones.all().order_by('-created_at')[:3]
-        
-        if self.request.user.is_authenticated:
-            if producto.opiniones.filter(user=self.request.user).exists():
-                context['usuario_tiene_opinion'] = True
-            else:
-                context['opinion_form'] = OpinionClienteForm()
-    
-    def _get_colors_by_size(self, producto):
-        return {
-            talla.id: [
-                pcolor.color for pcolor in ProductoTallaColor.objects.filter(producto_talla=talla)
-            ] for talla in producto.tallas.all()
-        }
-
-class ProductoOpinionView(View):
-    def post(self, request, slug):
-        producto = get_object_or_404(Producto, slug=slug)
-
-        # Crear el formulario de opinión con los datos del POST
-        form = OpinionClienteForm(request.POST)
-        
-        if form.is_valid():
-            # Procesar los datos del formulario (guardar la opinión)
-            opinion = form.save(commit=False)
-            opinion.producto = producto
-            opinion.usuario = request.user
-            opinion.save()
-
-            # Mensaje de éxito
-            messages.success(request, 'Tu opinión ha sido guardada correctamente.')
-            return redirect('producto_detalle', slug=producto.slug)
-        
-        # Si el formulario no es válido, redirigir de nuevo al detalle del producto
-        else:
-            messages.error(request, 'Hubo un error al enviar tu opinión. Por favor, inténtalo de nuevo.')
-            return render(request, 'producto_detalle.html', {'producto': producto, 'form': form})
-    
-    def get(self, request, slug):
-        producto = get_object_or_404(Producto, slug=slug)
-        form = OpinionClienteForm # Crear un formulario vacío para el GET
-        return render(request, 'producto_detalle.html', {'producto': producto, 'form': form})
-    
-    
-
-def agregar_al_carrito(request, producto):
-        talla_id = request.POST.get('talla')
-        color_id = request.POST.get('color')
-        
-        if not (talla_id and color_id):
-            messages.error(request, 'Selecciona una talla y un color válidos.')
-            return False
-            
-        talla = get_object_or_404(ProductoTalla, id=talla_id, producto=producto)
-        color = get_object_or_404(ProductoTallaColor, id=color_id, producto_talla=talla)
-        
-        carrito = request.session.get('carrito', {})
-        
-        carrito_item = {
-            'producto_id': producto.id,
-            'nombre': producto.nombre,
-            'precio': float(producto.precio),
-            'talla': talla.talla,
-            'color': color.color.nombre,
-            'cantidad': 1,
-        }
-        
-        if str(producto.id) in carrito:
-            carrito[str(producto.id)]['cantidad'] += 1
-        else:
-            carrito[str(producto.id)] = carrito_item
-        
-        request.session['carrito'] = carrito
-        messages.success(request, 'Producto agregado al carrito exitosamente.')
-        return True
-    
-    
-@csrf_exempt
-def get_colores_por_talla(request):
-
-    if request.method == 'POST':
-        talla_id = request.POST.get('talla')
-
-        if talla_id:
-            # Filtrar los colores asociados a la talla seleccionada
-            talla_colores = ProductoTallaColor.objects.filter(producto_talla__id=talla_id)
-
-            colores = [
-                {'id': pcolor.color.id, 'nombre': pcolor.color.nombre} 
-                for pcolor in talla_colores
-            ]
-            
-            return JsonResponse({'colores': colores})
-
-        return JsonResponse({'colores': []})
-    
     
 class IndexView(ListView):
     model = Producto
@@ -504,14 +490,15 @@ def dejar_opinion(request, slug):
     if request.method == 'POST':
         form = OpinionClienteForm(request.POST)
         if form.is_valid():
-            # Asignar el producto a la opinión
+            # Asignar el producto y el usuario a la opinión
             opinion = form.save(commit=False)
             opinion.producto = producto  # Asociar la opinión con el producto
+            opinion.user = request.user  # Asignar el usuario autenticado
             opinion.save()  # Guardar la opinión
 
             # Mensaje de éxito
             messages.success(request, '¡Gracias por tu opinión!')
-            return redirect('detalle_producto', slug=producto.slug)  # Redirigir a la página del producto
+            return redirect('producto_detalle', slug=producto.slug)  # Redirigir a la página del producto
     else:
         form = OpinionClienteForm()
 

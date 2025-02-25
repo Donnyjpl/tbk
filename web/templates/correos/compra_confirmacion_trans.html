@@ -55,9 +55,11 @@
         <p>Hemos recibido tu pedido y está pendiente de confirmación de pago. El pago se debe realizar mediante **Transferencia Bancaria**.</p>
         
         <p>Por favor, realiza la transferencia a los siguientes datos bancarios:</p>
-        <p><strong>Banco:</strong> Banco Ejemplo</p>
-        <p><strong>Cuenta:</strong> 123456789</p>
-        <p><strong>RUT del titular:</strong> 12.345.678-9</p>
+        <p><strong>Banco:</strong> Banco Santander</p>
+        <p><strong>Tipo de cuenta:</strong> Corriente</p>
+        <p><strong>Cuenta:</strong> 000092299040</p>
+        <p><strong>RUT del titular:</strong> 77804542-7</p>
+        <p><strong>Nombre del titular:</strong> Studio RZ spa</p>
         <p><strong>Referencia de pago:</strong> Pedido #{{ venta.id }}</p>
 
         <div class="order-details">
@@ -78,8 +80,8 @@
                     <tr>
                         <td>{{ venta.producto.nombre|title }}</td>
                         <td>{{ venta.cantidad }}</td>
-                        <td>{% if venta.talla %}{{ venta.talla.talla }}{% else %}N/A{% endif %}</td>  <!-- Mostrar talla -->
-                        <td>{{ venta.color }}</td>  <!-- Mostrar color -->
+                        <td>{% if venta.talla|title %}{{ venta.talla.talla|title }}{% else %}N/A{% endif %}</td>  <!-- Mostrar talla -->
+                        <td>{{ venta.color|title }}</td>  <!-- Mostrar color -->
                         <td>${{ venta.precio|formatear_precio }}</td>
                         <td>${{ venta.precio_total|formatear_precio }}</td>
                     </tr>
@@ -90,7 +92,7 @@
 
         <p><strong>Total a pagar: ${{ total|formatear_precio }}</strong></p>
 
-        <p>Una vez realizada la transferencia, por favor, envíanos el comprobante al correo <strong>ventas@tutienda.com</strong> para que podamos confirmar tu pago y proceder con el envío.</p>
+        <p>Una vez realizada la transferencia, por favor, envíanos el comprobante al correo <strong>info@tbkdesire.cl</strong> para que podamos confirmar tu pago y proceder con el envío.</p>
 
         <p class="footer">Si tienes alguna pregunta o necesitas asistencia, no dudes en contactarnos. ¡Gracias por elegirnos!</p>
     </div>

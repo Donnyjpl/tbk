@@ -1,6 +1,7 @@
 {% load custom_filters %}
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,6 +12,7 @@
             background-color: #f4f4f4;
             padding: 20px;
         }
+
         .email-container {
             background-color: #fff;
             padding: 20px;
@@ -20,24 +22,31 @@
             max-width: 600px;
             margin: 0 auto;
         }
+
         h1 {
             color: #0066cc;
         }
+
         .order-details {
             margin-top: 20px;
         }
+
         .order-details table {
             width: 100%;
             border-collapse: collapse;
         }
-        .order-details table th, .order-details table td {
+
+        .order-details table th,
+        .order-details table td {
             border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
         }
+
         .order-details table th {
             background-color: #f4f4f4;
         }
+
         .footer {
             margin-top: 20px;
             font-size: 14px;
@@ -45,6 +54,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="email-container">
         <h1>Nuevo pedido realizado</h1>
@@ -56,13 +66,11 @@
         <p><strong>Dirección:</strong> {{ direccion }}</p>
 
         <!-- Agregar medio de pago -->
-        <p><strong>Medio de pago:</strong> 
-            {% if metodo_pago == "mercado_pago" %}
-                Mercado Pago
+        <p><strong>Medio de pago:</strong>
             {% elif metodo_pago == "transferencia" %}
-                Transferencia Bancaria
+            Transferencia Bancaria
             {% else %}
-                No especificado
+            Mercado Pago
             {% endif %}
         </p>
 
@@ -73,8 +81,8 @@
                     <tr>
                         <th>Producto</th>
                         <th>Cantidad</th>
-                        <th>Talla</th>  <!-- Agregar columna de talla -->
-                        <th>Color</th>  <!-- Agregar columna de color -->
+                        <th>Talla</th> <!-- Agregar columna de talla -->
+                        <th>Color</th> <!-- Agregar columna de color -->
                         <th>Precio</th>
                         <th>Total</th>
                     </tr>
@@ -82,10 +90,12 @@
                 <tbody>
                     {% for venta in ventas %}
                     <tr>
-                        <td>{{ venta.producto.nombre }}{% if venta.talla %} - Talla: {{ venta.talla.talla }}{% else %} - Talla: N/A{% endif %}</td>
+                        <td>{{ venta.producto.nombre|title }}{% if venta.talla %} - Talla:
+                            {{ venta.talla.talla }}{% else %} - Talla: N/A{% endif %}</td>
                         <td>{{ venta.cantidad }}</td>
-                        <td>{% if venta.talla %}{{ venta.talla.talla }}{% else %}N/A{% endif %}</td>  <!-- Mostrar talla -->
-                        <td>{{ venta.color }}</td>  <!-- Mostrar color -->
+                        <td>{% if venta.talla|title %}{{ venta.talla.talla }}{% else %}N/A{% endif %}</td>
+                        <!-- Mostrar talla -->
+                        <td>{{ venta.color|title }}</td> <!-- Mostrar color -->
                         <td>${{ venta.precio|formatear_precio }}</td>
                         <td>${{ venta.precio_total|formatear_precio }}</td>
                     </tr>
@@ -93,10 +103,10 @@
                 </tbody>
             </table>
         </div>
-
         <p><strong>Total del pedido: ${{ total|formatear_precio }}</strong></p>
 
         <p class="footer">Por favor, contacta al cliente para confirmar los detalles de su compra.</p>
     </div>
 </body>
+
 </html>

@@ -83,7 +83,6 @@ from .forms import ColorForm
 from .models import Categoria
 from .forms import CategoriaForm
 
-
 @login_required
 def procesar_pago(request):
     # Obtener el carrito de la sesión
@@ -121,6 +120,12 @@ def procesar_pago(request):
                 "quantity": producto_data['cantidad'],
                 "unit_price": float(producto_data['precio'])
             })
+            
+            
+    envio = request.session.get('envio', 'retiro')
+    if envio == 'envio':
+        total += 5000  # Costo de envío
+            
 
     # Configuración del SDK de Mercado Pago
     sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
@@ -162,7 +167,6 @@ def procesar_pago(request):
         # Si ocurre un error en el proceso de creación de la preferencia
         return JsonResponse({'error': str(e)}, status=500)
 
-
 @login_required
 def procesar_pago_transferencia(request):
     carrito = request.session.get('carrito', {})
@@ -191,54 +195,45 @@ def procesar_pago_transferencia(request):
                 precio_unitario = Decimal(str(talla_data['precio']))  # Convertir a Decimal
                 precio_total = Decimal(str(talla_data['precio'])) * Decimal(talla_data['cantidad'])
 
-                # Obtener color, si lo hay
-                color = talla_data.get('colores', {}).get('color', 'N/A')  # Asumir que el color puede estar dentro de un diccionario
+                # Procesar los colores si existen en esta talla
+                if 'colores' in talla_data:
+                    for color_id, color_data in talla_data['colores'].items():
+                        color_nombre = color_data.get('color', 'N/A')  # Obtener el nombre del color
+                        
+                        # Obtener el objeto Color correspondiente al nombre
+                        try:
+                            color = Color.objects.get(nombre=color_nombre)
+                        except Color.DoesNotExist:
+                            color = None  # Si no existe el color, lo dejamos como None
+                            messages.warning(request, f"El color '{color_nombre}' no está disponible para el producto {producto.nombre}.") 
 
                 # Crear la línea de venta para este producto
-                linea_venta = LineaVenta.objects.create(
-                    venta=venta,
-                    producto=producto,
-                    cantidad=talla_data['cantidad'],
-                    talla=talla,
-                    precio_unitario=precio_unitario  # Guardar el precio unitario
-                )
+                if color:  # Solo crear la línea si se obtuvo un color válido
+                    linea_venta = LineaVenta.objects.create(
+                        venta=venta,
+                        producto=producto,
+                        cantidad=talla_data['cantidad'],
+                        talla=talla,
+                        color=color,  # Ahora asignamos la instancia de Color
+                        precio_unitario=precio_unitario  # Guardar el precio unitario
+                    )
 
-                # Calcular total
-                total += precio_total  # Sumamos a total (asegurado que es Decimal)
+                    # Calcular total
+                    total += precio_total  # Sumamos a total (asegurado que es Decimal)
 
-                ventas.append({
-                    'producto': producto,
-                    'cantidad': talla_data['cantidad'],
-                    'talla': talla,
-                    'color': color,  # Agregar el color aquí
-                    'precio': precio_unitario,
-                    'precio_total': precio_total
-                })
-        else:
-            # Asegurarse de que los precios sean de tipo Decimal
-            precio_unitario = Decimal(str(producto_data['precio']))  # Convertir a Decimal
-            precio_total = Decimal(str(producto_data['precio'])) * Decimal(producto_data['cantidad'])
-
-            # Obtener color, si lo hay
-            color = producto_data.get('colores', {}).get('color', 'N/A')  # Asumir que el color puede estar dentro de un diccionario
-
-            # Crear la línea de venta para productos sin talla
-            linea_venta = LineaVenta.objects.create(
-                venta=venta,
-                producto=producto,
-                cantidad=producto_data['cantidad'],
-                precio_unitario=precio_unitario  # Guardar el precio unitario
-            )
-
-            total += precio_total  # Sumamos a total (asegurado que es Decimal)
-
-            ventas.append({
-                'producto': producto,
-                'cantidad': producto_data['cantidad'],
-                'color': color,  # Agregar el color aquí
-                'precio': precio_unitario,
-                'precio_total': precio_total
-            })
+                    ventas.append({
+                        'producto': producto,
+                        'cantidad': talla_data['cantidad'],
+                        'talla': talla,
+                        'color': color_nombre,  # Guardar el nombre del color en la venta
+                        'precio': precio_unitario,
+                        'precio_total': precio_total
+                    })
+                
+    # Obtener el costo de envío de la sesión (si es aplicable)
+    envio = request.session.get('envio', 'retiro')  # Valor predeterminado: retiro en tienda
+    if envio == 'envio':
+        total += Decimal('5000')  # Costo de envío, lo agregamos al total
 
     # Crear el pago pendiente
     pago = Pago.objects.create(user=request.user, total=total, estado='pendiente')
@@ -254,9 +249,10 @@ def procesar_pago_transferencia(request):
     rut = profile.rut
     telefono = profile.telefono
     direccion = profile.direccion
+    metodo_pago='transferencia'
 
     # Enviar correo al cliente
-    email_prueba='donnyjpl@gmail.com'
+    email_prueba = 'info@tbkdesire.cl'
     email_cliente = request.user.email
     subject = 'Confirmación de tu pedido - Transferencia Bancaria'
     message = render_to_string('correos/compra_confirmacion_trans.html', {
@@ -283,13 +279,14 @@ def procesar_pago_transferencia(request):
         'rut': rut,
         'telefono': telefono,
         'direccion': direccion,
+        'metodo_pago': metodo_pago 
     })
 
     send_mail(
         admin_subject,
         admin_message,
         settings.DEFAULT_FROM_EMAIL,
-        [email_prueba],
+        [admin_email],
         html_message=admin_message
     )
 
@@ -299,7 +296,6 @@ def procesar_pago_transferencia(request):
         'total': total,
         'pago_id': pago.id
     })
-    
 
 @login_required
 def procesar_pago_success(request):
@@ -309,7 +305,7 @@ def procesar_pago_success(request):
         return redirect('shop')
 
     total = Decimal('0.00')  # Usar Decimal para evitar problemas con los decimales
-    ventas = []
+    ventas = []  # Lista para registrar las ventas
 
     # Crear la venta principal y asociarla al usuario
     venta = Venta.objects.create(user=request.user)  # Crear una venta vacía
@@ -323,118 +319,66 @@ def procesar_pago_success(request):
 
         if 'tallas' in producto_data:
             for talla_id, talla_data in producto_data['tallas'].items():
-                try:
-                    talla = ProductoTalla.objects.get(id=talla_id)
-                except ProductoTalla.DoesNotExist:
-                    continue  # Si la talla no existe, la saltamos
-                
+                talla = ProductoTalla.objects.get(id=talla_id)
+
                 # Asegurarse de que los precios sean de tipo Decimal
                 precio_unitario = Decimal(str(talla_data['precio']))  # Convertir a Decimal
-                
-                # Procesamos los colores si existen
-                if 'colores' in talla_data and talla_data['colores']:
+                precio_total = Decimal(str(talla_data['precio'])) * Decimal(talla_data['cantidad'])
+
+                # Procesar los colores si existen en esta talla
+                if 'colores' in talla_data:
                     for color_id, color_data in talla_data['colores'].items():
+                        color_nombre = color_data.get('color', 'N/A')  # Obtener el nombre del color
+                        
+                        # Obtener el objeto Color correspondiente al nombre
                         try:
-                            # Obtener el objeto Color relacionado con ProductoTallaColor
-                            producto_talla_color = ProductoTallaColor.objects.get(id=color_id)
-                            color = producto_talla_color.color
-                            
-                            cantidad_color = color_data['cantidad']
-                            precio_total_color = Decimal(str(color_data['precio'])) * Decimal(cantidad_color)
-                            
-                            # Crear la línea de venta para este producto con talla y color
-                            linea_venta = LineaVenta.objects.create(
-                                venta=venta,
-                                producto=producto,
-                                cantidad=cantidad_color,
-                                talla=talla,
-                                color=color,  # Agregar el color
-                                precio_unitario=Decimal(str(color_data['precio']))
-                            )
-                            
-                            # Calcular total
-                            total += precio_total_color
-                            
-                            ventas.append({
-                                'producto': producto,
-                                'cantidad': cantidad_color,
-                                'talla': talla.talla,
-                                'color': color.nombre,  # Incluir el nombre del color
-                                'precio': Decimal(str(color_data['precio'])),
-                                'precio_total': precio_total_color
-                            })
-                        except ProductoTallaColor.DoesNotExist:
-                            # Si el color no existe, lo saltamos
-                            continue
-                else:
-                    # Si no hay colores específicos, usamos la información general de la talla
-                    precio_total = precio_unitario * Decimal(talla_data['cantidad'])
-                    
-                    # Crear la línea de venta sin color específico
+                            color = Color.objects.get(nombre=color_nombre)
+                        except Color.DoesNotExist:
+                            color = None  # Si no existe el color, lo dejamos como None
+                            messages.warning(request, f"El color '{color_nombre}' no está disponible para el producto {producto.nombre}.") 
+
+                # Crear la línea de venta para este producto
+                if color:  # Solo crear la línea si se obtuvo un color válido
                     linea_venta = LineaVenta.objects.create(
                         venta=venta,
                         producto=producto,
                         cantidad=talla_data['cantidad'],
                         talla=talla,
-                        precio_unitario=precio_unitario
+                        color=color,  # Ahora asignamos la instancia de Color
+                        precio_unitario=precio_unitario  # Guardar el precio unitario
                     )
-                    
-                    total += precio_total
-                    
+
+                    # Calcular total
+                    total += precio_total  # Sumamos a total (asegurado que es Decimal)
+
                     ventas.append({
                         'producto': producto,
                         'cantidad': talla_data['cantidad'],
-                        'talla': talla.talla,
-                        'color': 'Sin especificar',  # Indicar que no hay color específico
+                        'talla': talla,
+                        'color': color_nombre,  # Guardar el nombre del color en la venta
                         'precio': precio_unitario,
                         'precio_total': precio_total
                     })
-        else:
-            # Procesamos productos sin talla
-            precio_unitario = Decimal(str(producto_data['precio']))
-            precio_total = precio_unitario * Decimal(producto_data['cantidad'])
-            
-            # Crear la línea de venta para productos sin talla y sin color
-            linea_venta = LineaVenta.objects.create(
-                venta=venta,
-                producto=producto,
-                cantidad=producto_data['cantidad'],
-                precio_unitario=precio_unitario
-            )
-            
-            total += precio_total
-            
-            ventas.append({
-                'producto': producto,
-                'cantidad': producto_data['cantidad'],
-                'talla': 'Sin especificar',  # Indicar que no hay talla específica
-                'color': 'Sin especificar',  # Indicar que no hay color específico
-                'precio': precio_unitario,
-                'precio_total': precio_total
-            })
+                
+    # Crear el pago pendiente
+    pago = Pago.objects.create(user=request.user, total=total, estado='confirmado')
 
-    # Actualizar el total en la venta principal
-    venta.total = total
-    venta.calcular_total()  # Llamamos al método para recalcular el total de la venta
-    
-    # Vaciar el carrito
+    # Vaciar el carrito de la sesión
     request.session['carrito'] = {}
 
-    # Resto del código para enviar correos y renderizar la confirmación...
-    
     # Mostrar un mensaje de éxito
-    messages.success(request, f'Pago exitoso por un total de ${total:.0f}. ¡Gracias por tu compra!')
+    messages.success(request, f'Pedido registrado con éxito. Tu pago está confirmado.')
 
-    # Obtener los datos del perfil
+    # Obtener los datos del perfil del usuario
     profile = request.user.profile
     rut = profile.rut
     telefono = profile.telefono
     direccion = profile.direccion
 
-    # Correo al usuario
-    email_prueba='donnyjpl@gmail.com'
-    email_cliente = request.user.email  # Usamos el correo del cliente
-    subject = 'Confirmación de tu compra en Nuestro Sitio'
+    # Enviar correo al cliente
+    email_prueba = 'info@tbkdesire.cl'
+    email_cliente = request.user.email
+    subject = 'Confirmación de tu pedido - Transferencia Bancaria'
     message = render_to_string('correos/compra_confirmacion.html', {
         'ventas': ventas,
         'total': total,
@@ -446,42 +390,37 @@ def procesar_pago_success(request):
         message,
         settings.DEFAULT_FROM_EMAIL,
         [email_prueba],
-        html_message=message  # Correo en formato HTML
+        html_message=message
     )
-    email_prueba='donnyjpl@gmail.com'
-    # Correo al administrador
+
+    # Enviar correo al administrador
     admin_email = 'info@tbkdesire.cl'  # Correo del administrador
-    admin_subject = 'Nuevo Pedido Realizado'
+    admin_subject = 'Nuevo Pedido Realizado - Mercado Pago'
+    admin_message = render_to_string('correos/nuevo_pedido.html', {
+        'ventas': ventas,
+        'total': total,
+        'usuario': request.user,
+        'rut': rut,
+        'telefono': telefono,
+        'direccion': direccion,
+    })
 
-    try:
-        # Intentar renderizar el mensaje HTML para el administrador
-        admin_message = render_to_string('correos/nuevo_pedido.html', {
-            'ventas': ventas,
-            'total': total,
-            'usuario': request.user,
-            'rut': rut,
-            'telefono': telefono,
-            'direccion': direccion,
-        })
-    except Exception as e:
-        admin_message = f"Error al generar el mensaje del pedido: {str(e)}"
-
-    if admin_message:
-        send_mail(
-            admin_subject,
-            admin_message,
-            settings.DEFAULT_FROM_EMAIL,
-            [email_prueba],
-            html_message=admin_message  # Correo en formato HTML
-        )
-    else:
-        print("No se generó el mensaje HTML para el administrador.")
+    send_mail(
+        admin_subject,
+        admin_message,
+        settings.DEFAULT_FROM_EMAIL,
+        [admin_email],
+        html_message=admin_message
+    )
 
     # Renderizar la página de confirmación después del pago
     return render(request, 'carrito/compra_confirmacion.html', {
         'ventas': ventas,
         'total': total,
+        'pago_id': pago.id
     })
+
+
 
 def ver_carrito(request):
     resumen_carrito = obtener_resumen_carrito(request)

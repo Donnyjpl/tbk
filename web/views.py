@@ -1,12 +1,9 @@
 # views.py
-from django.shortcuts import render, redirect
-from django.urls import reverse_lazy
-from django.views.generic import CreateView,ListView,DetailView
-from .models import Producto, ProductoImagen,ProductoTalla,Categoria,Profile,Venta,LineaVenta
+from django.views.generic import CreateView,ListView,DetailView,View
+from .models import Producto, ProductoImagen,ProductoTalla,Categoria,Profile,Venta,LineaVenta,Pago
 from .forms import ProductoForm, ProductoImagenForm, ProductoFilterForm,ContactoForm,ProductoTallaForm,LoginForm,OpinionClienteForm
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
-from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.core.paginator import Paginator
 from .forms import CustomUserCreationForm
@@ -15,28 +12,21 @@ from django.contrib.auth import logout
 # @method_decorator(login_required, name='dispatch')
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
-from django.views.generic import CreateView,View
-from .models import Producto, ProductoImagen, ProductoTalla,OpinionCliente
-from .forms import ProductoForm
+from .models import OpinionCliente
 from django.core.exceptions import ValidationError
-from django.contrib import messages
-from django.http import JsonResponse
+
 import mercadopago
 #usuario
 from .forms import ProfileForm
-from django.contrib.auth.decorators import login_required
 from django.views.generic.edit import UpdateView
 from .models import Profile
 from django.urls import reverse_lazy, reverse
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth import authenticate, login
 
-from django.conf import settings
 from django.contrib.auth.views import (PasswordResetConfirmView, PasswordResetDoneView, PasswordResetCompleteView)
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.views.generic import ListView
 from django.utils import timezone
@@ -93,6 +83,566 @@ from .forms import ColorForm
 from .models import Categoria
 from .forms import CategoriaForm
 
+
+@login_required
+def procesar_pago(request):
+    # Obtener el carrito de la sesión
+    carrito = request.session.get('carrito', {})
+    
+    # Verificar si el carrito está vacío
+    if not carrito or sum(item['cantidad'] for item in carrito.values()) == 0:
+        return JsonResponse({'error': 'El carrito está vacío o no tiene productos válidos.'}, status=400)
+    
+       # Calcular el total y la cantidad total de productos
+    total = 0
+    cantidad_total = 0
+    items = []  # Aquí se guardarán los productos y tallas del carrito
+    for producto_slug, producto_data in carrito.items():
+        if 'tallas' in producto_data:  # Si el producto tiene tallas
+            for talla_id, talla_data in producto_data['tallas'].items():
+                # Calcular el total del carrito con tallas y cantidades
+                total += float(talla_data['precio']) * talla_data['cantidad']
+                cantidad_total += talla_data['cantidad']
+                
+                # Agregar cada talla como un item en los items de la preferencia
+                items.append({
+                    "title": f"{producto_data['nombre']} - Talla {talla_data['talla']}",  # Nombre con la talla
+                    "quantity": talla_data['cantidad'],  # Cantidad de esta talla
+                    "unit_price": float(talla_data['precio'])  # Precio de la talla
+                })
+        else:
+            # Si no tiene tallas, agregar solo el producto
+            total += float(producto_data['precio']) * producto_data['cantidad']
+            cantidad_total += producto_data['cantidad']
+            
+            # Agregar el producto como un item en los items de la preferencia
+            items.append({
+                "title": producto_data['nombre'],
+                "quantity": producto_data['cantidad'],
+                "unit_price": float(producto_data['precio'])
+            })
+
+    # Configuración del SDK de Mercado Pago
+    sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
+    
+    # Crear la preferencia de pago
+    preference_data = {
+        "items": [
+            {
+                "title": "Compra en nuestra tienda TBK",  # Nombre del producto (puedes personalizarlo)
+                "quantity": 1,  # Cantidad total de productos en el carrito
+                "unit_price": total  # Total del carrito
+            }
+        ],
+        "back_urls": {
+             "success": request.build_absolute_uri('/procesar_pago/exito'),  # URL absoluta
+             "failure": request.build_absolute_uri('/procesar_pago/failure'),
+             "pending": request.build_absolute_uri('/procesar_pago/pending'),
+        },
+        "auto_return": "approved",  # La redirección automática cuando el pago es aprobado
+    }
+
+    # Intentar crear la preferencia
+    try:
+        preference_response = sdk.preference().create(preference_data)
+        preference = preference_response.get("response", {})
+        
+        
+        # Imprimir la respuesta de Mercado Pago para depuración
+        # Verificar si la preferencia fue creada correctamente
+        if 'init_point' in preference:
+            # Redirigir al usuario a la página de pago de Mercado Pago
+            return redirect(preference["init_point"])
+        else:
+            # Si no se pudo crear la preferencia, retornar un mensaje de error
+            error_message = preference_response.get("message", "Error desconocido.")
+            return JsonResponse({'error': error_message}, status=400)
+
+    except Exception as e:
+        # Si ocurre un error en el proceso de creación de la preferencia
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def procesar_pago_transferencia(request):
+    carrito = request.session.get('carrito', {})
+
+    if not carrito or len(carrito) == 0:
+        return redirect('shop')
+
+    total = Decimal('0.00')  # Usar Decimal para evitar problemas con los decimales
+    ventas = []  # Lista para registrar las ventas
+
+    # Crear la venta principal y asociarla al usuario
+    venta = Venta.objects.create(user=request.user)  # Crear una venta vacía
+
+    # Procesar cada producto en el carrito
+    for producto_slug, producto_data in carrito.items():
+        try:
+            producto = Producto.objects.get(slug=producto_slug)  # Obtener el producto de la DB
+        except Producto.DoesNotExist:
+            continue  # Si el producto no existe, lo saltamos
+
+        if 'tallas' in producto_data:
+            for talla_id, talla_data in producto_data['tallas'].items():
+                talla = ProductoTalla.objects.get(id=talla_id)
+
+                # Asegurarse de que los precios sean de tipo Decimal
+                precio_unitario = Decimal(str(talla_data['precio']))  # Convertir a Decimal
+                precio_total = Decimal(str(talla_data['precio'])) * Decimal(talla_data['cantidad'])
+
+                # Obtener color, si lo hay
+                color = talla_data.get('colores', {}).get('color', 'N/A')  # Asumir que el color puede estar dentro de un diccionario
+
+                # Crear la línea de venta para este producto
+                linea_venta = LineaVenta.objects.create(
+                    venta=venta,
+                    producto=producto,
+                    cantidad=talla_data['cantidad'],
+                    talla=talla,
+                    precio_unitario=precio_unitario  # Guardar el precio unitario
+                )
+
+                # Calcular total
+                total += precio_total  # Sumamos a total (asegurado que es Decimal)
+
+                ventas.append({
+                    'producto': producto,
+                    'cantidad': talla_data['cantidad'],
+                    'talla': talla,
+                    'color': color,  # Agregar el color aquí
+                    'precio': precio_unitario,
+                    'precio_total': precio_total
+                })
+        else:
+            # Asegurarse de que los precios sean de tipo Decimal
+            precio_unitario = Decimal(str(producto_data['precio']))  # Convertir a Decimal
+            precio_total = Decimal(str(producto_data['precio'])) * Decimal(producto_data['cantidad'])
+
+            # Obtener color, si lo hay
+            color = producto_data.get('colores', {}).get('color', 'N/A')  # Asumir que el color puede estar dentro de un diccionario
+
+            # Crear la línea de venta para productos sin talla
+            linea_venta = LineaVenta.objects.create(
+                venta=venta,
+                producto=producto,
+                cantidad=producto_data['cantidad'],
+                precio_unitario=precio_unitario  # Guardar el precio unitario
+            )
+
+            total += precio_total  # Sumamos a total (asegurado que es Decimal)
+
+            ventas.append({
+                'producto': producto,
+                'cantidad': producto_data['cantidad'],
+                'color': color,  # Agregar el color aquí
+                'precio': precio_unitario,
+                'precio_total': precio_total
+            })
+
+    # Crear el pago pendiente
+    pago = Pago.objects.create(user=request.user, total=total, estado='pendiente')
+
+    # Vaciar el carrito de la sesión
+    request.session['carrito'] = {}
+
+    # Mostrar un mensaje de éxito
+    messages.success(request, f'Pedido registrado con éxito. Tu pago está pendiente de confirmación.')
+
+    # Obtener los datos del perfil del usuario
+    profile = request.user.profile
+    rut = profile.rut
+    telefono = profile.telefono
+    direccion = profile.direccion
+
+    # Enviar correo al cliente
+    email_prueba='donnyjpl@gmail.com'
+    email_cliente = request.user.email
+    subject = 'Confirmación de tu pedido - Transferencia Bancaria'
+    message = render_to_string('correos/compra_confirmacion_trans.html', {
+        'ventas': ventas,
+        'total': total,
+        'usuario': request.user
+    })
+
+    send_mail(
+        subject,
+        message,
+        settings.DEFAULT_FROM_EMAIL,
+        [email_prueba],
+        html_message=message
+    )
+
+    # Enviar correo al administrador
+    admin_email = 'info@tbkdesire.cl'  # Correo del administrador
+    admin_subject = 'Nuevo Pedido Realizado - Transferencia Bancaria'
+    admin_message = render_to_string('correos/nuevo_pedido.html', {
+        'ventas': ventas,
+        'total': total,
+        'usuario': request.user,
+        'rut': rut,
+        'telefono': telefono,
+        'direccion': direccion,
+    })
+
+    send_mail(
+        admin_subject,
+        admin_message,
+        settings.DEFAULT_FROM_EMAIL,
+        [email_prueba],
+        html_message=admin_message
+    )
+
+    # Renderizar la página de confirmación después del pago
+    return render(request, 'carrito/compra_confirmacion.html', {
+        'ventas': ventas,
+        'total': total,
+        'pago_id': pago.id
+    })
+    
+
+@login_required
+def procesar_pago_success(request):
+    carrito = request.session.get('carrito', {})
+
+    if not carrito or len(carrito) == 0:
+        return redirect('shop')
+
+    total = Decimal('0.00')  # Usar Decimal para evitar problemas con los decimales
+    ventas = []
+
+    # Crear la venta principal y asociarla al usuario
+    venta = Venta.objects.create(user=request.user)  # Crear una venta vacía
+
+    # Procesar cada producto en el carrito
+    for producto_slug, producto_data in carrito.items():
+        try:
+            producto = Producto.objects.get(slug=producto_slug)  # Obtener el producto de la DB
+        except Producto.DoesNotExist:
+            continue  # Si el producto no existe, lo saltamos
+
+        if 'tallas' in producto_data:
+            for talla_id, talla_data in producto_data['tallas'].items():
+                try:
+                    talla = ProductoTalla.objects.get(id=talla_id)
+                except ProductoTalla.DoesNotExist:
+                    continue  # Si la talla no existe, la saltamos
+                
+                # Asegurarse de que los precios sean de tipo Decimal
+                precio_unitario = Decimal(str(talla_data['precio']))  # Convertir a Decimal
+                
+                # Procesamos los colores si existen
+                if 'colores' in talla_data and talla_data['colores']:
+                    for color_id, color_data in talla_data['colores'].items():
+                        try:
+                            # Obtener el objeto Color relacionado con ProductoTallaColor
+                            producto_talla_color = ProductoTallaColor.objects.get(id=color_id)
+                            color = producto_talla_color.color
+                            
+                            cantidad_color = color_data['cantidad']
+                            precio_total_color = Decimal(str(color_data['precio'])) * Decimal(cantidad_color)
+                            
+                            # Crear la línea de venta para este producto con talla y color
+                            linea_venta = LineaVenta.objects.create(
+                                venta=venta,
+                                producto=producto,
+                                cantidad=cantidad_color,
+                                talla=talla,
+                                color=color,  # Agregar el color
+                                precio_unitario=Decimal(str(color_data['precio']))
+                            )
+                            
+                            # Calcular total
+                            total += precio_total_color
+                            
+                            ventas.append({
+                                'producto': producto,
+                                'cantidad': cantidad_color,
+                                'talla': talla.talla,
+                                'color': color.nombre,  # Incluir el nombre del color
+                                'precio': Decimal(str(color_data['precio'])),
+                                'precio_total': precio_total_color
+                            })
+                        except ProductoTallaColor.DoesNotExist:
+                            # Si el color no existe, lo saltamos
+                            continue
+                else:
+                    # Si no hay colores específicos, usamos la información general de la talla
+                    precio_total = precio_unitario * Decimal(talla_data['cantidad'])
+                    
+                    # Crear la línea de venta sin color específico
+                    linea_venta = LineaVenta.objects.create(
+                        venta=venta,
+                        producto=producto,
+                        cantidad=talla_data['cantidad'],
+                        talla=talla,
+                        precio_unitario=precio_unitario
+                    )
+                    
+                    total += precio_total
+                    
+                    ventas.append({
+                        'producto': producto,
+                        'cantidad': talla_data['cantidad'],
+                        'talla': talla.talla,
+                        'color': 'Sin especificar',  # Indicar que no hay color específico
+                        'precio': precio_unitario,
+                        'precio_total': precio_total
+                    })
+        else:
+            # Procesamos productos sin talla
+            precio_unitario = Decimal(str(producto_data['precio']))
+            precio_total = precio_unitario * Decimal(producto_data['cantidad'])
+            
+            # Crear la línea de venta para productos sin talla y sin color
+            linea_venta = LineaVenta.objects.create(
+                venta=venta,
+                producto=producto,
+                cantidad=producto_data['cantidad'],
+                precio_unitario=precio_unitario
+            )
+            
+            total += precio_total
+            
+            ventas.append({
+                'producto': producto,
+                'cantidad': producto_data['cantidad'],
+                'talla': 'Sin especificar',  # Indicar que no hay talla específica
+                'color': 'Sin especificar',  # Indicar que no hay color específico
+                'precio': precio_unitario,
+                'precio_total': precio_total
+            })
+
+    # Actualizar el total en la venta principal
+    venta.total = total
+    venta.calcular_total()  # Llamamos al método para recalcular el total de la venta
+    
+    # Vaciar el carrito
+    request.session['carrito'] = {}
+
+    # Resto del código para enviar correos y renderizar la confirmación...
+    
+    # Mostrar un mensaje de éxito
+    messages.success(request, f'Pago exitoso por un total de ${total:.0f}. ¡Gracias por tu compra!')
+
+    # Obtener los datos del perfil
+    profile = request.user.profile
+    rut = profile.rut
+    telefono = profile.telefono
+    direccion = profile.direccion
+
+    # Correo al usuario
+    email_prueba='donnyjpl@gmail.com'
+    email_cliente = request.user.email  # Usamos el correo del cliente
+    subject = 'Confirmación de tu compra en Nuestro Sitio'
+    message = render_to_string('correos/compra_confirmacion.html', {
+        'ventas': ventas,
+        'total': total,
+        'usuario': request.user
+    })
+
+    send_mail(
+        subject,
+        message,
+        settings.DEFAULT_FROM_EMAIL,
+        [email_prueba],
+        html_message=message  # Correo en formato HTML
+    )
+    email_prueba='donnyjpl@gmail.com'
+    # Correo al administrador
+    admin_email = 'info@tbkdesire.cl'  # Correo del administrador
+    admin_subject = 'Nuevo Pedido Realizado'
+
+    try:
+        # Intentar renderizar el mensaje HTML para el administrador
+        admin_message = render_to_string('correos/nuevo_pedido.html', {
+            'ventas': ventas,
+            'total': total,
+            'usuario': request.user,
+            'rut': rut,
+            'telefono': telefono,
+            'direccion': direccion,
+        })
+    except Exception as e:
+        admin_message = f"Error al generar el mensaje del pedido: {str(e)}"
+
+    if admin_message:
+        send_mail(
+            admin_subject,
+            admin_message,
+            settings.DEFAULT_FROM_EMAIL,
+            [email_prueba],
+            html_message=admin_message  # Correo en formato HTML
+        )
+    else:
+        print("No se generó el mensaje HTML para el administrador.")
+
+    # Renderizar la página de confirmación después del pago
+    return render(request, 'carrito/compra_confirmacion.html', {
+        'ventas': ventas,
+        'total': total,
+    })
+
+def ver_carrito(request):
+    resumen_carrito = obtener_resumen_carrito(request)
+    
+    # También necesitamos verificar si hay información de envío en la sesión
+    envio = request.session.get('envio', 'retiro')  # Valor predeterminado: retiro en tienda
+    
+    # Si hay envío, calculamos el total con envío
+    total = resumen_carrito['total']
+    if envio == 'envio':
+        total += 5000  # Costo de envío
+    
+    context = {
+        'carrito': resumen_carrito,
+        'envio': envio,
+        'total': total
+    }
+    
+    return render(request, 'carrito/carrito.html', context)  # Corregido para llamar a render con los argumentos
+
+
+def obtener_resumen_carrito(request):
+    """
+    Función para procesar el carrito y obtener un resumen detallado
+    incluyendo la cantidad de cada producto por talla y color.
+    """
+    carrito = request.session.get('carrito', {})
+    resumen_carrito = []
+    
+    # Calcular el total general
+    total_carrito = 0
+    
+    for slug, producto_info in carrito.items():
+        # Información general del producto
+        producto_resumen = {
+            'nombre': producto_info.get('nombre', 'Producto sin nombre'),
+            'slug': slug,
+            'cantidad_total': producto_info.get('cantidad', 0),
+            'precio_unitario': producto_info.get('precio', 0),
+            'subtotal': producto_info.get('cantidad', 0) * producto_info.get('precio', 0),
+            'tallas': []
+        }
+        
+        # Agregar el subtotal al total general
+        total_carrito += producto_resumen['subtotal']
+        
+        # Verificar si el producto tiene tallas
+        if 'tallas' in producto_info:
+            # Procesar cada talla
+            for talla_id, talla_info in producto_info['tallas'].items():
+                talla_resumen = {
+                    'id': talla_id,
+                    'talla': talla_info.get('talla', 'Sin talla'),
+                    'cantidad': talla_info.get('cantidad', 0),
+                    'colores': []
+                }
+                
+                # Verificar si la talla tiene colores
+                if 'colores' in talla_info:
+                    # Procesar cada color de esta talla
+                    for color_id, color_info in talla_info['colores'].items():
+                        color_resumen = {
+                            'id': color_id,
+                            'nombre': color_info.get('color', 'Sin color'),
+                            'cantidad': color_info.get('cantidad', 0),
+                            'precio': color_info.get('precio', 0),
+                            'subtotal': color_info.get('cantidad', 0) * color_info.get('precio', 0)
+                        }
+                        
+                        talla_resumen['colores'].append(color_resumen)
+                
+                producto_resumen['tallas'].append(talla_resumen)
+        
+        resumen_carrito.append(producto_resumen)
+    
+    return {
+        'productos': resumen_carrito,
+        'total': total_carrito,
+        'cantidad_productos': sum(prod['cantidad_total'] for prod in resumen_carrito)
+    }
+
+def actualizar_color_carrito(request, slug, talla_id, color_id):
+    if request.method == 'POST':
+        carrito = request.session.get('carrito', {})
+        cantidad = int(request.POST.get('cantidad', 1))
+        
+        if slug in carrito and talla_id in carrito[slug]['tallas'] and color_id in carrito[slug]['tallas'][talla_id]['colores']:
+            # Obtener la cantidad anterior
+            cantidad_anterior = carrito[slug]['tallas'][talla_id]['colores'][color_id]['cantidad']
+            
+            # Calcular la diferencia
+            diferencia = cantidad - cantidad_anterior
+            
+            # Actualizar la cantidad del color
+            carrito[slug]['tallas'][talla_id]['colores'][color_id]['cantidad'] = cantidad
+            
+            # Actualizar la cantidad total de la talla
+            carrito[slug]['tallas'][talla_id]['cantidad'] += diferencia
+            
+            # Actualizar la cantidad total del producto
+            carrito[slug]['cantidad'] += diferencia
+            
+            # Guardar los cambios
+            request.session['carrito'] = carrito
+            messages.success(request, 'Carrito actualizado correctamente.')
+        else:
+            messages.error(request, 'No se pudo actualizar el carrito.')
+            
+    return redirect('ver_carrito')
+
+def eliminar_color_carrito(request, slug, talla_id, color_id):
+    carrito = request.session.get('carrito', {})
+    
+    if slug in carrito and talla_id in carrito[slug]['tallas'] and color_id in carrito[slug]['tallas'][talla_id]['colores']:
+        # Obtener la cantidad que vamos a eliminar
+        cantidad_a_eliminar = carrito[slug]['tallas'][talla_id]['colores'][color_id]['cantidad']
+        
+        # Restar la cantidad del color del total de la talla
+        carrito[slug]['tallas'][talla_id]['cantidad'] -= cantidad_a_eliminar
+        
+        # Restar la cantidad del color del total del producto
+        carrito[slug]['cantidad'] -= cantidad_a_eliminar
+        
+        # Eliminar el color
+        del carrito[slug]['tallas'][talla_id]['colores'][color_id]
+        
+        # Si no quedan colores en la talla, eliminar la talla
+        if not carrito[slug]['tallas'][talla_id]['colores']:
+            del carrito[slug]['tallas'][talla_id]
+        
+        # Si no quedan tallas en el producto, eliminar el producto
+        if not carrito[slug]['tallas']:
+            del carrito[slug]
+        
+        # Guardar el carrito actualizado en la sesión
+        request.session['carrito'] = carrito
+        
+        messages.success(request, 'Producto eliminado del carrito.')
+    else:
+        messages.error(request, 'El producto no se encuentra en el carrito.')
+    
+    return redirect('ver_carrito')
+
+def eliminar_del_carrito(request, slug):
+    carrito = request.session.get('carrito', {})
+    
+    if slug in carrito:
+        del carrito[slug]
+        request.session['carrito'] = carrito
+        messages.success(request, 'Producto eliminado completamente del carrito.')
+    else:
+        messages.error(request, 'El producto no se encuentra en el carrito.')
+    
+    return redirect('ver_carrito')
+
+def vaciar_carrito(request):
+    request.session['carrito'] = {}
+    messages.success(request, 'Carrito vaciado con éxito.')
+    return redirect('ver_carrito')
+
+
 def agregar_al_carrito(request, slug):
     # Obtener el producto usando el slug
     producto = get_object_or_404(Producto, slug=slug)
@@ -114,7 +664,7 @@ def agregar_al_carrito(request, slug):
         messages.error(request, 'La talla seleccionada no existe para este producto.')
         return redirect('producto_detalle', slug=slug)
     
-    # Obtener el color seleccionado (usando la solución 1)
+    # Obtener el color seleccionado
     try:
         color = ProductoTallaColor.objects.get(id=color_id)
         print(f"Color encontrado: {color.color.nombre}")
@@ -124,12 +674,18 @@ def agregar_al_carrito(request, slug):
     
     # Si el producto ya está en el carrito
     if slug in carrito:
+        # Incrementar la cantidad total del producto
+        carrito[slug]['cantidad'] += 1
+        
         if talla_id in carrito[slug]['tallas']:
+            # Incrementar la cantidad total de esta talla
+            carrito[slug]['tallas'][talla_id]['cantidad'] += 1
+            
             if color_id in carrito[slug]['tallas'][talla_id]['colores']:
                 # Si el producto con esta talla y color ya está en el carrito, incrementamos la cantidad
                 carrito[slug]['tallas'][talla_id]['colores'][color_id]['cantidad'] += 1
             else:
-                # Si el color no está, lo agregamos
+                # Si el color no está, lo agregamos como una nueva entrada
                 carrito[slug]['tallas'][talla_id]['colores'][color_id] = {
                     'color': color.color.nombre,
                     'cantidad': 1,
@@ -180,6 +736,22 @@ def agregar_al_carrito(request, slug):
     
     # Redirigir a la vista del producto
     return redirect('producto_detalle', slug=slug)
+
+
+def actualizar_producto_simple(request, slug):
+    if request.method == 'POST':
+        carrito = request.session.get('carrito', {})
+        cantidad = int(request.POST.get('cantidad', 1))
+        
+        if slug in carrito:
+            carrito[slug]['cantidad'] = cantidad
+            request.session['carrito'] = carrito
+            messages.success(request, 'Carrito actualizado correctamente.')
+        else:
+            messages.error(request, 'No se pudo actualizar el carrito.')
+            
+    return redirect('ver_carrito')
+
 
 
 
@@ -283,143 +855,6 @@ def politica_privacidad(request):
 
 def terminos_rembolso(request):
     return render(request, 'politicas/terminos_rembolso.html')
-
-@login_required
-def procesar_pago_success(request):
-    carrito = request.session.get('carrito', {})
-
-    if not carrito or len(carrito) == 0:
-        return redirect('shop')
-
-    total = Decimal('0.00')  # Usar Decimal para evitar problemas con los decimales
-    ventas = []
-
-    # Crear la venta principal y asociarla al usuario
-    venta = Venta.objects.create(user=request.user)  # Crear una venta vacía
-
-    # Procesar cada producto en el carrito
-    for producto_slug, producto_data in carrito.items():
-        try:
-            producto = Producto.objects.get(slug=producto_slug)  # Obtener el producto de la DB
-        except Producto.DoesNotExist:
-            continue  # Si el producto no existe, lo saltamos
-
-        if 'tallas' in producto_data:
-            for talla_id, talla_data in producto_data['tallas'].items():
-                talla = ProductoTalla.objects.get(id=talla_id)
-
-                # Asegurarse de que los precios sean de tipo Decimal
-                precio_unitario = Decimal(str(talla_data['precio']))  # Convertir a Decimal
-                precio_total = Decimal(str(talla_data['precio'])) * Decimal(talla_data['cantidad'])
-
-                # Crear la línea de venta para este producto
-                linea_venta = LineaVenta.objects.create(
-                    venta=venta,
-                    producto=producto,
-                    cantidad=talla_data['cantidad'],
-                    talla=talla,
-                    precio_unitario=precio_unitario  # Guardar el precio unitario
-                )
-
-                # Calcular total
-                total += precio_total  # Sumamos a total (asegurado que es Decimal)
-
-                ventas.append({
-                    'producto': producto,
-                    'cantidad': talla_data['cantidad'],
-                    'talla': talla,
-                    'precio': precio_unitario,
-                    'precio_total': precio_total
-                })
-        else:
-            # Asegurarse de que los precios sean de tipo Decimal
-            precio_unitario = Decimal(str(producto_data['precio']))  # Convertir a Decimal
-            precio_total = Decimal(str(producto_data['precio'])) * Decimal(producto_data['cantidad'])
-
-            # Crear la línea de venta para productos sin talla
-            linea_venta = LineaVenta.objects.create(
-                venta=venta,
-                producto=producto,
-                cantidad=producto_data['cantidad'],
-                precio_unitario=precio_unitario  # Guardar el precio unitario
-            )
-
-            total += precio_total  # Sumamos a total (asegurado que es Decimal)
-
-            ventas.append({
-                'producto': producto,
-                'cantidad': producto_data['cantidad'],
-                'precio': precio_unitario,
-                'precio_total': precio_total
-            })
-
-    # Actualizar el total en la venta principal
-    venta.total = total
-    venta.calcular_total()  # Llamamos al método para recalcular el total de la venta
-    # Vaciar el carrito
-    request.session['carrito'] = {}
-
-    # Mostrar un mensaje de éxito
-    messages.success(request, f'Pago exitoso por un total de ${total:.0f}. ¡Gracias por tu compra!')
-
-    # Obtener los datos del perfil
-    profile = request.user.profile
-    rut = profile.rut
-    telefono = profile.telefono
-    direccion = profile.direccion
-
-    # Correo al usuario
-    email_cliente = request.user.email  # Usamos el correo del cliente
-    subject = 'Confirmación de tu compra en Nuestro Sitio'
-    message = render_to_string('correos/compra_confirmacion.html', {
-        'ventas': ventas,
-        'total': total,
-        'usuario': request.user
-    })
-
-    send_mail(
-        subject,
-        message,
-        settings.DEFAULT_FROM_EMAIL,
-        [email_cliente],
-        html_message=message  # Correo en formato HTML
-    )
-
-    # Correo al administrador
-    admin_email = 'info@tbkdesire.cl'  # Correo del administrador
-    admin_subject = 'Nuevo Pedido Realizado'
-
-    try:
-        # Intentar renderizar el mensaje HTML para el administrador
-        admin_message = render_to_string('correos/nuevo_pedido.html', {
-            'ventas': ventas,
-            'total': total,
-            'usuario': request.user,
-            'rut': rut,
-            'telefono': telefono,
-            'direccion': direccion,
-        })
-    except Exception as e:
-        admin_message = f"Error al generar el mensaje del pedido: {str(e)}"
-
-    if admin_message:
-        send_mail(
-            admin_subject,
-            admin_message,
-            settings.DEFAULT_FROM_EMAIL,
-            [admin_email],
-            html_message=admin_message  # Correo en formato HTML
-        )
-    else:
-        print("No se generó el mensaje HTML para el administrador.")
-
-    # Renderizar la página de confirmación después del pago
-
-    return render(request, 'carrito/compra_confirmacion.html', {
-        'ventas': ventas,
-        'total': total,
-    })
-
 
 class MisComprasView(LoginRequiredMixin, ListView):
     model = Venta
@@ -589,7 +1024,7 @@ def actualizar_envio(request):
     # Redirige de vuelta al carrito o la página que corresponda
     return redirect('ver_carrito')
 
-def ver_carrito(request):
+def ver_carrito1(request):
     # Recuperar el carrito de la sesión
     carrito = request.session.get('carrito', {})
     
@@ -615,7 +1050,7 @@ def ver_carrito(request):
         'envio': envio,
     })
    
-def eliminar_del_carrito(request, slug, talla_id):
+def eliminar_del_carrito1(request, slug, talla_id):
     producto = get_object_or_404(Producto, slug=slug)
     talla = get_object_or_404(ProductoTalla, id=talla_id, producto=producto)
 
@@ -660,85 +1095,6 @@ def actualizar_carrito(request, slug, talla_id):
 
     return redirect('ver_carrito')
 
-@login_required
-def procesar_pago(request):
-    # Obtener el carrito de la sesión
-    carrito = request.session.get('carrito', {})
-    
-    # Verificar si el carrito está vacío
-    if not carrito or sum(item['cantidad'] for item in carrito.values()) == 0:
-        return JsonResponse({'error': 'El carrito está vacío o no tiene productos válidos.'}, status=400)
-    
-       # Calcular el total y la cantidad total de productos
-    total = 0
-    cantidad_total = 0
-    items = []  # Aquí se guardarán los productos y tallas del carrito
-
-    for producto_slug, producto_data in carrito.items():
-        if 'tallas' in producto_data:  # Si el producto tiene tallas
-            for talla_id, talla_data in producto_data['tallas'].items():
-                # Calcular el total del carrito con tallas y cantidades
-                total += float(talla_data['precio']) * talla_data['cantidad']
-                cantidad_total += talla_data['cantidad']
-                
-                # Agregar cada talla como un item en los items de la preferencia
-                items.append({
-                    "title": f"{producto_data['nombre']} - Talla {talla_data['talla']}",  # Nombre con la talla
-                    "quantity": talla_data['cantidad'],  # Cantidad de esta talla
-                    "unit_price": float(talla_data['precio'])  # Precio de la talla
-                })
-        else:
-            # Si no tiene tallas, agregar solo el producto
-            total += float(producto_data['precio']) * producto_data['cantidad']
-            cantidad_total += producto_data['cantidad']
-            
-            # Agregar el producto como un item en los items de la preferencia
-            items.append({
-                "title": producto_data['nombre'],
-                "quantity": producto_data['cantidad'],
-                "unit_price": float(producto_data['precio'])
-            })
-
-    # Configuración del SDK de Mercado Pago
-    sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
-    
-    # Crear la preferencia de pago
-    preference_data = {
-        "items": [
-            {
-                "title": "Compra en nuestra tienda TBK",  # Nombre del producto (puedes personalizarlo)
-                "quantity": 1,  # Cantidad total de productos en el carrito
-                "unit_price": total  # Total del carrito
-            }
-        ],
-        "back_urls": {
-             "success": request.build_absolute_uri('/procesar_pago/exito'),  # URL absoluta
-             "failure": request.build_absolute_uri('/procesar_pago/failure'),
-             "pending": request.build_absolute_uri('/procesar_pago/pending'),
-        },
-        "auto_return": "approved",  # La redirección automática cuando el pago es aprobado
-    }
-
-    # Intentar crear la preferencia
-    try:
-        preference_response = sdk.preference().create(preference_data)
-        preference = preference_response.get("response", {})
-        
-        
-        # Imprimir la respuesta de Mercado Pago para depuración
-
-        # Verificar si la preferencia fue creada correctamente
-        if 'init_point' in preference:
-            # Redirigir al usuario a la página de pago de Mercado Pago
-            return redirect(preference["init_point"])
-        else:
-            # Si no se pudo crear la preferencia, retornar un mensaje de error
-            error_message = preference_response.get("message", "Error desconocido.")
-            return JsonResponse({'error': error_message}, status=400)
-
-    except Exception as e:
-        # Si ocurre un error en el proceso de creación de la preferencia
-        return JsonResponse({'error': str(e)}, status=500)
     
 @login_required
 def failure(request):
@@ -1321,6 +1677,7 @@ def register(request):
         form = CustomUserCreationForm()
 
     return render(request, 'registration/register.html', {'form': form})
+
 
 # Vista de registro exitoso
 def registro_exitoso(request):

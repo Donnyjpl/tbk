@@ -1,3 +1,4 @@
+{% load static %}
 {% load custom_filters %}
 <!DOCTYPE html>
 <html lang="es">
@@ -47,34 +48,27 @@
 </head>
 <body>
     <div class="email-container">
-        <h1>Nuevo pedido realizado</h1>
-        <p>Un nuevo pedido ha sido realizado en tu tienda online. Aquí están los detalles:</p>
-
-        <p><strong>Usuario:</strong> {{ usuario.get_full_name }} ({{ usuario.email }})</p>
-        <p><strong>RUT:</strong> {{ rut }}</p>
-        <p><strong>Teléfono:</strong> {{ telefono }}</p>
-        <p><strong>Dirección:</strong> {{ direccion }}</p>
-
-        <!-- Agregar medio de pago -->
-        <p><strong>Medio de pago:</strong> 
-            {% if metodo_pago == "mercado_pago" %}
-                Mercado Pago
-            {% elif metodo_pago == "transferencia" %}
-                Transferencia Bancaria
-            {% else %}
-                No especificado
-            {% endif %}
-        </p>
+        <!-- Agregar imagen (por ejemplo, logo) al principio del correo -->
+        <img src="{% static 'img/logot.png' %}" alt="Logo" style="width: 150px; margin-bottom: 20px;">
+        
+        <h1>¡Gracias por tu pedido, {{ usuario.get_full_name }}!</h1>
+        <p>Hemos recibido tu pedido y está pendiente de confirmación de pago. El pago se debe realizar mediante **Transferencia Bancaria**.</p>
+        
+        <p>Por favor, realiza la transferencia a los siguientes datos bancarios:</p>
+        <p><strong>Banco:</strong> Banco Ejemplo</p>
+        <p><strong>Cuenta:</strong> 123456789</p>
+        <p><strong>RUT del titular:</strong> 12.345.678-9</p>
+        <p><strong>Referencia de pago:</strong> Pedido #{{ venta.id }}</p>
 
         <div class="order-details">
-            <h3>Detalles del pedido</h3>
+            <h3>Detalles de tu pedido</h3>
             <table>
                 <thead>
                     <tr>
                         <th>Producto</th>
                         <th>Cantidad</th>
-                        <th>Talla</th>  <!-- Agregar columna de talla -->
-                        <th>Color</th>  <!-- Agregar columna de color -->
+                        <th>Talla</th>  <!-- Nueva columna para mostrar la talla -->
+                        <th>Color</th>  <!-- Columna para mostrar el color -->
                         <th>Precio</th>
                         <th>Total</th>
                     </tr>
@@ -82,7 +76,7 @@
                 <tbody>
                     {% for venta in ventas %}
                     <tr>
-                        <td>{{ venta.producto.nombre }}{% if venta.talla %} - Talla: {{ venta.talla.talla }}{% else %} - Talla: N/A{% endif %}</td>
+                        <td>{{ venta.producto.nombre|title }}</td>
                         <td>{{ venta.cantidad }}</td>
                         <td>{% if venta.talla %}{{ venta.talla.talla }}{% else %}N/A{% endif %}</td>  <!-- Mostrar talla -->
                         <td>{{ venta.color }}</td>  <!-- Mostrar color -->
@@ -94,9 +88,11 @@
             </table>
         </div>
 
-        <p><strong>Total del pedido: ${{ total|formatear_precio }}</strong></p>
+        <p><strong>Total a pagar: ${{ total|formatear_precio }}</strong></p>
 
-        <p class="footer">Por favor, contacta al cliente para confirmar los detalles de su compra.</p>
+        <p>Una vez realizada la transferencia, por favor, envíanos el comprobante al correo <strong>ventas@tutienda.com</strong> para que podamos confirmar tu pago y proceder con el envío.</p>
+
+        <p class="footer">Si tienes alguna pregunta o necesitas asistencia, no dudes en contactarnos. ¡Gracias por elegirnos!</p>
     </div>
 </body>
 </html>

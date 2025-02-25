@@ -4,13 +4,18 @@ from django.conf import settings
 from django.conf.urls.static import static
 from .views import ProductoListView,about,contacto,successs,lista_productos,logout_view,custom_login,procesar_pago_success,ProductoDetalleView
 
-from .views import crear_producto, subir_imagenes,ver_carrito,eliminar_del_carrito,actualizar_carrito
+from .views import crear_producto, subir_imagenes,ver_carrito,eliminar_del_carrito1,actualizar_carrito
 
 from .views import profile_view,register, ProfileUpdateView,custom_password_reset_request,CustomPasswordResetConfirmView,CustomPasswordResetDoneView,CustomPasswordResetCompleteView
 from . import views
 from .views import agregar_a_favoritos, ver_favoritos, eliminar_de_favoritos, actualizar_favoritos,MisComprasView,get_colores_por_talla
 
 from django.contrib.auth import views as auth_views
+
+from .views import actualizar_color_carrito,eliminar_color_carrito,eliminar_del_carrito,actualizar_producto_simple
+
+
+
 urlpatterns = [
     path('crear/nuevo/',crear_producto , name='crear'),
     path('subir_imagenes/<slug:slug>/',subir_imagenes, name='subir_imagenes'),
@@ -29,7 +34,7 @@ urlpatterns = [
     path('successs/', successs, name='successs'),  # URL para ver la lista de productos
     path('listar/', lista_productos, name='listar'),  # URL para ver la lista de productos
     
-    
+    path('procesar_pago/transferencia/', views.procesar_pago_transferencia, name='procesar_pago_transferencia'),
     path('procesar_pago/', views.procesar_pago, name='procesar_pago'),
     path('procesar_pago/exito/', views.procesar_pago_success, name='exito'),
     path('procesar_pago/failure/', views.failure, name='failure'),
@@ -47,8 +52,9 @@ urlpatterns = [
     path('actualizar_envio/', views.actualizar_envio, name='actualizar_envio'),
     
     
-    path('eliminar_del_carrito/<slug:slug>/<int:talla_id>/', views.eliminar_del_carrito, name='eliminar_del_carrito'),
+    path('eliminar_del_carrito/<slug:slug>/<int:talla_id>/', views.eliminar_del_carrito1, name='eliminar_del_carrito'),
     path('actualizar_carrito/<slug:slug>/<int:talla_id>/', views.actualizar_carrito, name='actualizar_carrito'),
+    
     
     path('producto/<slug:slug>/opinion/', views.dejar_opinion, name='producto_opinion'),
     
@@ -77,6 +83,11 @@ urlpatterns = [
     path('password_reset/done/', CustomPasswordResetDoneView.as_view(), name='password_reset_done'),
     path('password_reset_confirm/<uidb64>/<token>/', CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('reset/done/', CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),
+    
+    path('carrito/actualizar/<slug:slug>/<str:talla_id>/<str:color_id>/', actualizar_color_carrito, name='actualizar_color_carrito'),
+    path('carrito/eliminar/<slug:slug>/<str:talla_id>/<str:color_id>/', eliminar_color_carrito, name='eliminar_color_carrito'),
+    path('carrito/eliminar-producto/<slug:slug>/', eliminar_del_carrito, name='eliminar_producto_carrito'),
+    path('carrito/actualizar-simple/<slug:slug>/', actualizar_producto_simple, name='actualizar_producto_simple'),
     
     
     path('color', views.color_list, name='color_list'),

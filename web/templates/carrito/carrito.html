@@ -11,7 +11,7 @@
 <div class="container py-5">
     <h2>Mi Carrito de Compras</h2>
 
-    {% if carrito|length == 0 %}
+    {% if carrito.productos|length == 0 %}
     <div class="alert alert-info">
         ¡Tu carrito está vacío! <a href="{% url 'shop' %}">Visita nuestra tienda</a> para agregar productos.
     </div>
@@ -31,41 +31,91 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for slug, producto in carrito.items %}
-                    {% if producto.tallas %}
-                    {% for talla_id, talla_data in producto.tallas.items %}
-                    <tr>
-                        <td>{{ producto.nombre|title }}</td>
-                        <td>{{ talla_data.talla|title }}</td>
+                    {% for producto in carrito.productos %}
+                    <!-- Fila para información total del producto -->
+                    <tr class="table-secondary">
+                        <td colspan="2"><strong>{{ producto.nombre|title }} (Total)</strong></td>
+                        <td>-</td>
+                        <td><strong>{{ producto.cantidad_total }}</strong></td>
+                        <td><strong>${{ producto.precio_unitario|formatear_precio }}</strong></td>
+                        <td><strong>${{ producto.subtotal|formatear_precio }}</strong></td>
                         <td>
-                            {% if talla_data.colores %}
-                            {% for color_id, color_data in talla_data.colores.items %}
-                            {{ color_data.color }}{% if not forloop.last %}, {% endif %}
-                            {% endfor %}
-                            {% else %}
-                            Sin color
-                            {% endif %}
+                            <a href="{% url 'eliminar_producto_carrito' slug=producto.slug %}" class="btn btn-sm btn-danger">Eliminar todo</a>
                         </td>
+                    </tr>
+                    
+                    {% if producto.tallas %}
+                    {% for talla in producto.tallas %}
+                    <!-- Fila para información de la talla -->
+                    <tr class="table-light">
+                        <td>-</td>
+                        <td><strong>{{ talla.talla|title }}</strong></td>
+                        <td>-</td>
+                        <td><strong>{{ talla.cantidad }}</strong></td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                    
+                    {% if talla.colores %}
+                    {% for color in talla.colores %}
+                    <!-- Fila para cada color -->
+                    <tr>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>{{ color.nombre }}</td>
                         <td>
-                            <form method="POST" action="{% url 'actualizar_carrito' producto.slug talla_id %}">
+                            <form method="POST" action="{% url 'actualizar_color_carrito' producto.slug talla.id color.id %}">
                                 {% csrf_token %}
-                                <input type="number" name="cantidad" value="{{ talla_data.cantidad }}" min="1" required>
-                                <button type="submit" class="btn btn-warning">Actualizar</button>
+                                <input type="number" name="cantidad" value="{{ color.cantidad }}" min="1" required class="form-control form-control-sm d-inline" style="width: A60px;">
+                                <button type="submit" class="btn btn-sm btn-warning">Actualizar</button>
                             </form>
                         </td>
-                        <td>${{ talla_data.precio|formatear_precio }}</td>
-                        <td>${{ talla_data.precio|multiply:talla_data.cantidad|formatear_precio}}</td>
+                        <td>${{ color.precio|formatear_precio }}</td>
+                        <td>${{ color.subtotal|formatear_precio }}</td>
                         <td>
-                            <a href="{% url 'eliminar_del_carrito' slug=slug talla_id=talla_id %}"
-                                class="btn btn-danger">Eliminar</a>
+                            <a href="{% url 'eliminar_color_carrito' slug=producto.slug talla_id=talla.id color_id=color.id %}" class="btn btn-sm btn-outline-danger">Eliminar</a>
                         </td>
                     </tr>
                     {% endfor %}
                     {% else %}
-                    <!-- Si no tiene tallas, mostrar algo especial -->
                     <tr>
-                        <td>{{ producto.nombre }}</td>
-                        <td colspan="5">Producto sin tallas disponibles</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>Sin color</td>
+                        <td>
+                            <form method="POST" action="{% url 'actualizar_carrito' producto.slug talla.id %}">
+                                {% csrf_token %}
+                                <input type="number" name="cantidad" value="{{ talla.cantidad }}" min="1" required class="form-control form-control-sm d-inline" style="width: 60px;">
+                                <button type="submit" class="btn btn-sm btn-warning">Actualizar</button>
+                            </form>
+                        </td>
+                        <td>${{ producto.precio_unitario|formatear_precio }}</td>
+                        <td>${{ producto.precio_unitario|multiply:talla.cantidad|formatear_precio }}</td>
+                        <td>
+                            <a href="{% url 'eliminar_del_carrito' slug=producto.slug talla_id=talla.id %}" class="btn btn-sm btn-danger">Eliminar</a>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                    {% else %}
+                    <!-- Si no tiene tallas, mostrar una fila simple -->
+                    <tr>
+                        <td>-</td>
+                        <td>Sin talla</td>
+                        <td>Sin color</td>
+                        <td>
+                            <form method="POST" action="{% url 'actualizar_producto_simple' producto.slug %}">
+                                {% csrf_token %}
+                                <input type="number" name="cantidad" value="{{ producto.cantidad_total }}" min="1" required class="form-control form-control-sm d-inline" style="width: 60px;">
+                                <button type="submit" class="btn btn-sm btn-warning">Actualizar</button>
+                            </form>
+                        </td>
+                        <td>${{ producto.precio_unitario|formatear_precio }}</td>
+                        <td>${{ producto.subtotal|formatear_precio }}</td>
+                        <td>
+                            <a href="{% url 'eliminar_producto_carrito' slug=producto.slug %}" class="btn btn-sm btn-danger">Eliminar</a>
+                        </td>
                     </tr>
                     {% endif %}
                     {% endfor %}
@@ -95,13 +145,21 @@
             {% if envio == 'envio' %}
             <h3>Total con envío: ${{ total|formatear_precio }}</h3>
             {% else %}
-            <h3>Total: ${{ total|formatear_precio }}</h3>
+            <h3>Total: ${{ carrito.total|formatear_precio }}</h3>
             {% endif %}
 
             {% if user.is_authenticated %}
-            <a href="{% url 'procesar_pago' %}" class="btn btn-success">Proceder al Pago</a>
+            <form method="post" id="paymentForm" action="{% url 'procesar_pago' %}">
+                {% csrf_token %}
+                <label for="payment_method">Método de pago:</label>
+                <select name="payment_method" id="payment_method" onchange="updateFormAction()">
+                    <option value="mercado_pago">Mercado Pago</option>
+                    <option value="transferencia">Transferencia Bancaria</option>
+                </select>
+                <button type="submit" class="btn btn-primary">Pagar</button>
+            </form>
             {% else %}
-            <h3>Total: ${{ total|formatear_precio }}</h3>
+            <h3>Total: ${{ carrito.total|formatear_precio }}</h3>
             <p class="alert alert-warning">Para proceder con el pago, por favor, inicie sesión o regístrese.</p>
             <a href="{% url 'login' %}" class="btn btn-primary">Iniciar Sesión</a>
             {% endif %}
@@ -110,4 +168,17 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+    function updateFormAction() {
+        var paymentMethod = document.getElementById('payment_method').value;
+        var form = document.getElementById('paymentForm');
+        
+        if (paymentMethod == 'transferencia') {
+            form.action = "{% url 'procesar_pago_transferencia' %}";  // Cambia la acción para Transferencia
+        } else {
+            form.action = "{% url 'procesar_pago' %}";  // Acción para Mercado Pago
+        }
+    }
+</script>
 {% endblock %}

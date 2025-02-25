@@ -132,3 +132,16 @@ class Contacto(models.Model):
   
     def __str__(self):
         return f"Formulario de Contacto - {self.contact_form_uuid}"
+    
+class Pago(models.Model):
+    ESTADO_CHOICES = (
+        ('pendiente', 'Pendiente'),
+        ('confirmado', 'Confirmado'),
+    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    total = models.DecimalField(max_digits=10, decimal_places=2)
+    estado = models.CharField(max_length=10, choices=ESTADO_CHOICES, default='pendiente')
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Pago {self.id} - {self.estado}"

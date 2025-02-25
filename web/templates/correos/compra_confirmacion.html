@@ -61,6 +61,8 @@
                     <tr>
                         <th>Producto</th>
                         <th>Cantidad</th>
+                        <th>Talla</th>  <!-- Nueva columna para mostrar la talla -->
+                        <th>Color</th>  <!-- Columna para mostrar el color -->
                         <th>Precio</th>
                         <th>Total</th>
                     </tr>
@@ -68,8 +70,10 @@
                 <tbody>
                     {% for venta in ventas %}
                     <tr>
-                        <td>{{ venta.producto.nombre|title }}{% if venta.talla %} - Talla: {{ venta.talla.talla}}{% endif %}</td>
+                        <td>{{ venta.producto.nombre|title }}</td>
                         <td>{{ venta.cantidad }}</td>
+                        <td>{% if venta.talla %}{{ venta.talla.talla }}{% else %}N/A{% endif %}</td>  <!-- Mostrar talla -->
+                        <td>{{ venta.color }}</td>  <!-- Mostrar color -->
                         <td>${{ venta.precio|formatear_precio }}</td>
                         <td>${{ venta.precio_total|formatear_precio }}</td>
                     </tr>

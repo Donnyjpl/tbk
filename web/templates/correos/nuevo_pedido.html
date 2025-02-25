@@ -59,6 +59,14 @@
     <div class="email-container">
         <h1>Nuevo pedido realizado</h1>
         <p>Un nuevo pedido ha sido realizado en tu tienda online. Aquí están los detalles:</p>
+         <!-- Sección para mostrar el tipo de envío -->
+         <p><strong>Tipo de envío:</strong> 
+            {% if venta.envio == 'envio' %}
+                Envío a domicilio
+            {% else %}
+                Retiro en tienda
+            {% endif %}
+        </p>
 
         <p><strong>Usuario:</strong> {{ usuario.get_full_name }} ({{ usuario.email }})</p>
         <p><strong>RUT:</strong> {{ rut }}</p>
@@ -67,7 +75,7 @@
 
         <!-- Agregar medio de pago -->
         <p><strong>Medio de pago:</strong>
-            {% elif metodo_pago == "transferencia" %}
+            {% if metodo_pago == "transferencia" %}
             Transferencia Bancaria
             {% else %}
             Mercado Pago

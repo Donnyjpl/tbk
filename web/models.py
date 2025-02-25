@@ -84,10 +84,26 @@ class OpinionCliente(models.Model):
         def __str__(self):
             return f'Opinión de {self.user.username} sobre {self.producto.nombre}'  # Acceso al nombre del producto usando self.producto.name
 
+class Pago(models.Model):
+    ESTADO_CHOICES = (
+        ('pendiente', 'Pendiente'),
+        ('confirmado', 'Confirmado'),
+    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    total = models.DecimalField(max_digits=10, decimal_places=2)
+    estado = models.CharField(max_length=10, choices=ESTADO_CHOICES, default='pendiente')
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Pago {self.id} - {self.estado}"
+
+
 class Venta(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)  # Relacionamos la venta con un usuario
     fecha = models.DateTimeField(auto_now_add=True)  # Fecha de la venta
     total = models.DecimalField(max_digits=10, decimal_places=0, default=0)  # Total de la venta, calculado automáticamente
+    pago = models.OneToOneField(Pago, null=True, blank=True, on_delete=models.SET_NULL)  # Relacionamos con el pago (uno a uno)
+    envio = models.CharField(max_length=20, choices=[('envio', 'Envío a domicilio'), ('retiro', 'Retiro en tienda')], default='envio')
 
     def calcular_total(self):
         """Método para calcular el total de la venta sumando los subtotales de las líneas de venta"""
@@ -133,15 +149,4 @@ class Contacto(models.Model):
     def __str__(self):
         return f"Formulario de Contacto - {self.contact_form_uuid}"
     
-class Pago(models.Model):
-    ESTADO_CHOICES = (
-        ('pendiente', 'Pendiente'),
-        ('confirmado', 'Confirmado'),
-    )
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    total = models.DecimalField(max_digits=10, decimal_places=2)
-    estado = models.CharField(max_length=10, choices=ESTADO_CHOICES, default='pendiente')
-    fecha = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"Pago {self.id} - {self.estado}"

@@ -55,3 +55,8 @@ def get_item(dictionary, key):
     if dictionary is None:
         return None
     return dictionary.get(key)
+
+@register.filter
+def divide_into_groups(items, n):
+    """Divide una lista en grupos de n elementos."""
+    return [items[i:i+n] for i in range(0, len(items), n)]

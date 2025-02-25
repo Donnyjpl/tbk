@@ -2,13 +2,23 @@
 {% load custom_filters %}
 
 {% block content %}
+
 <div class="container py-5">
+    {% if messages %}
+    <div class="messages container">
+        {% for message in messages %}
+        <div class="message {{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
     {% if request.user.is_staff %}
     <h2 class="text-center mb-4">Mis Ventas:</h2>
     {% else %}
     <h2 class="text-center mb-4">Mis Compras:</h2>
     {% endif %}
-
+    s
     {% if page_obj %}
     <div class="row">
         {% for venta in ventas %}
@@ -22,6 +32,7 @@
                     {% endif %}
                 </div>
                 <div class="card-body">
+                    {% if request.user.is_staff %}
                     <h6><strong>Detalles del Usuario:</strong></h6>
                     <ul class="list-group mb-3">
                         <li class="list-group-item"><strong>Fecha de Compra:</strong> {{ venta.fecha|date:"d/m/Y H:i" }}
@@ -33,22 +44,79 @@
                         <li class="list-group-item"><strong>Apellidos:</strong> {{ venta.user.last_name }}</li>
                         <li class="list-group-item"><strong>Teléfono:</strong> {{ venta.usuario_telefono }}</li>
                     </ul>
-
-                    <h6 class="mt-3"><strong>Productos:</strong></h6>
-                    <ul class="list-group list-group-flush">
-                        {% for linea in venta.lineas.all %}
-                        <li class="list-group-item">
-                            <strong>{{ linea.producto.nombre }}</strong><br>
-                            Talla: {{ linea.talla.talla|default:"No especificada" }}<br>
-                            Cantidad: {{ linea.cantidad }}<br>
-                            Precio unitario: ${{ linea.precio_unitario|formatear_precio }}<br>
-                            Total: ${{ linea.total_formateado|formatear_precio }}
+                    {% else %}
+                    <ul class="list-group mb-3">
+                        <li class="list-group-item"><strong>Fecha de Compra:</strong> {{ venta.fecha|date:"d/m/Y H:i" }}
                         </li>
-                        {% endfor %}
-                    </ul>
+                        {% endif %}
+
+
+
+                        <h6 class="mt-3"><strong>Productos:</strong></h6>
+                        <ul class="list-group list-group-flush">
+                            {% for linea in venta.lineas.all %}
+                            <li class="list-group-item">
+                                <strong>{{ linea.producto.nombre|title }}</strong><br>
+                                Talla: {{ linea.talla.talla|default:"No especificada" }}<br>
+                                {% if linea.color %}
+                                <strong>Color:</strong> {{ linea.color.nombre|title }}<br>
+                                {% else %}
+                                <strong>Color:</strong> No especificado<br>
+                                {% endif %}
+                                Cantidad: {{ linea.cantidad }}<br>
+                                Precio unitario: ${{ linea.precio_unitario|formatear_precio }}<br>
+                                Total: ${{ linea.total_formateado|formatear_precio }}
+
+                            </li>
+                            {% endfor %}
+                        </ul>
+
+                        <h6 class="mt-3"><strong>Estado de Pago:</strong></h6>
+                        <p class="list-group-item">
+                            {% if venta.estado_pago == 'pendiente' %}
+                            <span class="badge bg-warning text-dark">Pendiente</span>
+                            {% elif venta.estado_pago == 'confirmado' %}
+                            <span class="badge bg-success">Confirmado</span>
+                            {% else %}
+                            <span class="badge bg-secondary">No disponible</span>
+                            {% endif %}
+                        </p>
+
+                        {% if request.user.is_staff %}
+                        <h6 class="mt-3"><strong>Cambiar Estado de Pago:</strong></h6>
+                        <form method="POST" action="{% url 'cambiar_estado_pago' venta.id %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="estado" class="form-label">Estado de Pago</label>
+                                <select class="form-control" id="estado" name="estado">
+                                    <option value="pendiente"
+                                        {% if venta.estado_pago == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                                    <option value="confirmado"
+                                        {% if venta.estado_pago == 'confirmado' %}selected{% endif %}>Confirmado
+                                    </option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-success">Actualizar Estado</button>
+                        </form>
+                        {% endif %}
+                        <h6 class="mt-3"><strong>Envío:</strong></h6>
+                        <p class="list-group-item">
+                            {% if venta.tipo_envio == 'envio' %}
+                            <span class="badge bg-primary">Envío a Domicilio</span>
+                            {% elif venta.tipo_envio == 'retiro' %}
+                            <span class="badge bg-secondary">Retiro en Local</span>
+                            {% else %}
+                            <span class="badge bg-warning">No especificado</span>
+                            {% endif %}
+                        </p>
                 </div>
                 <div class="card-footer bg-light">
-                    <strong>Total de la Venta: ${{ venta.total_venta_formateado|formatear_precio }}</strong>
+                    <strong>Total de la Venta:</strong>
+                    {% if venta.tipo_envio == 'envio' %}
+                    ${{ venta.total_venta_formateado|add:"5000"|formatear_precio }}
+                    {% else %}
+                    ${{ venta.total_venta_formateado|formatear_precio }}
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -108,4 +176,3 @@
     {% endif %}
 </div>
 {% endblock %}
-

@@ -49,7 +49,7 @@
 <body>
     <div class="email-container">
         <!-- Agregar imagen (por ejemplo, logo) al principio del correo -->
-        <img src="{% static 'img/logot.png' %}" alt="Logo" style="width: 150px; margin-bottom: 20px;">
+        <img src="{% static 'img/logonegro.png' %}" alt="Logo" style="width: 150px; margin-bottom: 20px;">
         
         <h1>¡Gracias por tu pedido, {{ usuario.get_full_name }}!</h1>
         <p>Hemos recibido tu pedido y está pendiente de confirmación de pago. El pago se debe realizar mediante **Transferencia Bancaria**.</p>
@@ -61,6 +61,15 @@
         <p><strong>RUT del titular:</strong> 77804542-7</p>
         <p><strong>Nombre del titular:</strong> Studio RZ spa</p>
         <p><strong>Referencia de pago:</strong> Pedido #{{ venta.id }}</p>
+
+         <!-- Sección para mostrar el tipo de envío -->
+         <p><strong>Tipo de envío:</strong> 
+            {% if venta.envio == 'envio' %}
+                Envío a domicilio
+            {% else %}
+                Retiro en tienda
+            {% endif %}
+        </p>
 
         <div class="order-details">
             <h3>Detalles de tu pedido</h3>

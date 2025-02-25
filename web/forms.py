@@ -1,11 +1,17 @@
 # forms.py
 from django import forms
-from .models import Producto, ProductoImagen, Categoria, ProductoTalla, Contacto, Profile, OpinionCliente,Color
+from .models import Producto, ProductoImagen, Categoria, ProductoTalla, Contacto, Profile, OpinionCliente,Color, Pago
 from django.db.models import Min, Max
 from django.contrib.auth.forms import SetPasswordForm,UserCreationForm
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from .models import  ProductoTalla, Color,ProductoTallaColor
+
+class CambioEstadoPagoForm(forms.ModelForm):
+    class Meta:
+        model = Pago
+        fields = ['estado']
+
 
 
 class ColorForm(forms.ModelForm):

@@ -54,6 +54,15 @@
         <h1>¡Gracias por tu compra, {{ usuario.get_full_name }}!</h1>
         <p>Hemos recibido tu pedido y se está procesando. A continuación, te proporcionamos los detalles de tu compra:</p>
 
+         <!-- Sección para mostrar el tipo de envío -->
+         <p><strong>Tipo de envío:</strong> 
+            {% if venta.envio == 'envio' %}
+                Envío a domicilio
+            {% else %}
+                Retiro en tienda
+            {% endif %}
+        </p>
+
         <div class="order-details">
             <h3>Detalles de tu pedido</h3>
             <table>

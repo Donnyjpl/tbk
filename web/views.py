@@ -82,6 +82,67 @@ from .forms import ColorForm
 #Categoria
 from .models import Categoria
 from .forms import CategoriaForm
+from .forms import CambioEstadoPagoForm
+
+
+def cambiar_estado_pago(request, venta_id):
+    venta = get_object_or_404(Venta, id=venta_id)
+
+    # Verificar si el usuario tiene permiso de administrador
+    if not request.user.is_staff:
+        messages.error(request, "No tienes permisos para realizar esta acción.")
+        return redirect('mis_compras')
+
+    if request.method == 'POST':
+        # Cambiar el estado del pago
+        estado_pago = request.POST.get('estado')
+        if venta.pago:
+            venta.pago.estado = estado_pago
+            venta.pago.save()
+            messages.success(request, f"El estado de pago ha sido actualizado a {estado_pago}.")
+        else:
+            messages.error(request, "No se encontró el pago para esta venta.")
+        return redirect('mis_compras')  # Redirige a la vista de ventas
+
+    return redirect('mis_compras')
+
+class MisComprasView(LoginRequiredMixin, ListView):
+    model = Venta
+    template_name = 'compras/mis_compras.html'
+    context_object_name = 'ventas'
+    paginate_by = 30
+
+    def get_queryset(self):
+        lineas_venta = LineaVenta.objects.prefetch_related('producto', 'talla')
+        if self.request.user.is_staff:
+            ventas = Venta.objects.prefetch_related(Prefetch('lineas', queryset=lineas_venta)).order_by('-fecha')
+        else:
+            ventas = Venta.objects.filter(user=self.request.user).prefetch_related(Prefetch('lineas', queryset=lineas_venta)).order_by('-fecha')
+        return ventas
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Aquí recuperamos el perfil del usuario (si lo tiene)
+        for venta in context['ventas']:
+            venta.usuario_direccion = venta.user.profile.direccion if hasattr(venta.user, 'profile') else "No disponible"
+            venta.usuario_rut = venta.user.profile.rut if hasattr(venta.user, 'profile') else "No disponible"
+            venta.usuario_telefono = venta.user.profile.telefono if hasattr(venta.user, 'profile') else "No disponible"
+            venta.numero_control = venta.id  # Usamos el ID como número de control
+            # Obtener el tipo de envío
+            venta.tipo_envio = venta.envio if hasattr(venta, 'envio') else 'retiro'  # Si no hay envío, es retiro
+
+
+            # Agregar total de la venta
+            venta.total_venta = sum(linea.precio_unitario * linea.cantidad for linea in venta.lineas.all())
+            venta.total_venta_formateado = venta.total_venta
+
+            # Agregar el estado del pago
+            if venta.pago:  # Verificamos si la venta tiene un pago asociado
+                venta.estado_pago = venta.pago.estado
+            else:
+                venta.estado_pago = "No disponible"
+        return context
 
 @login_required
 def procesar_pago(request):
@@ -232,11 +293,16 @@ def procesar_pago_transferencia(request):
                 
     # Obtener el costo de envío de la sesión (si es aplicable)
     envio = request.session.get('envio', 'retiro')  # Valor predeterminado: retiro en tienda
+    venta.envio = envio  # Guardamos el tipo de envío en la venta
     if envio == 'envio':
         total += Decimal('5000')  # Costo de envío, lo agregamos al total
 
     # Crear el pago pendiente
     pago = Pago.objects.create(user=request.user, total=total, estado='pendiente')
+    
+    # Asociar el pago con la venta
+    venta.pago = pago  # Establecemos la relación en la venta
+    venta.save()  # Guardamos la venta con el pago asociado
 
     # Vaciar el carrito de la sesión
     request.session['carrito'] = {}
@@ -258,7 +324,8 @@ def procesar_pago_transferencia(request):
     message = render_to_string('correos/compra_confirmacion_trans.html', {
         'ventas': ventas,
         'total': total,
-        'usuario': request.user
+        'usuario': request.user,
+        'envio': venta.envio
     })
 
     send_mail(
@@ -279,7 +346,8 @@ def procesar_pago_transferencia(request):
         'rut': rut,
         'telefono': telefono,
         'direccion': direccion,
-        'metodo_pago': metodo_pago 
+        'metodo_pago': metodo_pago,
+        'envio': venta.envio
     })
 
     send_mail(
@@ -359,9 +427,18 @@ def procesar_pago_success(request):
                         'precio': precio_unitario,
                         'precio_total': precio_total
                     })
+                    
+    # Obtener el costo de envío de la sesión (si es aplicable)
+    envio = request.session.get('envio', 'retiro')  # Valor predeterminado: retiro en tienda
+    venta.envio = envio  # Guardamos el tipo de envío en la venta
+    if envio == 'envio':
+        total += Decimal('5000')  # Costo de envío, lo agregamos al total
                 
     # Crear el pago pendiente
     pago = Pago.objects.create(user=request.user, total=total, estado='confirmado')
+    # Asociar el pago con la venta
+    venta.pago = pago  # Establecemos la relación en la venta
+    venta.save()  # Guardamos la venta con el pago asociado
 
     # Vaciar el carrito de la sesión
     request.session['carrito'] = {}
@@ -382,7 +459,8 @@ def procesar_pago_success(request):
     message = render_to_string('correos/compra_confirmacion.html', {
         'ventas': ventas,
         'total': total,
-        'usuario': request.user
+        'usuario': request.user,
+        'envio': venta.envio
     })
 
     send_mail(
@@ -403,6 +481,7 @@ def procesar_pago_success(request):
         'rut': rut,
         'telefono': telefono,
         'direccion': direccion,
+        'envio': venta.envio
     })
 
     send_mail(
@@ -795,34 +874,7 @@ def politica_privacidad(request):
 def terminos_rembolso(request):
     return render(request, 'politicas/terminos_rembolso.html')
 
-class MisComprasView(LoginRequiredMixin, ListView):
-    model = Venta
-    template_name = 'compras/mis_compras.html'
-    context_object_name = 'ventas'
-    paginate_by = 5
 
-    def get_queryset(self):
-        lineas_venta = LineaVenta.objects.prefetch_related('producto', 'talla')
-        if self.request.user.is_staff:
-            ventas = Venta.objects.prefetch_related(Prefetch('lineas', queryset=lineas_venta)).order_by('-fecha')
-        else:
-            ventas = Venta.objects.filter(user=self.request.user).prefetch_related(Prefetch('lineas', queryset=lineas_venta)).order_by('-fecha')
-        return ventas
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        # Aquí recuperamos el perfil del usuario (si lo tiene)
-        for venta in context['ventas']:
-            venta.usuario_direccion = venta.user.profile.direccion if hasattr(venta.user, 'profile') else "No disponible"
-            venta.usuario_rut = venta.user.profile.rut if hasattr(venta.user, 'profile') else "No disponible"
-            venta.usuario_telefono = venta.user.profile.telefono if hasattr(venta.user, 'profile') else "No disponible"
-            venta.numero_control = venta.id  # Usamos el ID como número de control
-        
-            venta.total_venta = sum(linea.precio_unitario * linea.cantidad for linea in venta.lineas.all())
-            venta.total_venta_formateado = venta.total_venta
-        return context
-    
 def agregar_a_favoritos(request, slug):
     # Obtener el producto usando el slug
     producto = get_object_or_404(Producto, slug=slug)

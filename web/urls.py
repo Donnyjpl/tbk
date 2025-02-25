@@ -99,6 +99,7 @@ urlpatterns = [
     path('categorias/crear/', views.categoria_create, name='categoria_create'),
     path('categorias/editar/<int:pk>/', views.categoria_edit, name='categoria_edit'),
     path('categorias/eliminar/<int:pk>/', views.categoria_delete, name='categoria_delete'),
+    path('ventas/cambiar_estado_pago/<int:venta_id>/', views.cambiar_estado_pago, name='cambiar_estado_pago'),
     
     
 ]# Solo en desarrollo, servir archivos de medios

@@ -1,0 +1,28 @@
+<!-- categoria_confirm_delete.html -->
+{% extends 'baset.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Alerta de confirmación -->
+            <div class="alert alert-warning text-center" role="alert">
+                <h4 class="alert-heading">¡Atención!</h4>
+                <p>Estás a punto de eliminar la categoría <strong>{{ categoria.nombre }}</strong>. Esta acción no se puede deshacer.</p>
+                <hr>
+                <p class="mb-0">¿Estás seguro de que deseas continuar con la eliminación?</p>
+            </div>
+
+            <!-- Formulario de eliminación -->
+            <div class="d-flex justify-content-center">
+                <form method="post" class="mr-2">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-lg">Eliminar</button>
+                </form>
+                <a href="{% url 'categoria_list' %}" class="btn btn-secondary btn-lg">Cancelar</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

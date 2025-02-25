@@ -12,7 +12,7 @@ from .views import agregar_a_favoritos, ver_favoritos, eliminar_de_favoritos, ac
 
 from django.contrib.auth import views as auth_views
 urlpatterns = [
-    path('crear/',crear_producto , name='crear'),
+    path('crear/nuevo/',crear_producto , name='crear'),
     path('subir_imagenes/<slug:slug>/',subir_imagenes, name='subir_imagenes'),
     path('agregar_tallas/<slug:slug>/', views.agregar_tallas_y_colores, name='agregar_tallas'),
     path('agregar_colores_talla/<int:talla_id>/', views.agregar_colores_talla, name='agregar_colores_talla'),
@@ -66,11 +66,29 @@ urlpatterns = [
      path('login/', custom_login, name='login'),
     path('registro/', register, name='register'),
     path('profile/', profile_view, name='profile'),
-     path('terminos-condiciones/', views.terminos_condiciones, name='terminos_condiciones'),  # URL para los términos
+    
+    #####terminoos####
+     path('terminos/', views.terminos, name='terminos'),  # URL para los términos
+     path('terminos-condiciones/', views.terminos_condiciones, name='terminos_condiciones'),
+    path('politica-privacidad/', views.politica_privacidad, name='politica_privacidad'),
+    path('terminos-rembolso/', views.terminos_rembolso, name='terminos_rembolso'),
     
     path('password_reset/', custom_password_reset_request, name='password_reset'),
     path('password_reset/done/', CustomPasswordResetDoneView.as_view(), name='password_reset_done'),
     path('password_reset_confirm/<uidb64>/<token>/', CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('reset/done/', CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),
+    
+    
+    path('color', views.color_list, name='color_list'),
+    path('crear_color/', views.color_create, name='color_create'),
+    path('editar/<int:pk>/', views.color_edit, name='color_edit'),
+    path('eliminar/<int:pk>/', views.color_delete, name='color_delete'),
+    
+    path('categorias/', views.categoria_list, name='categoria_list'),
+    path('categorias/crear/', views.categoria_create, name='categoria_create'),
+    path('categorias/editar/<int:pk>/', views.categoria_edit, name='categoria_edit'),
+    path('categorias/eliminar/<int:pk>/', views.categoria_delete, name='categoria_delete'),
+    
+    
 ]# Solo en desarrollo, servir archivos de medios
 

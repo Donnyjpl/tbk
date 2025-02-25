@@ -1,0 +1,29 @@
+<!-- color_form.html -->
+{% extends 'baset.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4">{% if form.instance.pk %}Editar{% else %}Crear{% endif %} Color</h1>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <!-- Formulario -->
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="card p-4 shadow-sm">
+                    <div class="card-body">
+                        <!-- Mostrar los campos del formulario -->
+                        {{ form.as_p }}
+                        <!-- Botón de Enviar -->
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                {% if form.instance.pk %}Guardar Cambios{% else %}Crear Color{% endif %}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

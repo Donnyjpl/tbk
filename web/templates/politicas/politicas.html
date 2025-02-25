@@ -1,0 +1,47 @@
+{% extends 'baset.html' %}
+{% load static %}
+
+{% block title %}
+Formulario de Contacto - TBK-DESIRE
+{% endblock %}
+
+{% block content %}
+<!-- Encabezado -->
+<header class="bg-success text-white py-5 text-center">
+    <h1 class="display-3">Políticas de TBKDESIRE.CL</h1> <!-- Tamaño más grande para el título -->
+    <p class="lead fs-4">Te invitamos a conocer nuestras políticas para garantizar una experiencia de compra segura y confiable.</p> <!-- Tamaño de texto mayor -->
+</header>
+
+<!-- Contenido Principal -->
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h2 class="mb-5 text-center display-4">Políticas Importantes</h2> <!-- Título más grande -->
+            <p class="fs-5 mb-4">En TBKDESIRE, nos comprometemos a ofrecerte la mejor experiencia de compra. A continuación, te presentamos nuestras políticas para asegurar que tengas toda la información que necesitas:</p> <!-- Tamaño de texto mayor -->
+
+            <div class="list-group fs-5">
+                <a href="{% url 'terminos_condiciones' %}" class="list-group-item list-group-item-action">
+                    <h5 class="mb-1 display-6">Términos y Condiciones</h5> <!-- Título más grande -->
+                    <p class="mb-1">Revisa las reglas y condiciones para utilizar nuestros servicios y realizar compras.</p>
+                    <small>Leer más</small>
+                </a>
+                <a href="{% url 'politica_privacidad' %}" class="list-group-item list-group-item-action">
+                    <h5 class="mb-1 display-6">Política de Privacidad</h5> <!-- Título más grande -->
+                    <p class="mb-1">Descubre cómo protegemos y gestionamos tus datos personales para tu tranquilidad.</p>
+                    <small>Leer más</small>
+                </a>
+                <a href="{% url 'terminos_rembolso' %}" class="list-group-item list-group-item-action">
+                    <h5 class="mb-1 display-6">Políticas de Envío y Reembolso</h5> <!-- Título más grande -->
+                    <p class="mb-1">Conoce todo sobre nuestros procesos de envío, cambios y devoluciones.</p>
+                    <small>Leer más</small>
+                </a>
+            </div>
+
+            <div class="text-center mt-5">
+                <p class="fs-5">Si tienes alguna duda o necesitas más información, no dudes en ponerte en contacto con nosotros a través de nuestra página de contacto o por WhatsApp.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

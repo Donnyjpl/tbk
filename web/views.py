@@ -84,6 +84,15 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from django.http import HttpResponseForbidden
 
+#color
+
+from .models import Color
+from .forms import ColorForm
+
+#Categoria
+from .models import Categoria
+from .forms import CategoriaForm
+
 def agregar_al_carrito(request, slug):
     # Obtener el producto usando el slug
     producto = get_object_or_404(Producto, slug=slug)
@@ -92,47 +101,48 @@ def agregar_al_carrito(request, slug):
     talla_id = request.POST.get('talla')
     color_id = request.POST.get('color')
     
-    print(f"talla_id: {talla_id}, color_id: {color_id}", )  # Agrega esto para depuración
-
+    print(f"talla_id: {talla_id}, color_id: {color_id}")
+    
     # Obtener el carrito de la sesión o inicializarlo si no existe
     carrito = request.session.get('carrito', {})
     
     # Obtener la talla seleccionada
     try:
-        talla = producto.tallas.get(id=talla_id)  # Verifica que la talla exista para este producto
+        talla = producto.tallas.get(id=talla_id)
         print(f"Talla encontrada: {talla.talla}")
     except ProductoTalla.DoesNotExist:
         messages.error(request, 'La talla seleccionada no existe para este producto.')
         return redirect('producto_detalle', slug=slug)
-    # Obtener el color seleccionado para la talla
+    
+    # Obtener el color seleccionado (usando la solución 1)
     try:
-        color = ProductoTallaColor.objects.get(producto_talla=talla, color_id=color_id)
+        color = ProductoTallaColor.objects.get(id=color_id)
         print(f"Color encontrado: {color.color.nombre}")
     except ProductoTallaColor.DoesNotExist:
         messages.error(request, 'El color seleccionado no existe para esta talla.')
         return redirect('producto_detalle', slug=slug)
-
-    # Verificar si el producto ya está en el carrito
-    if str(slug) in carrito:
-        if str(talla_id) in carrito[str(slug)]['tallas']:
-            if str(color_id) in carrito[str(slug)]['tallas'][str(talla_id)]['colores']:
-                # Si el producto ya está en el carrito, solo incrementamos la cantidad
-                carrito[str(slug)]['tallas'][str(talla_id)]['colores'][str(color_id)]['cantidad'] += 1
+    
+    # Si el producto ya está en el carrito
+    if slug in carrito:
+        if talla_id in carrito[slug]['tallas']:
+            if color_id in carrito[slug]['tallas'][talla_id]['colores']:
+                # Si el producto con esta talla y color ya está en el carrito, incrementamos la cantidad
+                carrito[slug]['tallas'][talla_id]['colores'][color_id]['cantidad'] += 1
             else:
                 # Si el color no está, lo agregamos
-                carrito[str(slug)]['tallas'][str(talla_id)]['colores'][str(color_id)] = {
+                carrito[slug]['tallas'][talla_id]['colores'][color_id] = {
                     'color': color.color.nombre,
                     'cantidad': 1,
                     'precio': float(producto.precio),
                 }
         else:
             # Si la talla no está, la agregamos junto con el color
-            carrito[str(slug)]['tallas'][str(talla_id)] = {
+            carrito[slug]['tallas'][talla_id] = {
                 'talla': talla.talla,
                 'precio': float(producto.precio),
                 'cantidad': 1,
                 'colores': {
-                    str(color_id): {
+                    color_id: {
                         'color': color.color.nombre,
                         'cantidad': 1,
                         'precio': float(producto.precio),
@@ -141,18 +151,18 @@ def agregar_al_carrito(request, slug):
             }
     else:
         # Si el producto no está en el carrito, lo agregamos
-        carrito[str(slug)] = {
+        carrito[slug] = {
             'nombre': producto.nombre,
             'precio': float(producto.precio),
             'cantidad': 1,
             'slug': producto.slug,
             'tallas': {
-                str(talla_id): {
+                talla_id: {
                     'talla': talla.talla,
                     'precio': float(producto.precio),
                     'cantidad': 1,
                     'colores': {
-                        str(color_id): {
+                        color_id: {
                             'color': color.color.nombre,
                             'cantidad': 1,
                             'precio': float(producto.precio),
@@ -161,18 +171,17 @@ def agregar_al_carrito(request, slug):
                 }
             }
         }
-
+    
     # Guardar el carrito en la sesión
     request.session['carrito'] = carrito
-
+    
     # Mensaje de éxito
     messages.success(request, f'{producto.nombre} con talla {talla.talla} y color {color.color.nombre} se ha agregado al carrito con éxito.')
-
+    
     # Redirigir a la vista del producto
     return redirect('producto_detalle', slug=slug)
 
 
-    
 
 class ProductoDetalleView(DetailView):
     model = Producto
@@ -263,8 +272,17 @@ def get_colores_por_talla(request):
         print(f"Error al obtener colores: {str(e)}")
         return JsonResponse({'error': 'Error al procesar la solicitud'}, status=500)
 
+def terminos(request):
+    return render(request, 'politicas/politicas.html')
+
 def terminos_condiciones(request):
-    return render(request, 'terminos_condiciones.html')
+    return render(request, 'politicas/terminos_condiciones.html')
+
+def politica_privacidad(request):
+    return render(request, 'politicas/terminos_privacidad.html')
+
+def terminos_rembolso(request):
+    return render(request, 'politicas/terminos_rembolso.html')
 
 @login_required
 def procesar_pago_success(request):
@@ -562,8 +580,6 @@ def dejar_opinion(request, slug):
         'producto': producto
     })
     
-    
-    
 @login_required
 def actualizar_envio(request):
     if request.method == 'POST':
@@ -584,32 +600,20 @@ def ver_carrito(request):
         if 'tallas' in producto_data:
             for talla_id, talla_data in producto_data['tallas'].items():
                 total += float(talla_data['precio']) * talla_data['cantidad']
-
+    
     # Obtener la opción de envío de la sesión (por defecto es "retiro")
     envio = request.session.get('envio', 'retiro')
-
+    
     # Si el usuario seleccionó envío, agregar un costo fijo
     if envio == 'envio':
-        total += 6000  # Supón que el costo de envío es 6000
-        
-        # Recopilando los colores de los productos en el carrito (con manejo de ausencia de color)
-    colores = {}
-    for slug, producto in carrito.items():
-        # Asegurarse de que el producto tiene el atributo 'color'
-        if 'color' in producto:
-            colores[slug] = producto['color']
-        else:
-            colores[slug] = 'Sin color'  # O asignar un color predeterminado
-
+        total += 5000  # Costo de envío
+    
     # Pasar los datos al contexto de la plantilla
     return render(request, 'carrito/carrito.html', {
         'carrito': carrito,
         'total': total,
-        'envio': envio,  # Pasar la opción de envío para mostrarla en la vista
-        'colores':colores,# Recopilando los colores
+        'envio': envio,
     })
-
-
    
 def eliminar_del_carrito(request, slug, talla_id):
     producto = get_object_or_404(Producto, slug=slug)
@@ -1391,3 +1395,77 @@ class CustomPasswordResetCompleteView(PasswordResetCompleteView):
 def profile_view(request):
     return render(request, 'usuario/profile.html')
 
+
+
+# Vista para listar los colores
+def color_list(request):
+    colores = Color.objects.all()
+    return render(request, 'color/color_list.html', {'colores': colores})
+
+# Vista para crear un nuevo color
+def color_create(request):
+    if request.method == 'POST':
+        form = ColorForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('color_list')
+    else:
+        form = ColorForm()
+    return render(request, 'color/color_form.html', {'form': form})
+
+# Vista para editar un color existente
+def color_edit(request, pk):
+    color = get_object_or_404(Color, pk=pk)
+    if request.method == 'POST':
+        form = ColorForm(request.POST, request.FILES, instance=color)
+        if form.is_valid():
+            form.save()
+            return redirect('color_list')
+    else:
+        form = ColorForm(instance=color)
+    return render(request, 'color/color_form.html', {'form': form})
+
+# Vista para eliminar un color
+def color_delete(request, pk):
+    color = get_object_or_404(Color, pk=pk)
+    if request.method == 'POST':
+        color.delete()
+        return redirect('color_list')
+    return render(request, 'color/color_confirm_delete.html', {'color': color})
+
+
+# Vista para listar las categorías
+def categoria_list(request):
+    categorias = Categoria.objects.all()
+    return render(request, 'categoria/categoria_list.html', {'categorias': categorias})
+
+# Vista para crear una nueva categoría
+def categoria_create(request):
+    if request.method == 'POST':
+        form = CategoriaForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('categoria_list')
+    else:
+        form = CategoriaForm()
+    return render(request, 'categoria/categoria_form.html', {'form': form})
+
+# Vista para editar una categoría existente
+def categoria_edit(request, pk):
+    categoria = get_object_or_404(Categoria, pk=pk)
+    if request.method == 'POST':
+        form = CategoriaForm(request.POST, instance=categoria)
+        if form.is_valid():
+            form.save()
+            return redirect('categoria_list')
+    else:
+        form = CategoriaForm(instance=categoria)
+    return render(request, 'categoria/categoria_form.html', {'form': form})
+
+# Vista para eliminar una categoría
+def categoria_delete(request, pk):
+    categoria = get_object_or_404(Categoria, pk=pk)
+    if request.method == 'POST':
+        categoria.delete()
+        return redirect('categoria_list')
+    return render(request, 'categoria/categoria_confirm_delete.html', {'categoria': categoria})

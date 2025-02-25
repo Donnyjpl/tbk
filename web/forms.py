@@ -1,11 +1,39 @@
 # forms.py
 from django import forms
-from .models import Producto, ProductoImagen, Categoria, ProductoTalla, Contacto, Profile, OpinionCliente
+from .models import Producto, ProductoImagen, Categoria, ProductoTalla, Contacto, Profile, OpinionCliente,Color
 from django.db.models import Min, Max
 from django.contrib.auth.forms import SetPasswordForm,UserCreationForm
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from .models import  ProductoTalla, Color,ProductoTallaColor
+
+
+class ColorForm(forms.ModelForm):
+    class Meta:
+        model = Color
+        fields = ['nombre']
+        
+    def clean_nombre(self):
+        nombre = self.cleaned_data['nombre']
+        
+        # Verificar si el color ya está registrado
+        if Color.objects.filter(nombre=nombre).exists():
+            raise forms.ValidationError(f'El color "{nombre}" ya está registrado.')
+
+        return nombre.title()
+    
+class CategoriaForm(forms.ModelForm):
+    class Meta:
+        model = Categoria
+        fields = ['nombre']
+        
+    def clean_nombre(self):
+        nombre = self.cleaned_data['nombre']
+        # Verificar si el color ya está registrado
+        if Categoria.objects.filter(nombre=nombre).exists():
+            raise forms.ValidationError(f'la Categoria "{nombre}" ya está registrado.')
+        
+        return nombre.title()
 
 class ProductoForm(forms.ModelForm):
     class Meta:

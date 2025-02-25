@@ -51,10 +51,7 @@ def formatear_precio(value):
         return value
 
 @register.filter
-def get_item(queryset, user):
-    return queryset.filter(usuario_creador=user).first()
-
-
-@register.filter
 def get_item(dictionary, key):
+    if dictionary is None:
+        return None
     return dictionary.get(key)

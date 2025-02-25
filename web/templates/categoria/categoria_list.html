@@ -1,0 +1,40 @@
+{% extends 'baset.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Lista de Categorías</h1>
+
+    <!-- Botón de Crear Categoría -->
+    <div class="text-end mb-4">
+        <a href="{% url 'categoria_create' %}" class="btn btn-success">Crear Nueva Categoría</a>
+    </div>
+
+    <!-- Tabla de Categorías -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Nombre</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for categoria in categorias %}
+                <tr>
+                    <td>{{ categoria.nombre }}</td>
+                    <td>
+                        <a href="{% url 'categoria_edit' categoria.pk %}" class="btn btn-warning btn-sm">
+                            <i class="bi bi-pencil"></i> Editar
+                        </a>
+                        <a href="{% url 'categoria_delete' categoria.pk %}" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de que deseas eliminar esta categoría?');">
+                            <i class="bi bi-trash"></i> Eliminar
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

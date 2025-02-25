@@ -21,7 +21,6 @@ class Categoria(models.Model):
     
 class Color(models.Model):
     nombre = models.CharField(max_length=50)
-    imagen = models.ImageField(upload_to='colores/', null=True, blank=True)  # Imagen del color (opcional)
 
     def __str__(self):
         return self.nombre

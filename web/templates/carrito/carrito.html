@@ -36,8 +36,16 @@
                     {% for talla_id, talla_data in producto.tallas.items %}
                     <tr>
                         <td>{{ producto.nombre|title }}</td>
-                        <td>{{ talla_data.talla|title }}</td> <!-- Mostrar la talla -->
-                        <td>{{ colores.slug }}</td> <!-- Mostrar el color -->
+                        <td>{{ talla_data.talla|title }}</td>
+                        <td>
+                            {% if talla_data.colores %}
+                            {% for color_id, color_data in talla_data.colores.items %}
+                            {{ color_data.color }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                            {% else %}
+                            Sin color
+                            {% endif %}
+                        </td>
                         <td>
                             <form method="POST" action="{% url 'actualizar_carrito' producto.slug talla_id %}">
                                 {% csrf_token %}
@@ -78,7 +86,7 @@
 
             <!-- Monto adicional por el envío -->
             {% if envio == 'envio' %}
-            <h4>Costo de Envío: 6000 CLP</h4>
+            <h4>Costo de Envío: 5000 CLP</h4>
             {% else %}
             <h4>Sin costo de envío (Retiro en tienda)</h4>
             {% endif %}

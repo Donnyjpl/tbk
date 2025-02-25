@@ -1,0 +1,35 @@
+{% extends 'baset.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h1 class="text-center mb-4">{% if form.instance.pk %}Editar{% else %}Crear{% endif %} Categoría</h1>
+            
+            <!-- Formulario con clases de Bootstrap -->
+            <form method="post">
+                {% csrf_token %}
+                
+                <!-- Campo de nombre con diseño de Bootstrap -->
+                <div class="mb-3">
+                    <label for="id_nombre" class="form-label">Nombre de la Categoría</label>
+                    {{ form.nombre }}
+                    <!-- Si hay errores, los mostramos debajo del campo -->
+                    {% if form.nombre.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.nombre.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <!-- Botones para enviar o cancelar -->
+                <div class="d-flex justify-content-between">
+                    <button type="submit" class="btn btn-success">{% if form.instance.pk %}Guardar Cambios{% else %}Crear Categoría{% endif %}</button>
+                    <a href="{% url 'categoria_list' %}" class="btn btn-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

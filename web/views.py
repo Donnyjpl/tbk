@@ -1,10 +1,8 @@
 # views.py
 from django.views.generic import CreateView,ListView,DetailView,View
-from .models import Producto, ProductoImagen,ProductoTalla,Categoria,Profile,Venta,LineaVenta,Pago
-from .forms import ProductoForm, ProductoImagenForm, ProductoFilterForm,ContactoForm,ProductoTallaForm,LoginForm,OpinionClienteForm
-from django.contrib.auth.decorators import login_required
+from .models import Producto, ProductoImagen,ProductoTalla,Categoria,Profile,Venta,LineaVenta,Pago,Color,Categoria
+from .forms import ProductoForm, ProductoImagenForm, ProductoFilterForm,ContactoForm,ProductoTallaForm,LoginForm,OpinionClienteForm,ColorForm, CategoriaForm
 from django.utils.decorators import method_decorator
-from django.http import HttpResponseRedirect
 from django.core.paginator import Paginator
 from .forms import CustomUserCreationForm
 from django import forms  # Aquí debes importar forms
@@ -15,6 +13,7 @@ from django.urls import reverse_lazy
 from .models import OpinionCliente
 from django.core.exceptions import ValidationError
 
+from django.db.models import Prefetch
 import mercadopago
 #usuario
 from .forms import ProfileForm
@@ -43,68 +42,27 @@ from django.core.mail import EmailMultiAlternatives
 from django.shortcuts import render
 from django.contrib.auth.decorators import user_passes_test
 from django.db.models import Avg
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
+
 from django.conf import settings
 from django.contrib import messages
-from django.shortcuts import render, redirect
 from .models import Producto, ProductoTalla, Venta
 # Vista de contacto
 from django.core.mail import EmailMultiAlternatives
 from django.contrib import messages
-from django.shortcuts import render, redirect
-from .forms import ContactoForm
-from django.db.models import Prefetch
-from decimal import Decimal
 
-from django.shortcuts import render, get_object_or_404, redirect
+from .forms import ContactoForm
+from decimal import Decimal
 from django.contrib import messages
 from .models import Producto, ProductoTalla, ProductoTallaColor
 from .forms import ProductoTallaForm, ProductoTallaColorForm
-from django.contrib.auth.decorators import user_passes_test
 from django.views.decorators.csrf import csrf_exempt
 
-
-from django.views.generic import DetailView
-from django.shortcuts import redirect, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from django.http import HttpResponseForbidden
-
-#color
-
-from .models import Color
-from .forms import ColorForm
-
-#Categoria
-from .models import Categoria
-from .forms import CategoriaForm
-from .forms import CambioEstadoPagoForm
-
-
-def cambiar_estado_pago(request, venta_id):
-    venta = get_object_or_404(Venta, id=venta_id)
-
-    # Verificar si el usuario tiene permiso de administrador
-    if not request.user.is_staff:
-        messages.error(request, "No tienes permisos para realizar esta acción.")
-        return redirect('mis_compras')
-
-    if request.method == 'POST':
-        # Cambiar el estado del pago
-        estado_pago = request.POST.get('estado')
-        if venta.pago:
-            venta.pago.estado = estado_pago
-            venta.pago.save()
-            messages.success(request, f"El estado de pago ha sido actualizado a {estado_pago}.")
-        else:
-            messages.error(request, "No se encontró el pago para esta venta.")
-        return redirect('mis_compras')  # Redirige a la vista de ventas
-
-    return redirect('mis_compras')
 
 class MisComprasView(LoginRequiredMixin, ListView):
     model = Venta
@@ -771,11 +729,9 @@ def actualizar_producto_simple(request, slug):
     return redirect('ver_carrito')
 
 
-
-
 class ProductoDetalleView(DetailView):
     model = Producto
-    template_name = 'producto_detalle.html'
+    template_name = 'productos/detalle.html'
     context_object_name = 'producto'
 
     def get_context_data(self, **kwargs):
@@ -939,7 +895,7 @@ def actualizar_favoritos(request, slug):
 
 class IndexView(ListView):
     model = Producto
-    template_name = 'index1.html'  # Plantilla para mostrar productos
+    template_name = 'index.html'  # Plantilla para mostrar productos
     context_object_name = 'productos_destacados'  # Nombre con el que accederemos a los productos en la plantilla
     paginate_by = 3  # Número de productos por página
 
@@ -1041,30 +997,6 @@ def ver_carrito1(request):
         'envio': envio,
     })
    
-def eliminar_del_carrito1(request, slug, talla_id):
-    producto = get_object_or_404(Producto, slug=slug)
-    talla = get_object_or_404(ProductoTalla, id=talla_id, producto=producto)
-
-    # Obtener el carrito de la sesión
-    carrito = request.session.get('carrito', {})
-
-    # Eliminar el producto de la talla seleccionada
-    if str(slug) in carrito:
-        if str(talla_id) in carrito[str(slug)]['tallas']:
-            del carrito[str(slug)]['tallas'][str(talla_id)]
-            if not carrito[str(slug)]['tallas']:  # Si ya no hay tallas, eliminar el producto
-                del carrito[str(slug)]
-            messages.success(request, f'{producto.nombre} con talla {talla.talla} ha sido eliminado del carrito.')
-        else:
-            messages.error(request, 'Error: Talla no encontrada en el carrito.')
-    else:
-        messages.error(request, 'Error: Producto no encontrado en el carrito.')
-
-    # Guardar el carrito actualizado en la sesión
-    request.session['carrito'] = carrito
-    return redirect('ver_carrito')  # Redirige al carrito después de eliminar
-
-
 def actualizar_carrito(request, slug, talla_id):
     producto = get_object_or_404(Producto, slug=slug)
     talla = get_object_or_404(ProductoTalla, id=talla_id, producto=producto)
@@ -1137,6 +1069,11 @@ def editar_producto(request, slug):
 def modificar_imagenes(request, slug):
     producto = get_object_or_404(Producto, slug=slug)
     imagenes = producto.imagenes.all()  # Obtener las imágenes existentes
+    
+    if imagenes.Count()>= 5:
+        # Limitar la cantidad de fotos a 5
+        messages.warning(request, 'Ya no puedes agregar más de 5 fotos.')
+        return render(request, 'productos/modificar_imagenes.html', {'form': form, 'producto': producto, 'imagenes': imagenes})
 
     if request.method == 'POST':
         form = ProductoImagenForm(request.POST, request.FILES)
@@ -1148,10 +1085,9 @@ def modificar_imagenes(request, slug):
             return redirect('modificar_imagenes', slug=producto.slug)
     else:
         form = ProductoImagenForm()
-
     return render(request, 'productos/modificar_imagenes.html', {'form': form, 'producto': producto, 'imagenes': imagenes})
 
-from django.db.models import Prefetch
+
 
 @user_passes_test(es_superusuario)
 def modificar_tallas(request, slug):
@@ -1273,7 +1209,7 @@ def subir_imagenes(request, slug):
             messages.success(request, 'Imagen subida exitosamente.')
 
             # Si ya se subieron las 5 imágenes, redirigir a la siguiente fase
-            if producto.imagenes.count() >= 3:
+            if producto.imagenes.count() >= 5:
                 messages.success(request, 'Se han subido todas las imágenes. Ahora puedes agregar las tallas.')
                 return redirect('agregar_tallas', slug=producto.slug)
             else:
@@ -1430,7 +1366,7 @@ def lista_productos(request):
     page_obj = paginator.get_page(page_number)
 
     # Pasar productos y formulario al contexto
-    return render(request, 'producto_list.html', {
+    return render(request, 'productos/producto_list.html', {
         'page_obj': page_obj,  # Usamos 'page_obj' para el template
         'form': form,
     })
@@ -1566,10 +1502,6 @@ def contacto(request):
     return render(request, 'contacto.html', {'formm': formm})
 
 
-def successs(request):
-    return render(request, 'registro_exitoso.html')
-
-
 class ProfileUpdateView(LoginRequiredMixin, UpdateView):
     model = Profile
     fields = ['telefono', 'direccion']
@@ -1670,9 +1602,6 @@ def register(request):
     return render(request, 'registration/register.html', {'form': form})
 
 
-# Vista de registro exitoso
-def registro_exitoso(request):
-    return render(request, 'usuario/registro_exitoso.html')
 
 def logout_view(request):
     logout(request)  # Cierra la sesión
@@ -1746,11 +1675,13 @@ def profile_view(request):
 
 
 # Vista para listar los colores
+@user_passes_test(es_superusuario)
 def color_list(request):
     colores = Color.objects.all()
     return render(request, 'color/color_list.html', {'colores': colores})
 
 # Vista para crear un nuevo color
+@user_passes_test(es_superusuario)
 def color_create(request):
     if request.method == 'POST':
         form = ColorForm(request.POST, request.FILES)
@@ -1762,6 +1693,7 @@ def color_create(request):
     return render(request, 'color/color_form.html', {'form': form})
 
 # Vista para editar un color existente
+@user_passes_test(es_superusuario)
 def color_edit(request, pk):
     color = get_object_or_404(Color, pk=pk)
     if request.method == 'POST':
@@ -1774,6 +1706,7 @@ def color_edit(request, pk):
     return render(request, 'color/color_form.html', {'form': form})
 
 # Vista para eliminar un color
+@user_passes_test(es_superusuario)
 def color_delete(request, pk):
     color = get_object_or_404(Color, pk=pk)
     if request.method == 'POST':
@@ -1783,11 +1716,13 @@ def color_delete(request, pk):
 
 
 # Vista para listar las categorías
+@user_passes_test(es_superusuario)
 def categoria_list(request):
     categorias = Categoria.objects.all()
     return render(request, 'categoria/categoria_list.html', {'categorias': categorias})
 
 # Vista para crear una nueva categoría
+@user_passes_test(es_superusuario)
 def categoria_create(request):
     if request.method == 'POST':
         form = CategoriaForm(request.POST)
@@ -1799,6 +1734,7 @@ def categoria_create(request):
     return render(request, 'categoria/categoria_form.html', {'form': form})
 
 # Vista para editar una categoría existente
+@user_passes_test(es_superusuario)
 def categoria_edit(request, pk):
     categoria = get_object_or_404(Categoria, pk=pk)
     if request.method == 'POST':
@@ -1811,9 +1747,32 @@ def categoria_edit(request, pk):
     return render(request, 'categoria/categoria_form.html', {'form': form})
 
 # Vista para eliminar una categoría
+@user_passes_test(es_superusuario)
 def categoria_delete(request, pk):
     categoria = get_object_or_404(Categoria, pk=pk)
     if request.method == 'POST':
         categoria.delete()
         return redirect('categoria_list')
     return render(request, 'categoria/categoria_confirm_delete.html', {'categoria': categoria})
+
+@user_passes_test(es_superusuario)
+def cambiar_estado_pago(request, venta_id):
+    venta = get_object_or_404(Venta, id=venta_id)
+
+    # Verificar si el usuario tiene permiso de administrador
+    if not request.user.is_staff:
+        messages.error(request, "No tienes permisos para realizar esta acción.")
+        return redirect('mis_compras')
+
+    if request.method == 'POST':
+        # Cambiar el estado del pago
+        estado_pago = request.POST.get('estado')
+        if venta.pago:
+            venta.pago.estado = estado_pago
+            venta.pago.save()
+            messages.success(request, f"El estado de pago ha sido actualizado a {estado_pago}.")
+        else:
+            messages.error(request, "No se encontró el pago para esta venta.")
+        return redirect('mis_compras')  # Redirige a la vista de ventas
+
+    return redirect('mis_compras')

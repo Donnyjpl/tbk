@@ -2,9 +2,9 @@ from django.urls import path,include
 
 from django.conf import settings
 from django.conf.urls.static import static
-from .views import ProductoListView,about,contacto,successs,lista_productos,logout_view,custom_login,procesar_pago_success,ProductoDetalleView
+from .views import ProductoListView,about,contacto,lista_productos,logout_view,custom_login,procesar_pago_success,ProductoDetalleView
 
-from .views import crear_producto, subir_imagenes,ver_carrito,eliminar_del_carrito1,actualizar_carrito
+from .views import crear_producto, subir_imagenes,ver_carrito,actualizar_carrito
 
 from .views import profile_view,register, ProfileUpdateView,custom_password_reset_request,CustomPasswordResetConfirmView,CustomPasswordResetDoneView,CustomPasswordResetCompleteView
 from . import views
@@ -31,7 +31,6 @@ urlpatterns = [
     path('', views.IndexView.as_view(), name='index'),  # URL para ver la lista de productos
     path('about/', about, name='about'),  # URL para ver la lista de productos
     path('contacto/', contacto, name='contacto'),  # URL para ver la lista de productos
-    path('successs/', successs, name='successs'),  # URL para ver la lista de productos
     path('listar/', lista_productos, name='listar'),  # URL para ver la lista de productos
     
     path('procesar_pago/transferencia/', views.procesar_pago_transferencia, name='procesar_pago_transferencia'),
@@ -51,8 +50,6 @@ urlpatterns = [
     path('ver_carrito/', ver_carrito, name='ver_carrito'),
     path('actualizar_envio/', views.actualizar_envio, name='actualizar_envio'),
     
-    
-    path('eliminar_del_carrito/<slug:slug>/<int:talla_id>/', views.eliminar_del_carrito1, name='eliminar_del_carrito'),
     path('actualizar_carrito/<slug:slug>/<int:talla_id>/', views.actualizar_carrito, name='actualizar_carrito'),
     
     

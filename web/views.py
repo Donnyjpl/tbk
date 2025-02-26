@@ -1,68 +1,40 @@
-# views.py
-from django.views.generic import CreateView,ListView,DetailView,View
-from .models import Producto, ProductoImagen,ProductoTalla,Categoria,Profile,Venta,LineaVenta,Pago,Color,Categoria
-from .forms import ProductoForm, ProductoImagenForm, ProductoFilterForm,ContactoForm,ProductoTallaForm,LoginForm,OpinionClienteForm,ColorForm, CategoriaForm
-from django.utils.decorators import method_decorator
-from django.core.paginator import Paginator
-from .forms import CustomUserCreationForm
-from django import forms  # Aquí debes importar forms
-from django.contrib.auth import logout
-# @method_decorator(login_required, name='dispatch')
-from django.shortcuts import redirect
-from django.urls import reverse_lazy
-from .models import OpinionCliente
-from django.core.exceptions import ValidationError
-
-from django.db.models import Prefetch
+# Librerías estándar de Python
+from decimal import Decimal
 import mercadopago
-#usuario
-from .forms import ProfileForm
-from django.views.generic.edit import UpdateView
-from .models import Profile
-from django.urls import reverse_lazy, reverse
-from django.contrib.auth.mixins import LoginRequiredMixin
 
-from django.contrib.auth.views import (PasswordResetConfirmView, PasswordResetDoneView, PasswordResetCompleteView)
+# Librerías de Django
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views.generic import CreateView, ListView, DetailView, View
+from django.views.generic.edit import UpdateView
+from django.contrib.auth import logout, authenticate, login
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.views import PasswordResetConfirmView, PasswordResetDoneView, PasswordResetCompleteView
+from django.core.exceptions import ValidationError
+from django.urls import reverse_lazy, reverse
+from django.db.models import Avg, Prefetch
+from django.utils import timezone
+from django.core.paginator import Paginator
+from django.core.mail import send_mail, EmailMessage, EmailMultiAlternatives
 from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
+from django.utils.encoding import force_bytes, smart_str
+from django.db.models import Prefetch
+from django.http import JsonResponse, HttpResponseRedirect, HttpResponseForbidden
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.views.decorators.http import require_POST
+from django.template.loader import render_to_string
+from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.models import User
-from django.views.generic import ListView
-from django.utils import timezone
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth import authenticate, login
-from django.contrib import messages
-from django.http import HttpResponseRedirect
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
-from django.utils.encoding import smart_str
-from django.core.mail import EmailMessage
-from django.core.mail import EmailMultiAlternatives
-from django.shortcuts import render
-from django.contrib.auth.decorators import user_passes_test
-from django.db.models import Avg
+from django import forms
 
-from django.conf import settings
-from django.contrib import messages
-from .models import Producto, ProductoTalla, Venta
-# Vista de contacto
-from django.core.mail import EmailMultiAlternatives
+
+# Modelos y formularios de tu aplicación
+from .models import Producto, ProductoImagen, ProductoTalla, Categoria, Profile, Venta, LineaVenta, Pago, Color, OpinionCliente, ProductoTallaColor
+from .forms import  CustomUserCreationForm,ProductoForm, ProductoImagenForm, ProductoFilterForm, ContactoForm, ProductoTallaForm, LoginForm, OpinionClienteForm, ColorForm, CategoriaForm, ProfileForm, ProductoTallaColorForm
+# Mensajes de Django
 from django.contrib import messages
 
-from .forms import ContactoForm
-from decimal import Decimal
-from django.contrib import messages
-from .models import Producto, ProductoTalla, ProductoTallaColor
-from .forms import ProductoTallaForm, ProductoTallaColorForm
-from django.views.decorators.csrf import csrf_exempt
-
-from django.contrib import messages
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_protect
-from django.http import HttpResponseForbidden
 
 class MisComprasView(LoginRequiredMixin, ListView):
     model = Venta

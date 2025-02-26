@@ -4,7 +4,6 @@
 .env
 tbk/settings.py
 tbk/wsgi.py
-*.pyc
-__pycache__/
+
 
 

@@ -248,7 +248,7 @@ def procesar_pago_transferencia(request):
     metodo_pago='transferencia'
 
     # Enviar correo al cliente
-    email_prueba = 'info@tbkdesire.cl'
+    #email_prueba = 'info@tbkdesire.cl'
     email_cliente = request.user.email
     subject = 'Confirmación de tu pedido - Transferencia Bancaria'
     message = render_to_string('correos/compra_confirmacion_trans.html', {
@@ -262,7 +262,7 @@ def procesar_pago_transferencia(request):
         subject,
         message,
         settings.DEFAULT_FROM_EMAIL,
-        [email_prueba],
+        [email_cliente],
         html_message=message
     )
 
@@ -383,7 +383,7 @@ def procesar_pago_success(request):
     direccion = profile.direccion
 
     # Enviar correo al cliente
-    email_prueba = 'info@tbkdesire.cl'
+    #email_prueba = 'info@tbkdesire.cl'
     email_cliente = request.user.email
     subject = 'Confirmación de tu pedido - Transferencia Bancaria'
     message = render_to_string('correos/compra_confirmacion.html', {
@@ -397,7 +397,7 @@ def procesar_pago_success(request):
         subject,
         message,
         settings.DEFAULT_FROM_EMAIL,
-        [email_prueba],
+        [email_cliente],
         html_message=message
     )
 
@@ -599,15 +599,12 @@ def agregar_al_carrito(request, slug):
     talla_id = request.POST.get('talla')
     color_id = request.POST.get('color')
     
-    print(f"talla_id: {talla_id}, color_id: {color_id}")
-    
     # Obtener el carrito de la sesión o inicializarlo si no existe
     carrito = request.session.get('carrito', {})
     
     # Obtener la talla seleccionada
     try:
         talla = producto.tallas.get(id=talla_id)
-        print(f"Talla encontrada: {talla.talla}")
     except ProductoTalla.DoesNotExist:
         messages.error(request, 'La talla seleccionada no existe para este producto.')
         return redirect('producto_detalle', slug=slug)
@@ -615,7 +612,6 @@ def agregar_al_carrito(request, slug):
     # Obtener el color seleccionado
     try:
         color = ProductoTallaColor.objects.get(id=color_id)
-        print(f"Color encontrado: {color.color.nombre}")
     except ProductoTallaColor.DoesNotExist:
         messages.error(request, 'El color seleccionado no existe para esta talla.')
         return redirect('producto_detalle', slug=slug)
@@ -1119,7 +1115,6 @@ def modificar_tallas(request, slug):
         'tallas': tallas,
         'color_form': color_form,
     })
-
 
 
 @user_passes_test(es_superusuario)

@@ -4,6 +4,16 @@
 {% block title %}Crear/Editar Usuario{% endblock %}
 {% block content %}
 <div class="container py-5">
+    <!-- Mostrar mensajes de error -->
+    {% if messages %}
+    <div class="mt-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} mt-2">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
     <div class="row justify-content-center">
         <div class="col-md-8 col-lg-6">
             <div class="card shadow-lg p-4">
@@ -13,102 +23,103 @@
                     <!-- Mostrar mensajes de error -->
                     {% csrf_token %}
 
-                    <div class="mb-3">
-                        <label for="id_nombre" class="form-label">Nombre:</label>
-                        {{ form.nombre|add_class:"form-control" }}
-                        {% if form.nombre.errors %}
-                        <div class="text-danger">{{ form.nombre.errors }}</div>
-                        {% endif %}
-                    </div>
+    <div class="mb-3">
+        <label for="id_nombre" class="form-label">Nombre:</label>
+        {{ form.nombre|add_class:"form-control" }}
+        {% if form.nombre.errors %}
+        <div class="text-danger">{{ form.nombre.errors }}</div>
+        {% endif %}
+    </div>
 
-                    <div class="mb-3">
-                        <label for="id_apellido" class="form-label">Apellido:</label>
-                        {{ form.apellido|add_class:"form-control" }}
-                        {% if form.apellido.errors %}
-                        <div class="text-danger">{{ form.apellido.errors }}</div>
-                        {% endif %}
-                    </div>
+    <div class="mb-3">
+        <label for="id_apellido" class="form-label">Apellido:</label>
+        {{ form.apellido|add_class:"form-control" }}
+        {% if form.apellido.errors %}
+        <div class="text-danger">{{ form.apellido.errors }}</div>
+        {% endif %}
+    </div>
 
-                    <div class="mb-3">
-                        <label for="id_email" class="form-label">Correo:</label>
-                        {{ form.email|add_class:"form-control" }}
-                        {% if form.email.errors %}
-                        <div class="text-danger">{{ form.email.errors }}</div>
-                        {% endif %}
-                    </div>
+    <div class="mb-3">
+        <label for="id_email" class="form-label">Correo:</label>
+        {{ form.email|add_class:"form-control" }}
+        {% if form.email.errors %}
+        <div class="text-danger">{{ form.email.errors }}</div>
+        {% endif %}
+    </div>
 
-                    <div class="mb-3">
-                        <label for="id_password1" class="form-label">Contraseña:</label>
-                        <input id="password1" type="password" name="password1" class="form-control"
-                            {% if form.password1.value %} value="{{ form.password1.value }}" {% endif %}>
-                        {% if form.password1.errors %}
-                        <div class="text-danger">{{ form.password1.errors }}</div>
-                        {% endif %}
-                        <!-- Checkbox para mostrar/ocultar la contraseña -->
-                        <div class="form-check mt-2">
-                            <input class="form-check-input" type="checkbox" id="show-password1"
-                                onclick="togglePassword('password1', 'show-password1')">
-                            <label class="form-check-label" for="show-password1">Mostrar Contraseña</label>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="id_password2" class="form-label">Confirme Contraseña:</label>
-                        <input id="password2" type="password" name="password2" class="form-control"
-                            {% if form.password2.value %} value="{{ form.password2.value }}" {% endif %}>
-                        {% if form.password2.errors %}
-                        <div class="text-danger">{{ form.password2.errors }}</div>
-                        {% endif %}
-                        <!-- Checkbox para mostrar/ocultar la contraseña -->
-                        <div class="form-check mt-2">
-                            <input class="form-check-input" type="checkbox" id="show-password2"
-                                onclick="togglePassword('password2', 'show-password2')">
-                            <label class="form-check-label" for="show-password2">Mostrar Contraseña</label>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="id_telefono" class="form-label">Telefono:</label>
-                        {{ form.telefono|add_class:"form-control" }}
-                        {% if form.telefono.errors %}
-                        <div class="text-danger">{{ form.telefono.errors }}</div>
-                        {% endif %}
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="id_direccion" class="form-label">Direccion:</label>
-                        {{ form.direccion|add_class:"form-control" }}
-                        {% if form.direccion.errors %}
-                        <div class="text-danger">{{ form.direccion.errors }}</div>
-                        {% endif %}
-                    </div>
-
-                    <!-- Campo de Términos y Condiciones -->
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="id_acepta_terminos" name="acepta_terminos"
-                            {% if form.acepta_terminos.value %}checked{% endif %}>
-                        <label class="form-check-label" for="id_acepta_terminos">Acepto los <a
-                                href="{% url 'terminos' %}" target="_blank">términos y condiciones</a>.</label>
-                        {% if form.acepta_terminos.errors %}
-                        <div class="text-danger">{{ form.acepta_terminos.errors }}</div>
-                        {% endif %}
-                    </div>
-
-                    <div class="mb-3" id="rut-field"><label for="id_rut" class="form-label">RUT:</label>
-                        {{ form.rut|add_class:"form-control" }}
-                        {% if form.rut.errors %}
-                        <div class="text-danger">{{ form.rut.errors }}</div>
-                        {% endif %}
-                    </div>
-
-                    <button type="submit" class="btn btn-success w-100 mt-3">Registrar</button>
-                </form>
-
-                <p class="text-center mt-3">¿Ya tienes una cuenta? <a href="{% url 'login' %}">Inicia sesión aquí</a>
-                </p>
-            </div>
+    <div class="mb-3">
+        <label for="id_password1" class="form-label">Contraseña:</label>
+        <input id="password1" type="password" name="password1" class="form-control" {% if form.password1.value %}
+            value="{{ form.password1.value }}" {% endif %}>
+        {% if form.password1.errors %}
+        <div class="text-danger">{{ form.password1.errors }}</div>
+        {% endif %}
+        <!-- Checkbox para mostrar/ocultar la contraseña -->
+        <div class="form-check mt-2">
+            <input class="form-check-input" type="checkbox" id="show-password1"
+                onclick="togglePassword('password1', 'show-password1')">
+            <label class="form-check-label" for="show-password1">Mostrar Contraseña</label>
         </div>
     </div>
+
+    <div class="mb-3">
+        <label for="id_password2" class="form-label">Confirme Contraseña:</label>
+        <input id="password2" type="password" name="password2" class="form-control" {% if form.password2.value %}
+            value="{{ form.password2.value }}" {% endif %}>
+        {% if form.password2.errors %}
+        <div class="text-danger">{{ form.password2.errors }}</div>
+        {% endif %}
+        <!-- Checkbox para mostrar/ocultar la contraseña -->
+        <div class="form-check mt-2">
+            <input class="form-check-input" type="checkbox" id="show-password2"
+                onclick="togglePassword('password2', 'show-password2')">
+            <label class="form-check-label" for="show-password2">Mostrar Contraseña</label>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label for="id_telefono" class="form-label">Telefono:</label>
+        {{ form.telefono|add_class:"form-control" }}
+        {% if form.telefono.errors %}
+        <div class="text-danger">{{ form.telefono.errors }}</div>
+        {% endif %}
+    </div>
+
+    <div class="mb-3">
+        <label for="id_direccion" class="form-label">Direccion:</label>
+        {{ form.direccion|add_class:"form-control" }}
+        {% if form.direccion.errors %}
+        <div class="text-danger">{{ form.direccion.errors }}</div>
+        {% endif %}
+    </div>
+
+    <!-- Campo de Términos y Condiciones -->
+    <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="id_acepta_terminos" name="acepta_terminos"
+            {% if form.acepta_terminos.value %}checked{% endif %}>
+        <label class="form-check-label" for="id_acepta_terminos">Acepto los <a href="{% url 'terminos' %}"
+                target="_blank">términos y condiciones</a>.</label>
+        {% if form.acepta_terminos.errors %}
+        <div class="text-danger">{{ form.acepta_terminos.errors }}</div>
+        {% endif %}
+    </div>
+
+    <div class="mb-3" id="rut-field"><label for="id_rut" class="form-label">RUT:</label>
+        {{ form.rut|add_class:"form-control" }}
+        {% if form.rut.errors %}
+        <small id="rutHelp" class="form-text text-muted">Formato: 12.345.678-9 o 12.345.678-K</small>
+        <div class="text-danger">{{ form.rut.errors }}</div>
+        {% endif %}
+    </div>
+
+    <button type="submit" class="btn btn-success w-100 mt-3">Registrar</button>
+    </form>
+
+    <p class="text-center mt-3">¿Ya tienes una cuenta? <a href="{% url 'login' %}">Inicia sesión aquí</a>
+    </p>
+</div>
+</div>
+</div>
 </div>
 
 <!-- JavaScript para alternar la visibilidad de la contraseña -->

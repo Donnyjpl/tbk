@@ -6,12 +6,41 @@ from django.contrib.auth.forms import SetPasswordForm,UserCreationForm
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from .models import  ProductoTalla, Color,ProductoTallaColor
+import re
+
+
+def validar_rut(rut):
+    """ Valida un RUT chileno en el formato correcto y verifica su dígito verificador (DV) """
+    rut = rut.replace('.', '').replace('-', '')  # Eliminar puntos y guión
+    if not rut.isdigit():
+        raise ValidationError("El RUT solo debe contener números y el dígito verificador.")
+    
+    rut_base = rut[:-1]  # RUT sin el dígito verificador
+    dv = rut[-1].upper()  # Dígito verificador (puede ser un número o la letra K)
+    
+    # Algoritmo para calcular el dígito verificador
+    suma = 0
+    multiplicador = 2
+    for i in range(len(rut_base) - 1, -1, -1):
+        suma += int(rut_base[i]) * multiplicador
+        multiplicador = 3 if multiplicador == 7 else multiplicador + 1
+
+    dv_calculado = 11 - (suma % 11)
+    if dv_calculado == 11:
+        dv_calculado = '0'
+    elif dv_calculado == 10:
+        dv_calculado = 'K'
+
+    if str(dv) != str(dv_calculado):
+        raise ValidationError(f"El RUT ingresado es inválido. El dígito verificador debería ser {dv_calculado}.")
+    return rut
+
+
 
 class CambioEstadoPagoForm(forms.ModelForm):
     class Meta:
         model = Pago
         fields = ['estado']
-
 
 
 class ColorForm(forms.ModelForm):
@@ -221,8 +250,13 @@ class CustomUserCreationForm(UserCreationForm):
         
     def clean_rut(self):
         rut = self.cleaned_data.get('rut')
+        # Validar el RUT utilizando la función que creaste
+        validar_rut(rut)
+        
+        # Verificar si ya existe el RUT en la base de datos
         if Profile.objects.filter(rut=rut).exists():
-            raise ValidationError("Este correo rut ya está registrado.")
+            raise ValidationError("Este RUT ya está registrado.")
+        
         return rut
 
     # Validación personalizada para asegurarse de que el correo y el teléfono sean únicos

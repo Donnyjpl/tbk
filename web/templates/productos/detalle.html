@@ -26,7 +26,8 @@ Detalles de Producto
                         <img class="card-img img-fluid" src="{{ producto.imagenes_list.first.imagen.url }}"
                             alt="{{ producto.nombre }}" id="product-detail">
                         <div class="zoom-icon position-absolute top-0 end-0 m-2">
-                            <button class="btn btn-sm btn-light" onclick="openZoomModal('{{ producto.imagenes_list.first.imagen.url }}')">
+                            <button class="btn btn-sm btn-light"
+                                onclick="openZoomModal('{{ producto.imagenes_list.first.imagen.url }}')">
                                 <i class="fas fa-search-plus"></i>
                             </button>
                         </div>
@@ -52,7 +53,8 @@ Detalles de Producto
                                 <div class="row thumbnail-row">
                                     {% for imagen in i %}
                                     <div class="col-4 thumbnail-col">
-                                        <div class="thumbnail-item" onclick="changeMainImage('{{ imagen.imagen.url }}')">
+                                        <div class="thumbnail-item"
+                                            onclick="changeMainImage('{{ imagen.imagen.url }}')">
                                             <img src="{{ imagen.imagen.url }}" alt="Miniatura {{ forloop.counter }}">
                                         </div>
                                     </div>
@@ -110,7 +112,8 @@ Detalles de Producto
                         </div>
 
                         <!-- Formulario de compra -->
-                        <form id="addToCartForm" method="POST" action="{% url 'agregar_al_carrito' slug=producto.slug %}">
+                        <form id="addToCartForm" method="POST"
+                            action="{% url 'agregar_al_carrito' slug=producto.slug %}">
                             {% csrf_token %}
                             <div class="form-group mb-3">
                                 <label for="talla">Talla:</label>
@@ -193,23 +196,51 @@ Detalles de Producto
     </div>
 </section>
 
-<!-- Productos relacionados (sin cambios) -->
+<!-- Productos relacionados -->
 <section class="py-5 bg-light">
     <div class="container">
         <h3 class="text-center mb-4">Productos Relacionados</h3>
         <div class="row">
             {% for related_product in productos_relacionados %}
             <div class="col-md-3 col-6 mb-4">
-                <div class="card h-100">
-                    {% if related_product.imagenes_list %}
-                    <img src="{{ related_product.imagenes_list.first.imagen.url }}" class="card-img-top"
-                        alt="{{ related_product.nombre }}">
-                    {% endif %}
-                    <div class="card-body">
-                        <h5 class="card-title">{{ related_product.nombre|title }}</h5>
-                        <p class="card-text text-primary fw-bold">${{ related_product.precio|formatear_precio }}</p>
+                <div class="card tbk-product-card related-product-card">
+                    <!-- Contenedor de la imagen con overlay -->
+                    <div class="tbk-product-img-container">
+                        {% if related_product.imagenes_list %}
+                        <img class="tbk-product-img related-product-img"
+                            src="{{ related_product.imagenes_list.first.imagen.url }}"
+                            alt="{{ related_product.nombre }}">
+                        {% else %}
+                        <img class="tbk-product-img related-product-img" src="{% static 'images/no-image.png' %}"
+                            alt="Imagen no disponible">
+                        {% endif %}
+
+                        <!-- Overlay con acciones -->
+                        <div class="tbk-product-overlay">
+                            <div class="tbk-product-actions">
+                                <a class="tbk-action-btn" title="Ver detalles"
+                                    href="{% url 'producto_detalle' slug=related_product.slug %}">
+                                    <i class="far fa-eye text-primary"></i>
+                                </a>
+                                <a class="tbk-action-btn" title="Añadir a favoritos"
+                                    href="{% url 'agregar_a_favoritos' slug=producto.slug %}">
+                                    <i class="far fa-heart text-danger"></i>
+                                </a>
+                                <a class="tbk-action-btn" title="Añadir al carrito"
+                                    href="{% url 'agregar_al_carrito' slug=related_product.slug %}">
+                                    <i class="fas fa-cart-plus text-success"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body related-product-body">
+                        <h5 class="tbk-product-title">{{ related_product.nombre|title }}</h5>
+                        <p class="tbk-product-price">${{ related_product.precio|formatear_precio }}</p>
                         <a href="{% url 'producto_detalle' slug=related_product.slug %}"
-                            class="btn btn-outline-primary">Ver detalles</a>
+                            class="tbk-buy-button w-100 text-center">
+                            <i class="fas fa-eye me-1"></i> Ver detalles
+                        </a>
                     </div>
                 </div>
             </div>
@@ -221,13 +252,12 @@ Detalles de Producto
         </div>
     </div>
 </section>
-
 <style>
     /* Contenedor principal de miniaturas */
     .thumbnails-container {
         margin-top: 15px;
     }
-    
+
     /* Controles del carrusel */
     .carousel-control {
         display: flex;
@@ -240,46 +270,48 @@ Detalles de Producto
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         transition: all 0.3s;
     }
-    
+
     .carousel-control:hover {
         background-color: rgba(255, 255, 255, 0.9);
         box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
     }
-    
+
     /* Mejorar la fila de miniaturas */
     .thumbnail-row {
         display: flex;
         justify-content: space-between;
         padding: 5px 0;
-        margin: 0 -5px; /* Compensar el padding de las columnas */
+        margin: 0 -5px;
+        /* Compensar el padding de las columnas */
     }
-    
+
     /* Columnas para cada miniatura */
     .thumbnail-col {
         padding: 0 5px;
         margin-bottom: 10px;
         width: 33.333%;
     }
-    
+
     /* Contenedor de la miniatura */
     .thumbnail-item {
         cursor: pointer;
         border: 1px solid #ddd;
         border-radius: 4px;
         transition: all 0.2s;
-        padding-top: 100%; /* Relación de aspecto 1:1 */
+        padding-top: 100%;
+        /* Relación de aspecto 1:1 */
         position: relative;
         overflow: hidden;
         background-color: white;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
-    
+
     .thumbnail-item:hover {
         border-color: #0d6efd;
         transform: translateY(-2px);
         box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
     }
-    
+
     /* Imagen dentro de la miniatura */
     .thumbnail-item img {
         position: absolute;
@@ -288,19 +320,20 @@ Detalles de Producto
         width: 100%;
         height: 100%;
         padding: 5px;
-        object-fit: contain; /* Muestra la imagen completa dentro del contenedor */
+        object-fit: contain;
+        /* Muestra la imagen completa dentro del contenedor */
     }
-    
+
     /* Botón de zoom */
     .zoom-icon {
         opacity: 0.7;
         transition: opacity 0.2s;
     }
-    
+
     .zoom-icon:hover {
         opacity: 1;
     }
-    
+
     /* Contenedor de la imagen principal */
     .img-container {
         width: 100%;
@@ -311,9 +344,10 @@ Detalles de Producto
         overflow: hidden;
         background-color: white;
         border-radius: 4px;
-        padding: 0; /* Eliminar el padding */
+        padding: 0;
+        /* Eliminar el padding */
     }
-    
+
     .img-container img {
         max-height: 100%;
         max-width: 100%;
@@ -321,22 +355,22 @@ Detalles de Producto
         height: auto;
         object-fit: contain;
     }
-    
+
     /* Carrusel */
     .carousel-inner {
         padding: 0;
     }
-    
+
     /* Imagen en el modal */
     #zoomedImage {
         max-height: 80vh;
     }
-    
+
     /* Asegurar que el carrusel ocupe todo el ancho disponible */
     #thumbnails-carousel {
         padding: 0;
     }
-    
+
     /* Evitar bordes blancos en las miniaturas */
     .img-thumbnail {
         max-width: 100%;
@@ -356,76 +390,76 @@ Detalles de Producto
             updateColors();
         }
     });
-    
+
     // Función para cambiar la imagen principal
     function changeMainImage(imageUrl) {
         const mainImage = document.getElementById('product-detail');
         mainImage.src = imageUrl;
-        
+
         // Actualizar también el botón de zoom
         const zoomButton = document.querySelector('.zoom-icon button');
         zoomButton.setAttribute('onclick', `openZoomModal('${imageUrl}')`);
     }
-    
+
     // Función para abrir el modal con la imagen ampliada
     function openZoomModal(imageUrl) {
         const zoomedImage = document.getElementById('zoomedImage');
         zoomedImage.src = imageUrl;
-        
+
         const zoomModal = new bootstrap.Modal(document.getElementById('imageZoomModal'));
         zoomModal.show();
     }
-  
+
     function updateColors() {
         const tallaId = document.getElementById('talla').value;
         const colorSelect = document.getElementById('color');
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    
+
         // Reset color select
         colorSelect.innerHTML = '<option value="">Cargando colores...</option>';
-    
+
         if (!tallaId) {
             colorSelect.innerHTML = '<option value="">Selecciona primero una talla</option>';
             return;
         }
-    
+
         // Usar la URL absoluta para evitar problemas de ruta
         fetch('/producto/get_colores/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': csrfToken
-            },
-            body: `talla=${tallaId}`
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Error en la respuesta: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log(data);  // Ver qué llega en el backend
-            colorSelect.innerHTML = '';
-    
-            if (data.colores && data.colores.length > 0) {
-                colorSelect.innerHTML = '<option value="">Selecciona un color</option>';
-                data.colores.forEach(color => {
-                    const option = document.createElement('option');
-                    option.value = color.id;
-                    option.textContent = color.nombre;
-                    colorSelect.appendChild(option);
-                });
-            } else {
-                colorSelect.innerHTML = '<option value="">No hay colores disponibles</option>';
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            colorSelect.innerHTML = '<option value="">Error al cargar colores</option>';
-        });
-    } 
-    
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: `talla=${tallaId}`
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Error en la respuesta: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log(data); // Ver qué llega en el backend
+                colorSelect.innerHTML = '';
+
+                if (data.colores && data.colores.length > 0) {
+                    colorSelect.innerHTML = '<option value="">Selecciona un color</option>';
+                    data.colores.forEach(color => {
+                        const option = document.createElement('option');
+                        option.value = color.id;
+                        option.textContent = color.nombre;
+                        colorSelect.appendChild(option);
+                    });
+                } else {
+                    colorSelect.innerHTML = '<option value="">No hay colores disponibles</option>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                colorSelect.innerHTML = '<option value="">Error al cargar colores</option>';
+            });
+    }
+
     // Validación del formulario
     document.getElementById('addToCartForm').addEventListener('submit', function (e) {
         const talla = document.getElementById('talla').value;

@@ -2,177 +2,267 @@
 {% load custom_filters %}
 
 {% block content %}
-
 <div class="container py-5">
     {% if messages %}
-    <div class="messages container">
+    <div class="alert alert-success alert-dismissible fade show mb-4">
         {% for message in messages %}
-        <div class="message {{ message.tags }}">
-            {{ message }}
-        </div>
+        <p class="mb-0">{{ message }}</p>
         {% endfor %}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
     {% endif %}
-    {% if request.user.is_staff %}
-    <h2 class="text-center mb-4">Mis Ventas:</h2>
-    {% else %}
-    <h2 class="text-center mb-4">Mis Compras:</h2>
-    {% endif %}
-    s
-    {% if page_obj %}
-    <div class="row">
-        {% for venta in ventas %}
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card shadow-lg {% if request.user.is_staff %} border-info {% endif %}">
-                <div class="card-header bg-primary text-white">
-                    {% if request.user.is_staff %}
-                    <h5 class="card-title">Venta ID: {{ venta.numero_control }}</h5>
-                    {% else %}
-                    <h5 class="card-title">Compra ID: {{ venta.numero_control }}</h5>
-                    {% endif %}
-                </div>
-                <div class="card-body">
-                    {% if request.user.is_staff %}
-                    <h6><strong>Detalles del Usuario:</strong></h6>
-                    <ul class="list-group mb-3">
-                        <li class="list-group-item"><strong>Fecha de Compra:</strong> {{ venta.fecha|date:"d/m/Y H:i" }}
-                        </li>
-                        <li class="list-group-item"><strong>Usuario:</strong> {{ venta.user.username }}</li>
-                        <li class="list-group-item"><strong>Dirección:</strong> {{ venta.usuario_direccion }}</li>
-                        <li class="list-group-item"><strong>RUT:</strong> {{ venta.usuario_rut }}</li>
-                        <li class="list-group-item"><strong>Nombre:</strong> {{ venta.user.first_name }}</li>
-                        <li class="list-group-item"><strong>Apellidos:</strong> {{ venta.user.last_name }}</li>
-                        <li class="list-group-item"><strong>Teléfono:</strong> {{ venta.usuario_telefono }}</li>
-                    </ul>
-                    {% else %}
-                    <ul class="list-group mb-3">
-                        <li class="list-group-item"><strong>Fecha de Compra:</strong> {{ venta.fecha|date:"d/m/Y H:i" }}
-                        </li>
-                        {% endif %}
-
-
-
-                        <h6 class="mt-3"><strong>Productos:</strong></h6>
-                        <ul class="list-group list-group-flush">
-                            {% for linea in venta.lineas.all %}
-                            <li class="list-group-item">
-                                <strong>{{ linea.producto.nombre|title }}</strong><br>
-                                Talla: {{ linea.talla.talla|default:"No especificada" }}<br>
-                                {% if linea.color %}
-                                <strong>Color:</strong> {{ linea.color.nombre|title }}<br>
-                                {% else %}
-                                <strong>Color:</strong> No especificado<br>
-                                {% endif %}
-                                Cantidad: {{ linea.cantidad }}<br>
-                                Precio unitario: ${{ linea.precio_unitario|formatear_precio }}<br>
-                                Total: ${{ linea.total_formateado|formatear_precio }}
-
-                            </li>
-                            {% endfor %}
-                        </ul>
-
-                        <h6 class="mt-3"><strong>Estado de Pago:</strong></h6>
-                        <p class="list-group-item">
-                            {% if venta.estado_pago == 'pendiente' %}
-                            <span class="badge bg-warning text-dark">Pendiente</span>
-                            {% elif venta.estado_pago == 'confirmado' %}
-                            <span class="badge bg-success">Confirmado</span>
+    
+    <div class="card shadow-lg border-0 mb-5">
+        <div class="card-header bg-primary text-white py-3">
+            {% if request.user.is_staff %}
+            <h2 class="text-center mb-0 fw-bold">Historial de Ventas</h2>
+            {% else %}
+            <h2 class="text-center mb-0 fw-bold">Historial de Compras</h2>
+            {% endif %}
+        </div>
+        
+        <div class="card-body">
+            {% if page_obj %}
+            <div class="row g-4">
+                {% for venta in ventas %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 shadow border-0 rounded-3 overflow-hidden {% if request.user.is_staff %} border-start border-info border-5 {% endif %}">
+                        <div class="card-header bg-gradient-primary-to-secondary p-3">
+                            {% if request.user.is_staff %}
+                            <h5 class="card-title d-flex align-items-center mb-0">
+                                <i class="bi bi-bag-check-fill me-2"></i>Venta ID: {{ venta.numero_control }}
+                            </h5>
                             {% else %}
-                            <span class="badge bg-secondary">No disponible</span>
+                            <h5 class="card-title d-flex align-items-center mb-0">
+                                <i class="bi bi-basket-fill me-2"></i>Compra ID: {{ venta.numero_control }}
+                            </h5>
                             {% endif %}
-                        </p>
-
-                        {% if request.user.is_staff %}
-                        <h6 class="mt-3"><strong>Cambiar Estado de Pago:</strong></h6>
-                        <form method="POST" action="{% url 'cambiar_estado_pago' venta.id %}">
-                            {% csrf_token %}
-                            <div class="mb-3">
-                                <label for="estado" class="form-label">Estado de Pago</label>
-                                <select class="form-control" id="estado" name="estado">
-                                    <option value="pendiente"
-                                        {% if venta.estado_pago == 'pendiente' %}selected{% endif %}>Pendiente</option>
-                                    <option value="confirmado"
-                                        {% if venta.estado_pago == 'confirmado' %}selected{% endif %}>Confirmado
-                                    </option>
-                                </select>
+                        </div>
+                        
+                        <div class="card-body p-0">
+                            <!-- Fecha de compra con iconos -->
+                            <div class="p-3 border-bottom">
+                                <p class="d-flex align-items-center mb-0">
+                                    <i class="bi bi-calendar-date me-2 text-primary"></i>
+                                    <strong>Fecha:</strong> 
+                                    <span class="ms-2">{{ venta.fecha|date:"d/m/Y H:i" }}</span>
+                                </p>
                             </div>
-                            <button type="submit" class="btn btn-success">Actualizar Estado</button>
-                        </form>
-                        {% endif %}
-                        <h6 class="mt-3"><strong>Envío:</strong></h6>
-                        <p class="list-group-item">
-                            {% if venta.tipo_envio == 'envio' %}
-                            <span class="badge bg-primary">Envío a Domicilio</span>
-                            {% elif venta.tipo_envio == 'retiro' %}
-                            <span class="badge bg-secondary">Retiro en Local</span>
-                            {% else %}
-                            <span class="badge bg-warning">No especificado</span>
+                            
+                            {% if request.user.is_staff %}
+                            <!-- Información del cliente para staffs -->
+                            <div class="p-3 border-bottom bg-light">
+                                <h6 class="d-flex align-items-center mb-2 text-primary">
+                                    <i class="bi bi-person-badge me-2"></i>
+                                    <strong>Información del Cliente</strong>
+                                </h6>
+                                <div class="ms-3">
+                                    <p class="mb-1"><strong>Usuario:</strong> {{ venta.user.username }}</p>
+                                    <p class="mb-1"><strong>Nombre:</strong> {{ venta.user.first_name }} {{ venta.user.last_name }}</p>
+                                    <p class="mb-1"><strong>RUT:</strong> {{ venta.usuario_rut }}</p>
+                                    <p class="mb-1"><strong>Teléfono:</strong> {{ venta.usuario_telefono }}</p>
+                                    <p class="mb-0"><strong>Dirección:</strong> {{ venta.usuario_direccion }}</p>
+                                </div>
+                            </div>
                             {% endif %}
-                        </p>
+                            
+                            <!-- Productos -->
+                            <div class="p-3 border-bottom">
+                                <h6 class="d-flex align-items-center mb-2 text-primary">
+                                    <i class="bi bi-box-seam me-2"></i>
+                                    <strong>Productos</strong>
+                                </h6>
+                                <div class="accordion accordion-flush" id="productos{{ venta.id }}">
+                                    {% for linea in venta.lineas.all %}
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="heading{{ venta.id }}_{{ forloop.counter }}">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                                    data-bs-target="#collapse{{ venta.id }}_{{ forloop.counter }}" 
+                                                    aria-expanded="false" aria-controls="collapse{{ venta.id }}_{{ forloop.counter }}">
+                                                {{ linea.producto.nombre|title }} ({{ linea.cantidad }})
+                                            </button>
+                                        </h2>
+                                        <div id="collapse{{ venta.id }}_{{ forloop.counter }}" class="accordion-collapse collapse" 
+                                             aria-labelledby="heading{{ venta.id }}_{{ forloop.counter }}" data-bs-parent="#productos{{ venta.id }}">
+                                            <div class="accordion-body">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <span><strong>Talla:</strong> {{ linea.talla.talla|default:"No especificada" }}</span>
+                                                    <span class="badge bg-primary rounded-pill">x{{ linea.cantidad }}</span>
+                                                </div>
+                                                {% if linea.color %}
+                                                <p class="mb-2"><strong>Color:</strong> {{ linea.color.nombre|title }}</p>
+                                                {% else %}
+                                                <p class="mb-2"><strong>Color:</strong> No especificado</p>
+                                                {% endif %}
+                                                <div class="d-flex justify-content-between mb-0">
+                                                    <span><strong>Precio:</strong> ${{ linea.precio_unitario|formatear_precio }}</span>
+                                                    <span><strong>Subtotal:</strong> ${{ linea.total_formateado|formatear_precio }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <!-- Estado de pago y envío -->
+                            <div class="p-3 border-bottom">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <h6 class="d-flex align-items-center mb-2 text-primary">
+                                            <i class="bi bi-credit-card me-2"></i>
+                                            <strong>Estado de Pago</strong>
+                                        </h6>
+                                        {% if venta.estado_pago == 'pendiente' %}
+                                        <span class="badge bg-warning text-dark fs-6 d-block p-2 text-center">
+                                            <i class="bi bi-hourglass-split me-1"></i> Pendiente
+                                        </span>
+                                        {% elif venta.estado_pago == 'confirmado' %}
+                                        <span class="badge bg-success fs-6 d-block p-2 text-center">
+                                            <i class="bi bi-check-circle me-1"></i> Confirmado
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-secondary fs-6 d-block p-2 text-center">
+                                            <i class="bi bi-question-circle me-1"></i> No disponible
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-6">
+                                        <h6 class="d-flex align-items-center mb-2 text-primary">
+                                            <i class="bi bi-truck me-2"></i>
+                                            <strong>Tipo de Envío</strong>
+                                        </h6>
+                                        {% if venta.tipo_envio == 'envio' %}
+                                        <span class="badge bg-primary fs-6 d-block p-2 text-center">
+                                            <i class="bi bi-house-door me-1"></i> A Domicilio
+                                        </span>
+                                        {% elif venta.tipo_envio == 'retiro' %}
+                                        <span class="badge bg-secondary fs-6 d-block p-2 text-center">
+                                            <i class="bi bi-shop me-1"></i> Retiro en Local
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-warning text-dark fs-6 d-block p-2 text-center">
+                                            <i class="bi bi-question-circle me-1"></i> No especificado
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if request.user.is_staff %}
+                            <!-- Formulario para cambiar estado (solo staff) -->
+                            <div class="p-3 border-bottom bg-light">
+                                <h6 class="d-flex align-items-center mb-2 text-primary">
+                                    <i class="bi bi-pencil-square me-2"></i>
+                                    <strong>Actualizar Estado</strong>
+                                </h6>
+                                <form method="POST" action="{% url 'cambiar_estado_pago' venta.id %}">
+                                    {% csrf_token %}
+                                    <div class="input-group">
+                                        <select class="form-select" id="estado" name="estado">
+                                            <option value="pendiente" {% if venta.estado_pago == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                                            <option value="confirmado" {% if venta.estado_pago == 'confirmado' %}selected{% endif %}>Confirmado</option>
+                                        </select>
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="bi bi-check-lg me-1"></i> Actualizar
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Footer con total -->
+                        <div class="card-footer p-3 bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0 text-primary"><strong>Total:</strong></h6>
+                                <h5 class="mb-0">
+                                    {% if venta.tipo_envio == 'envio' %}
+                                    ${{ venta.total_venta_formateado|add:"5000"|formatear_precio }}
+                                    {% else %}
+                                    ${{ venta.total_venta_formateado|formatear_precio }}
+                                    {% endif %}
+                                </h5>
+                            </div>
+                            {% if venta.tipo_envio == 'envio' %}
+                            <div class="d-flex justify-content-end">
+                                <small class="text-muted">(Incluye costo de envío)</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
-                <div class="card-footer bg-light">
-                    <strong>Total de la Venta:</strong>
-                    {% if venta.tipo_envio == 'envio' %}
-                    ${{ venta.total_venta_formateado|add:"5000"|formatear_precio }}
-                    {% else %}
-                    ${{ venta.total_venta_formateado|formatear_precio }}
-                    {% endif %}
-                </div>
+                {% endfor %}
             </div>
+            
+            <!-- Paginación -->
+            <nav aria-label="Page navigation" class="mt-5">
+                <ul class="pagination pagination-lg justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?page=1&{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}"
+                            aria-label="Primera">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?page={{ page_obj.previous_page_number }}&{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}"
+                            aria-label="Anterior">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-double-left"></i></span></li>
+                    <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% else %}
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?page={{ num }}&{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?page={{ page_obj.next_page_number }}&{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}"
+                            aria-label="Siguiente">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?page={{ page_obj.paginator.num_pages }}&{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}"
+                            aria-label="Última">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-right"></i></span></li>
+                    <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-double-right"></i></span></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-bag-x display-1 text-muted mb-3"></i>
+                <h3 class="text-muted">No tienes compras o ventas registradas.</h3>
+                <a href="{% url 'shop' %}" class="btn btn-primary mt-3">
+                    <i class="bi bi-shop me-2"></i>Ir a la tienda
+                </a>
+            </div>
+            {% endif %}
         </div>
-        {% endfor %}
     </div>
-
-    <!-- Paginación -->
-    <nav aria-label="Page navigation" class="mt-4">
-        <ul class="pagination justify-content-center">
-            {% if page_obj.has_previous %}
-            <li class="page-item">
-                <a class="page-link"
-                    href="?page=1&{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}"
-                    aria-label="Primera">
-                    <span aria-hidden="true">&laquo;&laquo;</span>
-                </a>
-            </li>
-            <li class="page-item">
-                <a class="page-link"
-                    href="?page={{ page_obj.previous_page_number }}&{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}"
-                    aria-label="Anterior">
-                    <span aria-hidden="true">&laquo;</span>
-                </a>
-            </li>
-            {% else %}
-            <li class="page-item disabled"><span class="page-link">&laquo;&laquo;</span></li>
-            <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
-            {% endif %}
-
-            {% for num in page_obj.paginator.page_range %}
-            {% if page_obj.number == num %}
-            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-            {% else %}
-            <li class="page-item">
-                <a class="page-link"
-                    href="?page={{ num }}&{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}">{{ num }}</a>
-            </li>
-            {% endif %}
-            {% endfor %}
-
-            {% if page_obj.has_next %}
-            <li class="page-item">
-                <a class="page-link"
-                    href="?page={{ page_obj.next_page_number }}&{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}"
-                    aria-label="Siguiente">
-                    <span aria-hidden="true">&raquo;</span>
-                </a>
-            </li>
-            {% else %}
-            <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
-            {% endif %}
-        </ul>
-    </nav>
-
-    {% else %}
-    <p class="text-center">No tienes compras o ventas registradas.</p>
-    {% endif %}
 </div>
+
+<!-- Asegúrate de incluir Bootstrap Icons en tu archivo base -->
+<!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"> -->
 {% endblock %}

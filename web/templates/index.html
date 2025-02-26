@@ -139,6 +139,7 @@
     <!-- End Categories of The Month -->
     <!-- Productos destacados -->
     <!-- Start Productos Destacados -->
+    <!-- Start Productos Destacados -->
     <section class="container py-5">
         <div class="row text-center pt-3">
             <div class="col-lg-6 m-auto">
@@ -151,64 +152,89 @@
 
         <div class="row mt-5 justify-content-center">
             {% for producto in productos_destacados %}
-            <div class="col-12 col-md-4 mb-4">
-                <div class="card shadow-lg border-0 rounded">
-                    <!-- Mostrar imagen del producto -->
-                    {% if producto.imagenes_list.all %}
-                    <img class="card-img-top product-card-img" src="{{ producto.imagenes_list.first.imagen.url }}"
-                        alt="{{ producto.nombre }}">
-                    {% else %}
-                    <img class="card-img-top product-card-img" src="{% static 'images/no-image.png' %}"
-                        alt="Imagen no disponible">
-                    {% endif %}
 
-                    <div class="card-body text-center">
-                        <h5 class="card-title fw-bold text-dark">{{ producto.nombre|title }}</h5>
-                        <p class="card-text text-muted">${{ producto.precio|formatear_precio }}</p>
+            <div class="col-md-4 col-lg-4 mt-5">
+                <div class="card mb-4 tbk-product-card">
+                    <!-- Imagen con overlay mejorado -->
+                    <div class="tbk-product-img-container">
+                        {% if producto.imagenes.first %}
+                        <img class="tbk-product-img" src="{{ producto.imagenes.first.imagen.url }}"
+                            alt="{{ producto.nombre }}">
+                        {% else %}
+                        <img class="tbk-product-img" src="{% static 'img/default-product.jpg' %}"
+                            alt="{{ producto.nombre }}">
+                        {% endif %}
 
-                        <!-- Valoración de estrellas -->
-                        <p class="py-2">
-                            <ul class="list-unstyled d-flex justify-content-center mb-1">
+                        <!-- Overlay con efectos hover -->
+                        <div class="tbk-product-overlay">
+                            <div class="tbk-product-actions">
+                                <a class="tbk-action-btn" title="Añadir a favoritos"
+                                    href="{% url 'agregar_a_favoritos' slug=producto.slug %}">
+                                    <i class="far fa-heart text-danger"></i>
+                                </a>
+                                <a class="tbk-action-btn" title="Ver detalles"
+                                    href="{% url 'producto_detalle' slug=producto.slug %}">
+                                    <i class="far fa-eye text-primary"></i>
+                                </a>
+                                <a class="tbk-action-btn" title="Añadir al carrito"
+                                    href="{% url 'agregar_al_carrito' slug=producto.slug %}">
+                                    <i class="fas fa-cart-plus text-success"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contenido de la card -->
+                    <div class="card-body d-flex flex-column">
+                        <a href="{% url 'producto_detalle' producto.slug %}" class="tbk-product-title">
+                            {{ producto.nombre|title }}
+                        </a>
+
+                        <!-- Valoraciones con estrellas -->
+                        <div class="tbk-product-rating">
+                            <div class="tbk-product-stars">
                                 {% for i in rango_estrellas %}
-                                {% if i <= producto.promedio %}
-                                <li><i class="text-warning fa fa-star"></i></li> <!-- Estrella llena -->
+                                {% if i <= producto.promedio_valoracion %}
+                                <i class="fas fa-star text-warning"></i>
                                 {% else %}
-                                <li><i class="fa fa-star"></i></li> <!-- Estrella vacía -->
+                                <i class="far fa-star text-muted"></i>
                                 {% endif %}
                                 {% endfor %}
-                            </ul>
-                            <span class="list-inline-item text-dark">
-                                {{ producto.promedio|floatformat:0 }} de 5 Estrellas |
-                                {{ producto.opiniones.count }} Comentarios
+                            </div>
+                            <span class="tbk-product-reviews">
+                                {{ producto.opiniones_list.count }} Reseñas
                             </span>
-                        </p>
+                        </div>
 
-                        <!-- Tallas disponibles -->
-                        <p class="text-center">
-                            <strong>Tallas disponibles:</strong>
-                            {% if producto.tallas_list %}
-                            <span class="badge bg-info">
-                                {% for producto_talla in producto.tallas_list %}
-                                {{ producto_talla.talla|upper }}{% if not forloop.last %}, {% endif %}
+                        <!-- Tallas disponibles con diseño mejorado -->
+                        <div class="tbk-product-sizes">
+                            <span class="tbk-size-label">Tallas:</span>
+                            <div class="tbk-size-badges">
+                                {% if producto.tallas.all %}
+                                {% for producto_talla in producto.tallas.all %}
+                                <span class="tbk-size-badge">{{ producto_talla.talla|upper }}</span>
                                 {% endfor %}
-                            </span>
-                            {% else %}
-                            <span>No disponible</span>
-                            {% endif %}
-                        </p>
+                                {% else %}
+                                <span class="text-danger small">No disponible</span>
+                                {% endif %}
+                            </div>
+                        </div>
 
-                        <!-- Enlace al detalle del producto -->
-                        <a href="{% url 'producto_detalle' slug=producto.slug %}" class="btn btn-success mt-2">Ver
-                            más</a>
+                        <!-- Precio con diseño destacado -->
+                        <div class="tbk-product-footer">
+                            <span class="tbk-product-price">${{ producto.precio|formatear_precio }}</span>
+                            <a href="{% url 'agregar_al_carrito' slug=producto.slug %}" class="tbk-buy-button">
+                                <i class="fas fa-shopping-cart me-1"></i> Comprar
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
-            {% empty %}
-            <p class="text-center">No hay productos destacados disponibles.</p>
             {% endfor %}
         </div>
     </section>
     <!-- End Productos Destacados -->
- </body>
-    <!-- End Featured Product -->
-    {% endblock  %}
+    <!-- End Productos Destacados -->
+</body>
+<!-- End Featured Product -->
+{% endblock  %}

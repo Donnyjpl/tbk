@@ -29,9 +29,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 ALLOWED_HOSTS = ['tbkdesire.cl', 'www.tbkdesire.cl', '127.0.0.1','localhost','147.93.67.92']
-LOGIN_URL = '/web/login/'  # Asegúrate de que esta URL esté definida
-LOGIN_REDIRECT_URL = '/web/'  # Página a la que se redirige después del login
-LOGOUT_REDIRECT_URL = '/web/'  # Página a la que se redirige después del logout
+LOGIN_URL = '/login/'  # Asegúrate de que esta URL esté definida
+LOGIN_REDIRECT_URL = '/index/'  # Página a la que se redirige después del login
+LOGOUT_REDIRECT_URL = '/index/'  # Página a la que se redirige después del logout
 # Application definition
 
 INSTALLED_APPS = [

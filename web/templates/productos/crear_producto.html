@@ -1,5 +1,15 @@
 {% extends 'baset.html' %}
 {% block title %}Crear Productos - TBK{% endblock %}
+{% if messages %}
+<div class=" alert alert-success container">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
 
 {% block content %}
     <div class="container mt-5 mb-5">

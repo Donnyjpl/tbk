@@ -1070,10 +1070,13 @@ def modificar_imagenes(request, slug):
     producto = get_object_or_404(Producto, slug=slug)
     imagenes = producto.imagenes.all()  # Obtener las imágenes existentes
     
-    if imagenes.Count()>= 5:
+    if imagenes.count() >= 5:  # Corregir a `count()`
         # Limitar la cantidad de fotos a 5
         messages.warning(request, 'Ya no puedes agregar más de 5 fotos.')
-        return render(request, 'productos/modificar_imagenes.html', {'form': form, 'producto': producto, 'imagenes': imagenes})
+        return render(request, 'productos/modificar_imagenes.html', {'producto': producto, 'imagenes': imagenes})
+    
+    # Asegurarse de que el formulario siempre esté presente, incluso para una solicitud GET
+    form = ProductoImagenForm()
 
     if request.method == 'POST':
         form = ProductoImagenForm(request.POST, request.FILES)
@@ -1083,11 +1086,8 @@ def modificar_imagenes(request, slug):
             imagen.save()
             messages.success(request, 'Imagen modificada exitosamente.')
             return redirect('modificar_imagenes', slug=producto.slug)
-    else:
-        form = ProductoImagenForm()
+    
     return render(request, 'productos/modificar_imagenes.html', {'form': form, 'producto': producto, 'imagenes': imagenes})
-
-
 
 @user_passes_test(es_superusuario)
 def modificar_tallas(request, slug):

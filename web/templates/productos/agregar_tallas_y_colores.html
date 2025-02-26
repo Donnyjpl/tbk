@@ -1,7 +1,18 @@
 {% extends "baset.html" %}
 
 {% block content %}
+{% if messages %}
+<div class=" alert alert-success container">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
 <style>
+
 .imagen-pequena-talla {
     max-width: 100px;
     height: auto; /* Mantiene la proporción de la imagen */

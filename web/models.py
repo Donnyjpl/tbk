@@ -35,6 +35,9 @@ class Producto(models.Model):
     descripcion = models.TextField(max_length=1000, null=True)
     
     def save(self, *args, **kwargs):
+
+       # Si el nombre ha cambiado, actualizamos el slug
+
         # Si el nombre ha cambiado, actualizamos el slug
         if self.pk:  # Esto significa que el objeto ya existe (es una actualización)
             original = Producto.objects.get(pk=self.pk)
@@ -42,9 +45,12 @@ class Producto(models.Model):
                 self.slug = slugify(self.nombre)  # Regeneramos el slug si el nombre ha cambiado
         else:  # Es una creación nueva, generamos el slug normalmente
             self.slug = slugify(self.nombre)
-        
         super(Producto, self).save(*args, **kwargs)
-        
+
+
+
+
+
     @property
     def promedio_valoracion(self):
         if self.opiniones.exists():

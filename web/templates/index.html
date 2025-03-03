@@ -5,103 +5,92 @@
 {% block content %}
 {% load static %}
 
-<body>
-    <!-- Modal -->
-    <div class="modal fade bg-white" id="templatemo_search" tabindex="-1" role="dialog"
-        aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="w-100 pt-1 mb-5 text-right">
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="" method="get" class="modal-content modal-body border-0 p-0">
-                <div class="input-group mb-2">
-                    <input type="text" class="form-control" id="inputModalSearch" name="q" placeholder="Search ...">
-                    <button type="submit" class="input-group-text bg-success text-light">
-                        <i class="fa fa-fw fa-search text-white"></i>
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-    <!-- Start Banner Hero -->
-    <div id="template-mo-zay-hero-carousel" class="carousel slide" data-bs-ride="carousel">
-        <ol class="carousel-indicators">
-            <li data-bs-target="#template-mo-zay-hero-carousel" data-bs-slide-to="0" class="active"></li>
-            <li data-bs-target="#template-mo-zay-hero-carousel" data-bs-slide-to="1"></li>
-            <li data-bs-target="#template-mo-zay-hero-carousel" data-bs-slide-to="2"></li>
-        </ol>
-        <div class="carousel-inner">
-            <div class="carousel-item active">
-                <div class="container">
-                    <div class="row p-5">
-                        <div class="mx-auto col-md-8 col-lg-6 order-lg-last">
-                            <img class="img-fluid" src="{% static 'img/logonegro.png' %}" alt="">
-                        </div>
-                        <div class="col-lg-6 mb-0 d-flex align-items-center">
-                            <div class="text-align-left align-self-center">
-                                <h1 class="h1 text-success"><b>Bienvenida a</b> TBK</h1>
-                                <h3 class="h2">Tu tienda online de moda para todas las ocasiones</h3>
-                                <p>
-                                    En TBK, nos dedicamos a ofrecer lo mejor de la moda con una amplia selección de ropa
-                                    de marca de alta calidad. Somos una tienda virtual que te brinda una experiencia de
-                                    compra cercana y personalizada.
-                                </p>
-                            </div>
+<!-- Start Banner Hero -->
+<div id="template-mo-zay-hero-carousel" class="carousel slide" data-bs-ride="carousel">
+    <ol class="carousel-indicators">
+        <li data-bs-target="#template-mo-zay-hero-carousel" data-bs-slide-to="0" class="active"></li>
+        <li data-bs-target="#template-mo-zay-hero-carousel" data-bs-slide-to="1"></li>
+        <li data-bs-target="#template-mo-zay-hero-carousel" data-bs-slide-to="2"></li>
+    </ol>
+    <div class="carousel-inner">
+        <div class="carousel-item active">
+            <div class="container">
+                <div class="row p-5">
+                    <div class="mx-auto col-md-8 col-lg-6 order-lg-last">
+                        <div class="carousel-image-container">
+                            <img class="img-fluid" src="{% static 'img/banner1.png' %}" alt="">
                         </div>
                     </div>
-                </div>
-            </div>
-            <div class="carousel-item">
-                <div class="container">
-                    <div class="row p-5">
-                        <div class="mx-auto col-md-8 col-lg-6 order-lg-last">
-                            <img class="img-fluid" src=" {% static 'img/logonegro.png' %}" alt="">
-                        </div>
-                        <div class="col-lg-6 mb-0 d-flex align-items-center">
-                            <div class="text-align-left">
-                                <h1 class="h1">Explorar la Tienda</h1>
-                                <h3 class="h2">
-                                    <!-- Botón para ir a la tienda -->
-                                    <a href="{% url 'shop' %}" class="btn btn-lg btn-success shadow-sm">Explorar la
-                                        Tienda</a></h3>
-                                <p>
-                                    ¿Estás lista para tu próxima compra? ¡Explora nuestras colecciones y encuentra tu
-                                    look perfecto!
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="carousel-item">
-                <div class="container">
-                    <div class="row p-5">
-                        <div class="mx-auto col-md-8 col-lg-6 order-lg-last">
-                            <img class="img-fluid" src="{% static 'img/logonegro.png' %}" alt="">
-                        </div>
-                        <div class="col-lg-6 mb-0 d-flex align-items-center">
-                            <div class="text-align-left">
-                                <h1 class="h1">Tendencias de Moda 2025</h1>
-                                <h3 class="h2">Revoluciona tu closet con lo último en estilo.</h3>
-                                <p>
-                                    Desde ropa casual hasta elegante, tenemos todo lo que necesitas para que luzcas
-                                    espectacular.
-                                </p>
-                            </div>
+                    <div class="col-lg-6 mb-0 d-flex align-items-center">
+                        <div class="text-align-left align-self-center">
+                            <h1 class="h1 text-success"><b>Bienvenida a</b> TBK</h1>
+                            <h3 class="h2">Tu tienda online de moda para todas las ocasiones</h3>
+                            <p>
+                                En TBK, nos dedicamos a ofrecer lo mejor de la moda con una amplia selección de ropa
+                                de marca de alta calidad. Somos una tienda virtual que te brinda una experiencia de
+                                compra cercana y personalizada.
+                            </p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <a class="carousel-control-prev text-decoration-none w-auto ps-3" href="#template-mo-zay-hero-carousel"
-            role="button" data-bs-slide="prev">
-            <i class="fas fa-chevron-left"></i>
-        </a>
-        <a class="carousel-control-next text-decoration-none w-auto pe-3" href="#template-mo-zay-hero-carousel"
-            role="button" data-bs-slide="next">
-            <i class="fas fa-chevron-right"></i>
-        </a>
+        <div class="carousel-item">
+            <div class="container">
+                <div class="row p-5">
+                    <div class="mx-auto col-md-8 col-lg-6 order-lg-last">
+                        <div class="carousel-image-container">
+                            <img class="img-fluid" src=" {% static 'img/banner2.png' %}" alt="">
+                        </div>
+                    </div>
+                    <div class="col-lg-6 mb-0 d-flex align-items-center">
+                        <div class="text-align-left">
+                            <h1 class="h1">Explorar la Tienda</h1>
+                            <h3 class="h2">
+                                <!-- Botón para ir a la tienda -->
+                                <a href="{% url 'shop' %}" class="btn btn-lg btn-success shadow-sm">Explorar la
+                                    Tienda</a></h3>
+                            <p>
+                                ¿Estás lista para tu próxima compra? ¡Explora nuestras colecciones y encuentra tu
+                                look perfecto!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="carousel-item">
+            <div class="container">
+                <div class="row p-5">
+                    <div class="mx-auto col-md-8 col-lg-6 order-lg-last">
+                        <div class="carousel-image-container">
+                            <img class="img-fluid" src="{% static 'img/banner3.png' %}" alt="">
+                        </div>
+                    </div>
+                    <div class="col-lg-6 mb-0 d-flex align-items-center">
+                        <div class="text-align-left">
+                            <h1 class="h1">Tendencias de Moda 2025</h1>
+                            <h3 class="h2">Revoluciona tu closet con lo último en estilo.</h3>
+                            <p>
+                                Desde ropa casual hasta elegante, tenemos todo lo que necesitas para que luzcas
+                                espectacular.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+    <a class="carousel-control-prev text-decoration-none w-auto ps-3" href="#template-mo-zay-hero-carousel"
+        role="button" data-bs-slide="prev">
+        <i class="fas fa-chevron-left"></i>
+    </a>
+    <a class="carousel-control-next text-decoration-none w-auto pe-3" href="#template-mo-zay-hero-carousel"
+        role="button" data-bs-slide="next">
+        <i class="fas fa-chevron-right"></i>
+    </a>
+</div>
+<!-- End Banner Hero -->
     <!-- End Banner Hero -->
 
 
@@ -129,7 +118,7 @@
                 <p class="text-center"><a class="btn btn-success" href="{% url 'shop' %}">Explorar</a></p>
             </div>
             <div class="col-12 col-md-4 p-5 mt-3">
-                <a href="{% url 'shop' %}"><img src=" {% static 'img/shop_01.jpg' %}"
+                <a href="{% url 'shop' %}"><img src=" {% static 'img/banner3.png' %}"
                         class="rounded-circle img-fluid border"></a>
                 <h2 class="h5 text-center mt-3 mb-3">Accesorios</h2>
                 <p class="text-center"><a class="btn btn-success" href="{% url 'shop' %}">Explorar</a></p>
@@ -137,7 +126,6 @@
         </div>
     </section>
     <!-- End Categories of The Month -->
-    <!-- Productos destacados -->
     <!-- Start Productos Destacados -->
     <!-- Start Productos Destacados -->
     <section class="container py-5">
@@ -233,8 +221,59 @@
             {% endfor %}
         </div>
     </section>
-    <!-- End Productos Destacados -->
-    <!-- End Productos Destacados -->
-</body>
-<!-- End Featured Product -->
+
+
+    <style>
+
+/* Estilos para mejorar el carrusel */
+.carousel-image-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: 25px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.3));
+    padding: 10px;
+}
+
+.carousel-image-container img {
+    border-radius: 20px;
+    transition: transform 0.5s ease;
+}
+
+.carousel-image-container:hover img {
+    transform: scale(1.03);
+}
+
+/* Personaliza el fondo del carrusel si lo deseas */
+#template-mo-zay-hero-carousel {
+    background-color: #f8f9fa; /* Color de fondo claro */
+}
+
+/* Mejora los controles del carrusel */
+.carousel-control-prev, 
+.carousel-control-next {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.carousel-control-prev:hover, 
+.carousel-control-next:hover {
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* Mejora los indicadores */
+.carousel-indicators li {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin: 0 5px;
+}
+    </style>
 {% endblock  %}

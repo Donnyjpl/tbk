@@ -29,6 +29,10 @@ https://templatemo.com/tm-559-zay-shop
 </head>
 
 <body>
+    <!-- Contenedor del loader (se muestra mientras la página carga) -->
+    <div id="loading" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999;">
+        <img src="{% static 'img/ajax-loader.gif' %}" alt="Cargando...">
+    </div>
     {% include 'partes/navbar.html' %}
 
     {% block content %}
@@ -44,10 +48,12 @@ https://templatemo.com/tm-559-zay-shop
 
     {% endblock %}
     <a href="https://wa.me/+56968961483" class="whatsapp-fijo" target="_blank">
-        <div style="text-align: center; color: hsla(178, 81%, 15%, 0.685); font-weight: bold; font-size: 14px; margin-bottom: 5px;">
+        <div
+            style="text-align: center; color: hsla(178, 81%, 15%, 0.685); font-weight: bold; font-size: 14px; margin-bottom: 5px;">
             ¡Hablemos!
         </div>
-        <img src="{% static 'img/ws1.png' %}" alt="WhatsApp" width="60" height="60" style="border-radius: 50%; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);">
+        <img src="{% static 'img/ws1.png' %}" alt="WhatsApp" width="60" height="60"
+            style="border-radius: 50%; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);">
     </a>
     {% include 'partes/footer.html' %}
 
@@ -59,6 +65,14 @@ https://templatemo.com/tm-559-zay-shop
     <script src="{% static 'js/jquery-migrate-1.2.1.min.js' %}"></script>
     <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'js/templatemo.js' %}"></script>
+
+    <!-- Script para ocultar el loader cuando la página esté completamente cargada -->
+    <script>
+        window.onload = function () {
+            document.getElementById("loading").style.display =
+            "none"; // Oculta el loader cuando la página termina de cargar
+        };
+    </script>
     <!-- End Script -->
 </body>
 

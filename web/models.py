@@ -33,6 +33,7 @@ class Producto(models.Model):
     slug = models.SlugField(unique=True, blank=True)  # Slug único y automáticamente generado
     categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE, null=True, blank=True)  # Permite nulos
     descripcion = models.TextField(max_length=1000, null=True)
+    descuento = models.IntegerField(default=0, help_text="Porcentaje de descuento (0-100)")
     
     def save(self, *args, **kwargs):
 
@@ -47,10 +48,6 @@ class Producto(models.Model):
             self.slug = slugify(self.nombre)
         super(Producto, self).save(*args, **kwargs)
 
-
-
-
-
     @property
     def promedio_valoracion(self):
         if self.opiniones.exists():
@@ -58,6 +55,18 @@ class Producto(models.Model):
             return total_valoraciones / self.opiniones.count()
         else:
             return 0  # Retorna 0 si no hay opiniones
+        
+    @property
+    def precio_con_descuento(self):
+        """Calcula el precio con descuento aplicado"""
+        if self.descuento > 0:
+            return int(self.precio * (1 - self.descuento / 100))
+        return self.precio
+    
+    @property
+    def tiene_descuento(self):
+        """Determina si el producto tiene descuento"""
+        return self.descuento > 0
 
 
     def __str__(self):

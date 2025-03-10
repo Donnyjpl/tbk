@@ -95,7 +95,20 @@ Detalles de Producto
                 <div class="card">
                     <div class="card-body">
                         <h1 class="h2 fw-bold">{{ producto.nombre|title }}</h1>
-                        <p class="h3 py-2">${{ producto.precio|formatear_precio}}</p>
+                        <!-- Sección de precio con descuento -->
+                        <div class="pricing py-2">
+                            {% if producto.tiene_descuento %}
+                            <div class="d-flex align-items-center">
+                                <p class="h3 text-success me-2">${{ producto.precio_con_descuento|formatear_precio }}
+                                </p>
+                                <p class="h5 text-muted text-decoration-line-through">
+                                    ${{ producto.precio|formatear_precio }}</p>
+                                <span class="badge bg-danger ms-2">-{{ producto.descuento }}%</span>
+                            </div>
+                            {% else %}
+                            <p class="h3 py-2">${{ producto.precio|formatear_precio }}</p>
+                            {% endif %}
+                        </div>
 
                         <!-- Rating -->
                         <div class="d-flex align-items-center mb-3">
@@ -236,11 +249,29 @@ Detalles de Producto
 
                     <div class="card-body related-product-body">
                         <h5 class="tbk-product-title">{{ related_product.nombre|title }}</h5>
-                        <p class="tbk-product-price">${{ related_product.precio|formatear_precio }}</p>
-                        <a href="{% url 'producto_detalle' slug=related_product.slug %}"
-                            class="tbk-buy-button w-100 text-center">
-                            <i class="fas fa-eye me-1"></i> Ver detalles
-                        </a>
+                        <div class="tbk-product-footer">
+                            <div class="row align-items-center">
+                                <div class="col">
+                                    {% if producto.tiene_descuento %}
+                                    <div class="price-container">
+                                        <span
+                                            class="tbk-product-price">${{ producto.precio_con_descuento|formatear_precio }}</span>
+                                        <span
+                                            class="text-decoration-line-through text-muted ms-2 fs-6">${{ producto.precio|formatear_precio }}</span>
+                                        <span class="badge bg-danger ms-2">-{{ producto.descuento }}%</span>
+                                    </div>
+                                    {% else %}
+                                    <span class="tbk-product-price">${{ producto.precio|formatear_precio }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="col-auto">
+                                    <a href="{% url 'producto_detalle' slug=related_product.slug %}"
+                                        class="tbk-buy-button w-100 text-center">
+                                        <i class="fas fa-eye me-1"></i> Ver detalles
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

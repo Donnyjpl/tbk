@@ -595,6 +595,9 @@ def agregar_al_carrito(request, slug):
     # Obtener el producto usando el slug
     producto = get_object_or_404(Producto, slug=slug)
     
+    # Calcular el precio correcto (con o sin descuento)
+    precio = float(producto.precio_con_descuento) if producto.tiene_descuento else float(producto.precio)
+    
     # Obtener los valores de talla y color desde la solicitud POST
     talla_id = request.POST.get('talla')
     color_id = request.POST.get('color')
@@ -633,19 +636,19 @@ def agregar_al_carrito(request, slug):
                 carrito[slug]['tallas'][talla_id]['colores'][color_id] = {
                     'color': color.color.nombre,
                     'cantidad': 1,
-                    'precio': float(producto.precio),
+                    'precio': precio,
                 }
         else:
             # Si la talla no está, la agregamos junto con el color
             carrito[slug]['tallas'][talla_id] = {
                 'talla': talla.talla,
-                'precio': float(producto.precio),
+                'precio': precio,
                 'cantidad': 1,
                 'colores': {
                     color_id: {
                         'color': color.color.nombre,
                         'cantidad': 1,
-                        'precio': float(producto.precio),
+                        'precio': precio,
                     }
                 }
             }
@@ -653,19 +656,19 @@ def agregar_al_carrito(request, slug):
         # Si el producto no está en el carrito, lo agregamos
         carrito[slug] = {
             'nombre': producto.nombre,
-            'precio': float(producto.precio),
+            'precio': precio,
             'cantidad': 1,
             'slug': producto.slug,
             'tallas': {
                 talla_id: {
                     'talla': talla.talla,
-                    'precio': float(producto.precio),
+                    'precio': precio,
                     'cantidad': 1,
                     'colores': {
                         color_id: {
                             'color': color.color.nombre,
                             'cantidad': 1,
-                            'precio': float(producto.precio),
+                            'precio': precio,
                         }
                     }
                 }
@@ -680,7 +683,6 @@ def agregar_al_carrito(request, slug):
     
     # Redirigir a la vista del producto
     return redirect('producto_detalle', slug=slug)
-
 
 def actualizar_producto_simple(request, slug):
     if request.method == 'POST':

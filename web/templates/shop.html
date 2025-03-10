@@ -123,10 +123,24 @@
 
                             <!-- Precio con diseño destacado -->
                             <div class="tbk-product-footer">
-                                <span class="tbk-product-price">${{ producto.precio|formatear_precio }}</span>
-                                <a href="{% url 'agregar_al_carrito' slug=producto.slug %}" class="tbk-buy-button">
-                                    <i class="fas fa-shopping-cart me-1"></i> Comprar
-                                </a>
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        {% if producto.tiene_descuento %}
+                                            <div class="price-container">
+                                                <span class="tbk-product-price">${{ producto.precio_con_descuento|formatear_precio }}</span>
+                                                <span class="text-decoration-line-through text-muted ms-2 fs-6">${{ producto.precio|formatear_precio }}</span>
+                                                <span class="badge bg-danger ms-2">-{{ producto.descuento }}%</span>
+                                            </div>
+                                        {% else %}
+                                            <span class="tbk-product-price">${{ producto.precio|formatear_precio }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-auto">
+                                        <a href="{% url 'agregar_al_carrito' slug=producto.slug %}" class="tbk-buy-button">
+                                            <i class="fas fa-shopping-cart me-1"></i> Comprar
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

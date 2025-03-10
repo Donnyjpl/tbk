@@ -73,9 +73,26 @@ class CategoriaForm(forms.ModelForm):
 class ProductoForm(forms.ModelForm):
     class Meta:
         model = Producto
-        fields = ['marca', 'nombre', 'precio', 'descripcion','activo','categoria']  # No es necesario incluir 'imagen' aquí
+        fields = ['marca', 'nombre', 'precio', 'descripcion','activo','categoria', 'descuento']  # No es necesario incluir 'imagen' aquí
 
     categoria = forms.ModelChoiceField(queryset=Categoria.objects.all(), required=False)  # Si quieres que sea un campo de selección
+    
+    widgets = {
+           
+            'descuento': forms.NumberInput(attrs={'min': 0, 'max': 100, 'step': 1})
+        }
+    
+    def clean_descuento(self):
+        descuento = self.cleaned_data.get('descuento')
+        if descuento < 0 or descuento > 100:
+            raise forms.ValidationError("El descuento debe estar entre 0 y 100%")
+        return descuento
+    
+    def clean_nombre(self):
+        nombre = self.cleaned_data.get('nombre')
+        if Producto.objects.filter(nombre=nombre).exclude(id=self.instance.id).exists():
+            raise forms.ValidationError("Ya existe un producto con este nombre.")
+        return nombre
     
 class ProductoTallaForm(forms.ModelForm):
     class Meta:

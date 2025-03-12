@@ -889,18 +889,6 @@ class IndexView(ListView):
             producto.imagenes_list = producto.imagenes.all()  # Accede a las imágenes del producto
             producto.tallas_list = producto.tallas.all()  # Accede a las tallas del producto
         
-        # Obtener el carrito y contar los productos
-        carrito = self.request.session.get('carrito', {})
-        cantidad_carrito = sum(item['cantidad'] for producto in carrito.values() for item in producto.get('tallas', {}).values())
-        
-        # Obtener los favoritos y contar la cantidad de productos
-        favoritos = self.request.session.get('favoritos', {})
-        cantidad_favoritos = len(favoritos)  # Contamos el número de productos en favoritos
-
-        # Añadir las cantidades al contexto
-        context['cantidad_carrito'] = cantidad_carrito
-        context['cantidad_favoritos'] = cantidad_favoritos
-        
         return context
     
     

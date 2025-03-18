@@ -14,7 +14,8 @@ from django.contrib.auth import views as auth_views
 
 from .views import actualizar_color_carrito,eliminar_color_carrito,eliminar_del_carrito,actualizar_producto_simple
 
-
+from django.conf.urls import handler404
+handler404 = 'views.pagina_no_encontrada'
 
 urlpatterns = [
     path('crear/nuevo/',crear_producto , name='crear'),

@@ -10,31 +10,72 @@ import re
 
 
 def validar_rut(rut):
-    """ Valida un RUT chileno en el formato correcto y verifica su dígito verificador (DV) """
-    rut = rut.replace('.', '').replace('-', '')  # Eliminar puntos y guión
-    if not rut.isdigit():
-        raise ValidationError("El RUT solo debe contener números y el dígito verificador.")
+    """
+    Validador para RUT chileno que se puede usar en modelos o formularios de Django.
+    Acepta formatos: 12345678-9, 12.345.678-9, 1.234.567-8
+    """
+    # Eliminar puntos y guiones
+    rut_limpio = re.sub(r'[^0-9kK]', '', rut)
     
-    rut_base = rut[:-1]  # RUT sin el dígito verificador
-    dv = rut[-1].upper()  # Dígito verificador (puede ser un número o la letra K)
+    # Verificar longitud mínima (al menos 2 caracteres: 1 dígito + 1 verificador)
+    if len(rut_limpio) < 2:
+        raise ValidationError('El RUT ingresado es demasiado corto.')
+    
+    # Separar número base y dígito verificador
+    rut_numero = rut_limpio[:-1]
+    dv_ingresado = rut_limpio[-1].upper()
+    
+    # Verificar que el RUT solo contiene números
+    if not rut_numero.isdigit():
+        raise ValidationError('El RUT debe contener solo números antes del dígito verificador.')
+        
+    # Verificar que el dígito verificador sea válido
+    if dv_ingresado not in '0123456789K':
+        raise ValidationError('El dígito verificador debe ser un número o la letra K.')
     
     # Algoritmo para calcular el dígito verificador
+    multiplicadores = [2, 3, 4, 5, 6, 7]
     suma = 0
-    multiplicador = 2
-    for i in range(len(rut_base) - 1, -1, -1):
-        suma += int(rut_base[i]) * multiplicador
-        multiplicador = 3 if multiplicador == 7 else multiplicador + 1
-
-    dv_calculado = 11 - (suma % 11)
+    
+    # Recorrer el RUT de derecha a izquierda
+    for i, digito in enumerate(reversed(rut_numero)):
+        suma += int(digito) * multiplicadores[i % 6]
+    
+    # Calcular el resto y el dígito verificador
+    resto = suma % 11
+    dv_calculado = 11 - resto
+    
+    # Convertir a formato correcto
     if dv_calculado == 11:
         dv_calculado = '0'
     elif dv_calculado == 10:
         dv_calculado = 'K'
-
-    if str(dv) != str(dv_calculado):
-        raise ValidationError(f"El RUT ingresado es inválido. El dígito verificador debería ser {dv_calculado}.")
+    else:
+        dv_calculado = str(dv_calculado)
+    
+    # Verificar si coincide
+    if dv_ingresado != dv_calculado:
+        raise ValidationError(f'El RUT ingresado es inválido. El dígito verificador correcto es {dv_calculado}.')
+    
     return rut
 
+# Función para formatear RUT (opcional)
+def formatear_rut(rut):
+    """
+    Formatea un RUT en el formato estándar chileno (XX.XXX.XXX-Y)
+    """
+    rut_limpio = re.sub(r'[^0-9kK]', '', rut)
+    dv = rut_limpio[-1]
+    rut_numero = rut_limpio[:-1]
+    
+    # Formatear con puntos y guión
+    resultado = ''
+    for i, digito in enumerate(reversed(rut_numero)):
+        if i > 0 and i % 3 == 0:
+            resultado = '.' + resultado
+        resultado = digito + resultado
+    
+    return f"{resultado}-{dv}"
 
 
 class CambioEstadoPagoForm(forms.ModelForm):
@@ -273,7 +314,6 @@ class CustomUserCreationForm(UserCreationForm):
         # Verificar si ya existe el RUT en la base de datos
         if Profile.objects.filter(rut=rut).exists():
             raise ValidationError("Este RUT ya está registrado.")
-        
         return rut
 
     # Validación personalizada para asegurarse de que el correo y el teléfono sean únicos

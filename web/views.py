@@ -36,6 +36,10 @@ from .forms import  CustomUserCreationForm,ProductoForm, ProductoImagenForm, Pro
 from django.contrib import messages
 
 
+
+def pagina_no_encontrada(request, exception):
+    return render(request, '404.html', status=404)
+
 class MisComprasView(LoginRequiredMixin, ListView):
     model = Venta
     template_name = 'compras/mis_compras.html'

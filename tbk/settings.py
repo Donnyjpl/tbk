@@ -87,7 +87,7 @@ WSGI_APPLICATION = "tbk.wsgi.application"
 SECRET_KEY = env('SECRET_KEY')  # Cargar desde el archivo .env
 
 # Modo debug (es mejor no dejar DEBUG=True en producción)
-DEBUG = True
+DEBUG =  False
 
 # Configuración de la base de datos
 DATABASES = {

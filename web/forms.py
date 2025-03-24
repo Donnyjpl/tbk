@@ -8,74 +8,44 @@ from django.core.exceptions import ValidationError
 from .models import  ProductoTalla, Color,ProductoTallaColor
 import re
 
+import re
 
 def validar_rut(rut):
-    """
-    Validador para RUT chileno que se puede usar en modelos o formularios de Django.
-    Acepta formatos: 12345678-9, 12.345.678-9, 1.234.567-8
-    """
-    # Eliminar puntos y guiones
-    rut_limpio = re.sub(r'[^0-9kK]', '', rut)
-    
-    # Verificar longitud mínima (al menos 2 caracteres: 1 dígito + 1 verificador)
-    if len(rut_limpio) < 2:
-        raise ValidationError('El RUT ingresado es demasiado corto.')
-    
-    # Separar número base y dígito verificador
-    rut_numero = rut_limpio[:-1]
-    dv_ingresado = rut_limpio[-1].upper()
-    
-    # Verificar que el RUT solo contiene números
-    if not rut_numero.isdigit():
-        raise ValidationError('El RUT debe contener solo números antes del dígito verificador.')
-        
-    # Verificar que el dígito verificador sea válido
-    if dv_ingresado not in '0123456789K':
-        raise ValidationError('El dígito verificador debe ser un número o la letra K.')
-    
-    # Algoritmo para calcular el dígito verificador
-    multiplicadores = [2, 3, 4, 5, 6, 7]
-    suma = 0
-    
-    # Recorrer el RUT de derecha a izquierda
-    for i, digito in enumerate(reversed(rut_numero)):
-        suma += int(digito) * multiplicadores[i % 6]
-    
-    # Calcular el resto y el dígito verificador
-    resto = suma % 11
-    dv_calculado = 11 - resto
-    
-    # Convertir a formato correcto
-    if dv_calculado == 11:
-        dv_calculado = '0'
-    elif dv_calculado == 10:
-        dv_calculado = 'K'
-    else:
-        dv_calculado = str(dv_calculado)
-    
-    # Verificar si coincide
-    if dv_ingresado != dv_calculado:
-        raise ValidationError(f'El RUT ingresado es inválido. El dígito verificador correcto es {dv_calculado}.')
-    
-    return rut
+    # Eliminar puntos y guión del RUT
+    rut = rut.replace('.', '').replace('-', '')
 
-# Función para formatear RUT (opcional)
-def formatear_rut(rut):
-    """
-    Formatea un RUT en el formato estándar chileno (XX.XXX.XXX-Y)
-    """
-    rut_limpio = re.sub(r'[^0-9kK]', '', rut)
-    dv = rut_limpio[-1]
-    rut_numero = rut_limpio[:-1]
-    
-    # Formatear con puntos y guión
-    resultado = ''
-    for i, digito in enumerate(reversed(rut_numero)):
-        if i > 0 and i % 3 == 0:
-            resultado = '.' + resultado
-        resultado = digito + resultado
-    
-    return f"{resultado}-{dv}"
+    # Comprobar si el RUT tiene la longitud correcta
+    if len(rut) < 8 or len(rut) > 9:
+        return False
+
+    # Extraer el número y el dígito verificador
+    numero = rut[:-1]
+    digito = rut[-1].upper()
+
+    # Comprobar si el dígito verificador es un número o 'K'
+    if digito not in '0123456789K':
+        return False
+
+    # Calcular el dígito verificador
+    suma = 0
+    multiplicador = 2
+    for i in range(len(numero) - 1, -1, -1):
+        suma += int(numero[i]) * multiplicador
+        multiplicador = multiplicador + 1 if multiplicador < 7 else 2
+
+    resto = suma % 11
+    digito_calculado = 11 - resto
+
+    if digito_calculado == 11:
+        digito_calculado = '0'
+    elif digito_calculado == 10:
+        digito_calculado = 'K'
+    else:
+        digito_calculado = str(digito_calculado)
+
+    # Verificar si el dígito calculado coincide con el dígito ingresado
+    return digito_calculado == digito
+
 
 
 class CambioEstadoPagoForm(forms.ModelForm):
@@ -309,7 +279,9 @@ class CustomUserCreationForm(UserCreationForm):
     def clean_rut(self):
         rut = self.cleaned_data.get('rut')
         # Validar el RUT utilizando la función que creaste
-        validar_rut(rut)
+         # Validar el RUT utilizando la función que creamos
+        if not validar_rut(rut):
+            raise ValidationError("El RUT ingresado no es válido.")
         
         # Verificar si ya existe el RUT en la base de datos
         if Profile.objects.filter(rut=rut).exists():

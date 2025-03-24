@@ -8,45 +8,13 @@ from django.core.exceptions import ValidationError
 from .models import  ProductoTalla, Color,ProductoTallaColor
 import re
 
-import re
-
 def validar_rut(rut):
-    # Eliminar puntos y guión del RUT
-    rut = rut.replace('.', '').replace('-', '')
-
-    # Comprobar si el RUT tiene la longitud correcta
-    if len(rut) < 8 or len(rut) > 9:
-        return False
-
-    # Extraer el número y el dígito verificador
-    numero = rut[:-1]
-    digito = rut[-1].upper()
-
-    # Comprobar si el dígito verificador es un número o 'K'
-    if digito not in '0123456789K':
-        return False
-
-    # Calcular el dígito verificador
-    suma = 0
-    multiplicador = 2
-    for i in range(len(numero) - 1, -1, -1):
-        suma += int(numero[i]) * multiplicador
-        multiplicador = multiplicador + 1 if multiplicador < 7 else 2
-
-    resto = suma % 11
-    digito_calculado = 11 - resto
-
-    if digito_calculado == 11:
-        digito_calculado = '0'
-    elif digito_calculado == 10:
-        digito_calculado = 'K'
-    else:
-        digito_calculado = str(digito_calculado)
-
-    # Verificar si el dígito calculado coincide con el dígito ingresado
-    return digito_calculado == digito
-
-
+    # Expresión regular para validar el formato del RUT
+    pattern = r'^\d{7,8}-[0-9Kk]$'
+    
+    if re.match(pattern, rut):
+        return True
+    return False
 
 class CambioEstadoPagoForm(forms.ModelForm):
     class Meta:
